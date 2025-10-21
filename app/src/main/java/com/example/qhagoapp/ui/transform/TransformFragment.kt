@@ -31,6 +31,8 @@ import org.osmdroid.views.MapView
 // Location classes
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+//
+import android.graphics.BitmapFactory
 
 
 /**
@@ -143,12 +145,19 @@ class TransformFragment : Fragment()
         }
     }
 
-    // --- NEW: Function to set up the location overlay after permission is granted ---
-    private fun setupLocationOverlay() {
+    private fun setupLocationOverlay()
+    {
         locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), map)
+        // --- START: CUSTOM ICON LOGIC ---
+        // Convert your app's mipmap icon into a Bitmap.
+        val personBitmap = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+        // Set the custom bitmap as the location icon.
+        // We will use the same icon for both the static marker and the direction arrow.
+        locationOverlay.setPersonIcon(personBitmap)
+        locationOverlay.setDirectionArrow(personBitmap, personBitmap)
+        // --- END: CUSTOM ICON LOGIC ---
         locationOverlay.enableMyLocation() // Enable the location provider
         locationOverlay.enableFollowLocation() // Center the map on the user's location
-
         // Run this code once the first location fix is obtained
         locationOverlay.runOnFirstFix {
             activity?.runOnUiThread {
@@ -156,7 +165,6 @@ class TransformFragment : Fragment()
                 map.controller.setZoom(15.0) // Zoom in on the user's location
             }
         }
-
         map.overlays.add(locationOverlay) // Add the overlay to the map
         map.invalidate() // Redraw the map
     }
