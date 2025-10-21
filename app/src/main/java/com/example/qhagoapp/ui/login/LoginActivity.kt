@@ -24,33 +24,21 @@ class LoginActivity : AppCompatActivity()
     private lateinit var loginViewModel: LoginViewModel
     private lateinit var binding: ActivityLoginBinding
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?)
+    {
         super.onCreate(savedInstanceState)
-
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // The template generates this code for you, which is great.
-        // ... (existing code for loginViewModel, username, password, etc.)
-
-        // --- ADD THE FOLLOWING CODE ---
-
-        // 1. Get a reference to the bypass button from the layout
+        // Get a reference to the bypass button from the layout
         val bypassButton = binding.bypassButton
-
-        // 2. Set an OnClickListener
+        // Set an OnClickListener
         bypassButton?.setOnClickListener {
             // Create an Intent to start MainActivity
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
-
             // Finish LoginActivity so the user can't press "back" to return here
             finish()
         }
-
-        // --- END OF NEW CODE ---
-
-
 
         val username = binding.username
         val password = binding.password
@@ -122,6 +110,7 @@ class LoginActivity : AppCompatActivity()
             }
         }
     }
+
 
     private fun updateUiWithUser(model: LoggedInUserView) {
         val welcome = getString(R.string.welcome)
