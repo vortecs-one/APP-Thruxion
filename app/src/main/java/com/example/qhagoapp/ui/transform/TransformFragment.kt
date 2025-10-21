@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.qhagoapp.R
 import com.example.qhagoapp.databinding.FragmentTransformBinding
 import com.example.qhagoapp.databinding.ItemTransformBinding
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 // OSMDroid classes
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -104,6 +105,20 @@ class TransformFragment : Fragment()
             transformAdapter.submitList(items)
         }
         return root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?)
+    {
+        super.onViewCreated(view, savedInstanceState)
+        // --- MODIFIED: Find the button directly from the fragment's binding ---
+        val myLocationButton: FloatingActionButton? = binding.fabMyLocation
+        // Set a click listener for the button
+        myLocationButton?.setOnClickListener {
+            // Check if the location overlay and its location are available
+            if (::locationOverlay.isInitialized && locationOverlay.myLocation != null)
+                // Animate the map to the user's current location
+                map.controller.animateTo(locationOverlay.myLocation)
+        }
     }
 
     // --- NEW: Function to check and request permissions ---

@@ -34,4 +34,5 @@
     <string name="thruxion_icon">Thruxion icon</string>
     <string name="demo">Demo</string>
     <string name="logout">Logout</string>
+    <string name="reset_user_location">Reset user location</string>
 </resources>
