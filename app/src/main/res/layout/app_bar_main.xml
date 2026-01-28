@@ -16,7 +16,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/teal_700"
+            android:background="@color/teal_200"
             app:popupTheme="@style/Theme.QhagoApp.PopupOverlay" />
 
     </com.google.android.material.appbar.AppBarLayout>

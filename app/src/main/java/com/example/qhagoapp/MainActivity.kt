@@ -28,6 +28,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // 1. Setup Toolbar
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab?.setOnClickListener { view ->
@@ -36,33 +38,33 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .setAnchorView(R.id.fab).show()
         }
 
-        val navHostFragment =
-            (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment?)!!
+        // 2. Setup NavController
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
         val navController = navHostFragment.navController
 
-        binding.navView?.let {
-            appBarConfiguration = AppBarConfiguration(
-                setOf(
-                    R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings
-                ),
-                binding.drawerLayout
-            )
-            setupActionBarWithNavController(navController, appBarConfiguration)
-            it.setupWithNavController(navController)
+        // 3. Setup Unified AppBarConfiguration
+        // IMPORTANT: Include binding.drawerLayout here so the hamburger icon knows which drawer to open
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings
+            ),
+            binding.drawerLayout
+        )
 
-            // Set the listener for the NavigationView
+        // 4. Connect ActionBar to NavController with the config
+        setupActionBarWithNavController(navController, appBarConfiguration)
+
+        // 5. Setup Side Navigation Drawer (Hamburger Menu)
+        binding.navView?.let {
+            it.setupWithNavController(navController)
             it.setNavigationItemSelectedListener(this)
         }
 
-        binding.appBarMain.contentMain.bottomNavView?.let {
-            appBarConfiguration = AppBarConfiguration(
-                setOf(
-                    R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow
-                )
-            )
-            setupActionBarWithNavController(navController, appBarConfiguration)
-            it.setupWithNavController(navController)
-        }
+        // 6. Setup Bottom Navigation (if it exists in current layout)
+        binding.appBarMain.contentMain.bottomNavView?.setupWithNavController(navController)
+
+
     }
 
     // 3. Add the onNavigationItemSelected method to handle all menu clicks
