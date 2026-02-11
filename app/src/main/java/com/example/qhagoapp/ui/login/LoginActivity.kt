@@ -108,9 +108,15 @@ class LoginActivity : AppCompatActivity()
                 loading.visibility = View.VISIBLE
                 loginViewModel.login(username.text.toString(), password.text.toString())
             }
+
+            // Observe the API Health Status
+            loginViewModel.healthStatus.observe(this@LoginActivity) { message ->
+                Toast.makeText(this@LoginActivity , message, Toast.LENGTH_LONG).show()
+            }
+
+
         }
     }
-
 
     private fun updateUiWithUser(model: LoggedInUserView) {
         val welcome = getString(R.string.welcome)

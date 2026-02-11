@@ -122,6 +122,7 @@ class TransformFragment : Fragment()
                 map.controller.animateTo(locationOverlay.myLocation)
         }
         // Observe the API Health Status
+        /*
         transformViewModel.healthStatus.observe(viewLifecycleOwner) { message ->
             // Option A: Simple Toast (appears at bottom)
             android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_LONG).show()
@@ -132,6 +133,7 @@ class TransformFragment : Fragment()
                 com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
             ).setAction("OK") {}.show()
         }
+        */
     }
 
     // --- NEW: Function to check and request permissions ---
