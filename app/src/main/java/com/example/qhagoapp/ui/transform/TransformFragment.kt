@@ -121,6 +121,17 @@ class TransformFragment : Fragment()
                 // Animate the map to the user's current location
                 map.controller.animateTo(locationOverlay.myLocation)
         }
+        // Observe the API Health Status
+        transformViewModel.healthStatus.observe(viewLifecycleOwner) { message ->
+            // Option A: Simple Toast (appears at bottom)
+            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_LONG).show()
+            // Option B: Snackbar (more modern, usually preferred in Material apps)
+            com.google.android.material.snackbar.Snackbar.make(
+                view,
+                message,
+                com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
+            ).setAction("OK") {}.show()
+        }
     }
 
     // --- NEW: Function to check and request permissions ---

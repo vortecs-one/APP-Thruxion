@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     }
 
-    // 3. Add the onNavigationItemSelected method to handle all menu clicks
+    // Add the onNavigationItemSelected method to handle all menu clicks
     override fun onNavigationItemSelected(item: MenuItem): Boolean
     {
         // Find the NavController
