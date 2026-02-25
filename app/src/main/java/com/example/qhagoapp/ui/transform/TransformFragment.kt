@@ -1,5 +1,6 @@
 package com.example.qhagoapp.ui.transform
 
+import com.example.qhagoapp.R
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -14,26 +15,27 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.qhagoapp.R
 import com.example.qhagoapp.databinding.FragmentTransformBinding
 import com.example.qhagoapp.databinding.ItemTransformBinding
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 // OSMDroid classes
-import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 // Location classes
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 //
 import android.graphics.BitmapFactory
-
+import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import org.osmdroid.views.MapView
 
 /**
  * Fragment that demonstrates a responsive layout pattern where the format of the content
@@ -48,9 +50,11 @@ class TransformFragment : Fragment()
     private val binding get() = _binding!!
     private val transformViewModel: TransformViewModel by viewModels()
     // variable for the map
-    private lateinit var map: MapView
+    private val map get() = binding.map!!
     // --- NEW: LOCATION VARIABLES ---
     private lateinit var locationOverlay: MyLocationNewOverlay
+    private lateinit var markerClusterer: RadiusMarkerClusterer
+
 
     // --- NEW: PERMISSION LAUNCHER ---
     private val requestPermissionLauncher =
@@ -67,46 +71,31 @@ class TransformFragment : Fragment()
             }
         }
 
-
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentTransformBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        // --- User Agent for OSMDroid ---
-        Configuration.getInstance().userAgentValue = requireContext().packageName
-
-        // --- Initialize the Map ---
-        // The '!!' is not needed with view binding, but we'll keep it as it's not the main issue
-        map = binding.map!!
+        // 1. Initialize Map
         map.setTileSource(TileSourceFactory.MAPNIK)
-
-        // --- Configure Map Controller ---
         map.setMultiTouchControls(true)
-        val mapController = map.controller
-        mapController.setZoom(9.5)
-        val startPoint = GeoPoint(48.8583, 2.2944)
-        mapController.setCenter(startPoint)
-
-        // --- NEW: CHECK PERMISSIONS AND SETUP LOCATION ---
+        // 2. APPLY NIGHT MODE (Open Source Logic)
+        applyNightMode(map)
+        // 3. Setup Clusterer
+        setupMarkerClustering()
         checkLocationPermission()
-
         // --- RecyclerView Setup ---
         val recyclerView = binding.recyclerView
         val transformAdapter = TransformAdapter() // Create an instance of your adapter
         recyclerView?.layoutManager = LinearLayoutManager(requireContext())
         recyclerView?.adapter = transformAdapter // Assign the adapter to the RecyclerView
-
         // --- Observe ViewModel and Update Adapter ---
         transformViewModel.texts.observe(viewLifecycleOwner) { items ->
             // Use submitList() for ListAdapter
             transformAdapter.submitList(items)
         }
-        return root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?)
@@ -136,25 +125,90 @@ class TransformFragment : Fragment()
         */
     }
 
-    // --- NEW: Function to check and request permissions ---
+    private fun applyNightMode(mapView: MapView) {
+        // Invert colors and adjust brightness/contrast for a "Night" look
+        val inverseMatrix = ColorMatrix(floatArrayOf(
+            -1.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+            0.0f, -1.0f, 0.0f, 0.0f, 255.0f,
+            0.0f, 0.0f, -1.0f, 0.0f, 255.0f,
+            0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+        ))
+
+        // Slightly blue tint for "Night" feel
+        val destinationMatrix = ColorMatrix()
+        destinationMatrix.setScale(0.8f, 0.8f, 1.2f, 1.0f)
+        inverseMatrix.postConcat(destinationMatrix)
+
+        val filter = ColorMatrixColorFilter(inverseMatrix)
+        mapView.overlayManager.tilesOverlay.setColorFilter(filter)
+    }
+
+    private fun setupMarkerClustering()
+    {
+        // 1. Initialize the open-source clusterer
+        markerClusterer = RadiusMarkerClusterer(requireContext())
+        map.overlays.add(markerClusterer)
+        // 2. Security-First UI: Use a neutral icon that doesn't leak data in UI
+        val clusterIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+        markerClusterer.setIcon(clusterIcon)
+        // 3. Night Mode visibility: White text for dark tiles
+        markerClusterer.textPaint.color = Color.WHITE
+        markerClusterer.textPaint.textSize = 40f
+        // 4. Observe secured API data from your HumansApiService
+        transformViewModel.texts.observe(viewLifecycleOwner) { names ->
+            refreshMarkers(names)
+        }
+    }
+
+    private fun refreshMarkers(names: List<String>)
+    {
+        markerClusterer.items.clear()
+        names.forEachIndexed { index, name ->
+            val marker = Marker(map)
+            // Note: Replace with real Lat/Lng from your Humans API later
+            marker.position = GeoPoint(48.8583 + (index * 0.01), 2.2944 + (index * 0.01))
+            marker.title = name
+
+            // Security: Only show detail on click to prevent background data leaking
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            markerClusterer.add(marker)
+        }
+        map.invalidate()
+    }
+
+    private fun addMarkersToCluster(names: List<String>) {
+        markerClusterer.items.clear()
+
+        // Example: Spreading markers around Paris for demonstration
+        names.forEachIndexed { index, name ->
+            val marker = Marker(map)
+            marker.position = GeoPoint(48.8583 + (index * 0.01), 2.2944 + (index * 0.01))
+            marker.title = name
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+
+            // Custom Open Source Icon for Marker
+            marker.icon = ContextCompat.getDrawable(requireContext(), org.osmdroid.bonuspack.R.drawable.ic_menu_compass)
+
+            markerClusterer.add(marker)
+        }
+        map.invalidate()
+    }
+
+    // --- ENHANCED PERMISSION HANDLING (Modern API 30+) ---
     private fun checkLocationPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // Permission is already granted, setup the location overlay
-                setupLocationOverlay()
-            }
-            shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
-                // Explain to the user why you need the permission, then request it
-                // For this example, we'll just request it directly.
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-            else -> {
-                // Directly ask for the permission
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
+        val permissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        val needsRequest = permissions.any {
+            ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (needsRequest) {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else {
+            setupLocationOverlay()
         }
     }
 

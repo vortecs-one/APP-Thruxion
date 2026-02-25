@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.invoke
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -54,11 +56,19 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     //OSMDroid
     implementation(libs.osmdroid.android)
+    // Open Source Map Engine
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+    // Open Source Clustering and Utilities
+    implementation("com.github.MKergall:osmbonuspack:6.9.0")
+    // Security: Secure storage for your JWT tokens
+    implementation("androidx.security:security-crypto:1.1.0")
+
     // Networking
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+    //
 
 }
