@@ -132,25 +132,6 @@ class TransformFragment : Fragment() {
         binding.map?.overlays?.add(markerClusterer)
     }
 
-    /*private fun refreshMarkers(names: List<String>) {
-        markerClusterer.items.clear()
-        names.forEachIndexed { index, name ->
-            val marker = Marker(binding.map).apply {
-                position = GeoPoint(48.8583 + (index * 0.02), 2.2944 + (index * 0.02))
-                title = name
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                setOnMarkerClickListener { m, _ ->
-                    m.showInfoWindow()
-                    if (::locationOverlay.isInitialized && locationOverlay.myLocation != null) {
-                        getDirections(locationOverlay.myLocation, m.position)
-                    }
-                    true
-                }
-            }
-            markerClusterer.add(marker)
-        }
-        binding.map?.invalidate()
-    }*/
     private fun refreshMarkers(names: List<String>)
     {
         val map = binding.map ?: return
@@ -244,13 +225,6 @@ class TransformFragment : Fragment() {
         }
     }
 
-    /*private fun setupLocationOverlay() {
-        locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), binding.map).apply {
-            enableMyLocation()
-            runOnFirstFix { activity?.runOnUiThread { binding.map?.controller?.animateTo(myLocation) } }
-        }
-        binding.map?.overlays?.add(locationOverlay)
-    }*/
     private fun setupLocationOverlay()
     {
         // 1. Initialize the provider and overlay
