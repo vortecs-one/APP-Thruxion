@@ -9,14 +9,20 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.example.qhagoapp.MainActivity
 import com.example.qhagoapp.databinding.ActivityLoginBinding
-
 import com.example.qhagoapp.R
+import com.example.qhagoapp.network.ApiRegistry.communicationsApi
+import com.example.qhagoapp.network.ApiRegistry.humansApi
+import com.example.qhagoapp.network.model.SystemLoginRequest
+import com.example.qhagoapp.network.security.TokenManager
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity()
 {
@@ -108,15 +114,45 @@ class LoginActivity : AppCompatActivity()
                 loading.visibility = View.VISIBLE
                 loginViewModel.login(username.text.toString(), password.text.toString())
             }
-
-            // Observe the API Health Status
-            loginViewModel.healthStatus.observe(this@LoginActivity) { message ->
-                Toast.makeText(this@LoginActivity , message, Toast.LENGTH_LONG).show()
-            }
-
-
         }
+
+        // Observe the API Health Status
+        loginViewModel.healthStatus.observe(this@LoginActivity) { message ->
+            Toast.makeText(this@LoginActivity , message, Toast.LENGTH_LONG).show()
+        }
+
+        // JWT TOKEN
+        lifecycleScope.launch {
+            val commResponse = communicationsApi.systemLogin(
+                SystemLoginRequest("chetu","chetu2025")
+            )
+            if(commResponse.isSuccessful) {
+                Log.d("JWT_TEST", "COMM RAW RESPONSE: ${commResponse.body()}")
+                commResponse.body()?.token?.let {
+                    TokenManager.saveCommunicationsToken(it)
+                }
+            }
+            val humansResponse = humansApi.systemLogin(
+                SystemLoginRequest("admin","admin")
+            )
+            if(humansResponse.isSuccessful) {
+                Log.d("JWT_TEST", "HUMAN RAW RESPONSE: ${humansResponse.body()}")
+                humansResponse.body()?.token?.let {
+                    TokenManager.saveHumansToken(it)
+                }
+            }
+            //
+            /*
+            val commToken = TokenManager.getCommunicationsToken()
+            val humanToken = TokenManager.getHumansToken()
+            Log.d("JWT_TEST", "C TOKEN: $commToken")
+            Log.d("JWT_TEST", "H TOKEN: $humanToken")
+            */
+        }
+
+
     }
+
 
     private fun updateUiWithUser(model: LoggedInUserView) {
         val welcome = getString(R.string.welcome)

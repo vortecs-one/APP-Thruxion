@@ -1,19 +1,32 @@
 package com.example.qhagoapp.network
 
+import com.example.qhagoapp.network.api.CommunicationsApiService
+import com.example.qhagoapp.network.api.HumansApiService
+import com.example.qhagoapp.network.security.ApiType
+
 object ApiRegistry
 {
     private const val BASE_DOMAIN = "https://thruxion.com/api"
+    private const val HUMANS = "$BASE_DOMAIN/humans/"
 
-    // API 1: Communications
+  //private const val MACHINES = "$BASE_DOMAIN/machines/"
+    private const val COMMUNICATIONS = "$BASE_DOMAIN/communications/"
+
     val communicationsApi: CommunicationsApiService by lazy {
-        ApiClientFactory.createClient("$BASE_DOMAIN/communications/")
+        ApiClientFactory.create(COMMUNICATIONS, ApiType.COMMUNICATIONS)
             .create(CommunicationsApiService::class.java)
     }
 
-    // API 2: Humans
     val humansApi: HumansApiService by lazy {
-        ApiClientFactory.createClient("$BASE_DOMAIN/humans/")
+        ApiClientFactory.create(HUMANS, ApiType.HUMANS)
             .create(HumansApiService::class.java)
     }
+
+    /*val machinesApi: MachinesApiService by lazy {
+        ApiClientFactory.create(MACHINES,ApiType.MACHINES)
+            .create(MachinesApiService::class.java)
+    }*/
+
+
 
 }
