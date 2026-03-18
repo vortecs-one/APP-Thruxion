@@ -1,0 +1,12 @@
+<!-- In res/xml/network_security_config.xml -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">54.198.163.127</domain>
+    </domain-config>
+    <!-- Or for all domains for development purposes: -->
+    <!-- <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config> -->
+</network-security-config>

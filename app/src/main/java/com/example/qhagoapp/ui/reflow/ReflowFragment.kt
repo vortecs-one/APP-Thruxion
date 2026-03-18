@@ -1,48 +1,5 @@
 package com.example.qhagoapp.ui.reflow
 
-/*
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import com.example.qhagoapp.databinding.FragmentReflowBinding
-
-class ReflowFragment : Fragment()
-{
-    private var _binding: FragmentReflowBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    private val binding get() = _binding!!
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val reflowViewModel =
-            ViewModelProvider(this).get(ReflowViewModel::class.java)
-
-        _binding = FragmentReflowBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        val textView: TextView = binding.textReflow
-        reflowViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
-        }
-        return root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-}
-*/
-
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -55,8 +12,8 @@ import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import com.example.qhagoapp.R
 
-class ReflowFragment : Fragment() {
-
+class ReflowFragment : Fragment()
+{
     private lateinit var webView: WebView
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -83,7 +40,7 @@ class ReflowFragment : Fragment() {
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.settings.loadWithOverviewMode = true
-        webView.loadUrl("https://www.google.com")
+        webView.loadUrl("http://54.198.163.127/#/auth/login")
         return view
     }
 
