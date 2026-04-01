@@ -1,66 +1,55 @@
 package com.example.qhagoapp.ui.transform
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.*
 import android.os.Bundle
 import android.view.*
 import android.view.inputmethod.InputMethodManager
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.*
-import com.example.qhagoapp.R
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.qhagoapp.databinding.FragmentTransformBinding
-import com.example.qhagoapp.databinding.ItemTransformBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
-import org.osmdroid.bonuspack.location.NominatimPOIProvider
-import org.osmdroid.bonuspack.routing.*
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
-import org.osmdroid.views.overlay.mylocation.*
-import androidx.core.graphics.createBitmap
+// MapLibre
+import org.maplibre.geojson.Point
+import org.maplibre.geojson.Feature
+import org.maplibre.android.MapLibre
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.android.style.layers.PropertyFactory.*
+import org.maplibre.android.location.modes.CameraMode
+import org.maplibre.android.location.modes.RenderMode
+import org.maplibre.android.location.LocationComponentActivationOptions
+import java.net.URLEncoder
 
-class TransformFragment : Fragment() {
-
+class TransformFragment : Fragment()
+{
     private var _binding: FragmentTransformBinding? = null
     private val binding get() = _binding!!
-    private val transformViewModel: TransformViewModel by viewModels()
+    private val viewModel: TransformViewModel by viewModels()
+    private var mapLibreMap: MapLibreMap? = null
+    private var searchMarker: org.maplibre.android.annotations.Marker? = null
 
-    private lateinit var locationOverlay: MyLocationNewOverlay
-    private lateinit var markerClusterer: RadiusMarkerClusterer
-
-    private var currentRouteOverlay: Polyline? = null
-    private var searchMarker: Marker? = null
-
-    private val roadManager by lazy {
-        OSRMRoadManager(requireContext(), Configuration.getInstance().userAgentValue)
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && hasLocationPermission())
+            enableLocation()
+        else
+            Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
     }
-
-    private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) setupLocationOverlay()
-            else Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Configuration.getInstance().load(requireContext(), requireContext().getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
-        Configuration.getInstance().userAgentValue = requireContext().packageName
+        MapLibre.getInstance(requireContext())
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -75,247 +64,248 @@ class TransformFragment : Fragment() {
         observeData()
     }
 
-    private fun setupMap() {
-        binding.map.apply {
-            this!!.setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            controller.setZoom(12.0)
-            controller.setCenter(GeoPoint(48.8583, 2.2944))
+    // --------------------------------------------------
+    // MAP SETUP
+    // --------------------------------------------------
+
+    private fun setupMap()
+    {
+        binding.map?.getMapAsync { map ->
+            mapLibreMap = map
+            val isDark = binding.switchMapMode!!.isChecked
+            applyMapStyle(isDark)
         }
-        applyNightMode(binding.map)
-        setupMarkerClustering()
-        checkLocationPermission()
     }
+
+    private fun applyMapStyle(isDark: Boolean)
+    {
+        val styleUrl = if (isDark)
+            "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+        else
+            "https://tiles.openfreemap.org/styles/liberty"
+        mapLibreMap?.setStyle(styleUrl) { style ->
+            // 🔥 VERY IMPORTANT → re-add everything after style reload
+            enableLocation()
+            viewModel.users.value?.let {
+                refreshMarkers(it)
+            }
+        }
+    }
+
+
+
+    private fun moveToDefaultLocation()
+    {
+        mapLibreMap?.animateCamera(
+            org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                org.maplibre.android.geometry.LatLng(48.8583, 2.2944),
+                12.0
+            ),
+            1500 // duration in ms
+        )
+    }
+
+    // --------------------------------------------------
+    // RECYCLER
+    // --------------------------------------------------
 
     private fun setupRecyclerView() {
-        binding.recyclerView.apply {
-            this?.layoutManager = LinearLayoutManager(requireContext())
-            this?.adapter = TransformAdapter()
-        }
+        binding.recyclerView?.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView?.adapter = TransformAdapter()
     }
 
+    // --------------------------------------------------
+    // UI
+    // --------------------------------------------------
+
     private fun setupUI() {
-        binding.fabMyLocation?.setOnClickListener {
-            if (::locationOverlay.isInitialized && locationOverlay.myLocation != null) {
-                binding.map?.controller?.animateTo(locationOverlay.myLocation)
+        binding.fabMyLocation?.setOnClickListener()
+        {
+            binding.fabMyLocation?.setOnClickListener {
+                val location = mapLibreMap?.locationComponent?.lastKnownLocation
+                location?.let {
+                    mapLibreMap?.animateCamera(
+                        org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                            org.maplibre.android.geometry.LatLng(it.latitude, it.longitude),
+                            14.0
+                        )
+                    )
+                }
             }
         }
         binding.btnSearch?.setOnClickListener { performSearch() }
-        binding.editSearch?.setOnEditorActionListener { _, _, _ -> performSearch(); true }
-    }
-
-    private fun observeData() {
-        transformViewModel.texts.observe(viewLifecycleOwner) { items ->
-            (binding.recyclerView?.adapter as? TransformAdapter)?.submitList(items)
-            refreshMarkers(items)
+        binding.editSearch?.setOnEditorActionListener { _, _, _ ->
+            performSearch()
+            true
+        }
+        binding.switchMapMode?.isChecked = true
+        binding.switchMapMode?.setOnCheckedChangeListener { _, isChecked ->
+            applyMapStyle(isChecked)
         }
     }
 
-    private fun applyNightMode(mapView: MapView?) {
-        val inverse = ColorMatrix(floatArrayOf(
-            -1f, 0f, 0f, 0f, 255f,
-            0f, -1f, 0f, 0f, 255f,
-            0f, 0f, -1f, 0f, 255f,
-            0f, 0f, 0f, 1f, 0f
-        ))
-        val blueTint = ColorMatrix().apply { setScale(0.8f, 0.8f, 1.2f, 1f) }
-        inverse.postConcat(blueTint)
-        mapView?.overlayManager?.tilesOverlay?.setColorFilter(ColorMatrixColorFilter(inverse))
-    }
+    // --------------------------------------------------
+    // DATA OBSERVER
+    // --------------------------------------------------
 
-    private fun setupMarkerClustering() {
-        markerClusterer = RadiusMarkerClusterer(requireContext()).apply {
-            textPaint.color = Color.WHITE
-            textPaint.textSize = 40f
-            setIcon(BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher))
-        }
-        binding.map?.overlays?.add(markerClusterer)
-    }
-
-    private fun refreshMarkers(names: List<String>)
+    private fun observeData()
     {
-        val map = binding.map ?: return
-        markerClusterer.items.clear()
-        // Get user location or default to a fallback (e.g., Paris) if not yet fixed
-        val baseLocation = if (::locationOverlay.isInitialized && locationOverlay.myLocation != null) {
-            locationOverlay.myLocation
+        viewModel.users.observe(viewLifecycleOwner) { users ->
+            (binding.recyclerView?.adapter as? TransformAdapter)
+                ?.submitList(users.map { it.name })
+            refreshMarkers(users)
         }
-        else {
-            GeoPoint(48.8583, 2.2944)
-        }
-        names.forEachIndexed { index, name ->
-            val marker = Marker(map).apply {
-                // Generate a small random offset (approx 1-5km) to simulate people in the same city
-                val randomLatOffset = (Math.random() - 0.5) * 0.04
-                val randomLngOffset = (Math.random() - 0.5) * 0.04
-                position = GeoPoint(
-                    baseLocation.latitude + randomLatOffset,
-                    baseLocation.longitude + randomLngOffset
-                )
-                title = name
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-
-                setOnMarkerClickListener { m, _ ->
-                    m.showInfoWindow()
-                    if (::locationOverlay.isInitialized && locationOverlay.myLocation != null) {
-                        getDirections(locationOverlay.myLocation, m.position)
-                    }
-                    true
-                }
-            }
-            markerClusterer.add(marker)
-        }
-        map.invalidate()
     }
+
+    // --------------------------------------------------
+    // MARKERS (MapLibre)
+    // --------------------------------------------------
+
+    private fun refreshMarkers(users: List<MapUser>)
+    {
+        val style = mapLibreMap?.style ?: return
+        val features = users.map {
+            Feature.fromGeometry(
+                Point.fromLngLat(it.lng, it.lat)
+            ).apply {
+                addStringProperty("name", it.name)
+            }
+        }
+        val source = GeoJsonSource("users-source", FeatureCollection.fromFeatures(features))
+        if (style.getSource("users-source") != null)
+            style.removeSource("users-source")
+        if (style.getLayer("users-layer") != null)
+            style.removeLayer("users-layer")
+        style.addSource(source)
+        val layer = SymbolLayer("users-layer", "users-source")
+            .withProperties(
+                textField("{name}"),
+                textSize(12f),
+                textOffset(arrayOf(0f, 1.5f)),
+                textColor("#FFFFFF")
+            )
+        style.addLayer(layer)
+    }
+
+    // --------------------------------------------------
+    // MAP SEARCH
+    // --------------------------------------------------
 
     private fun performSearch() {
-        val query = binding.editSearch?.text?.toString().orEmpty()
-        if (query.isBlank()) return
+        val query = binding.editSearch?.text.toString().trim()
+        if (query.isEmpty()) return
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(view?.windowToken, 0)
         searchLocation(query)
     }
 
-    private fun searchLocation(query: String) {
+    private fun searchLocation(query: String)
+    {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val poiProvider = NominatimPOIProvider(Configuration.getInstance().userAgentValue)
-                val pois = poiProvider.getPOICloseTo(binding.map?.mapCenter as GeoPoint, query, 1, 0.1)
-                withContext(Dispatchers.Main) {
-                    if (!pois.isNullOrEmpty()) {
-                        val result = pois[0].mLocation
-                        binding.map?.controller?.animateTo(result)
-                        searchMarker?.let { binding.map?.overlays?.remove(it) }
-                        searchMarker = Marker(binding.map).apply {
-                            position = result
-                            title = pois[0].mDescription
-                        }
-                        binding.map?.overlays?.add(searchMarker)
-                        binding.map?.invalidate()
+            try
+            {
+                val encodedQuery = URLEncoder.encode(query, "UTF-8")
+                val url = "https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=1"
+                val connection = java.net.URL(url).openConnection()
+                connection.setRequestProperty("User-Agent", "qhago-app")
+                val response = connection.getInputStream().bufferedReader().use { it.readText() }
+                val jsonArray = org.json.JSONArray(response)
+                if (jsonArray.length() > 0) {
+                    val obj = jsonArray.getJSONObject(0)
+                    val lat = obj.getDouble("lat")
+                    val lon = obj.getDouble("lon")
+                    withContext(Dispatchers.Main) {
+                        moveToSearchResult(lat, lon, query)
                     }
                 }
-            } catch (e: Exception) { /* Log error */ }
+            }
+            catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Search failed", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
-    private fun getDirections(start: GeoPoint, end: GeoPoint) {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val road = roadManager.getRoad(arrayListOf(start, end))
-                withContext(Dispatchers.Main) {
-                    if (road.mStatus == Road.STATUS_OK) {
-                        currentRouteOverlay?.let { binding.map?.overlays?.remove(it) }
-                        currentRouteOverlay = RoadManager.buildRoadOverlay(road).apply {
-                            outlinePaint.color = Color.CYAN
-                            outlinePaint.strokeWidth = 12f
-                        }
-                        binding.map?.overlays?.add(currentRouteOverlay)
-                        binding.map?.invalidate()
-                    }
-                }
-            } catch (e: Exception) { /* Log error */ }
+    private fun moveToSearchResult(lat: Double, lon: Double, title: String)
+    {
+        val point = org.maplibre.android.geometry.LatLng(lat, lon)
+        // Move camera
+        mapLibreMap?.animateCamera(
+            org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(point, 14.0),
+            2000
+        )
+        // Remove previous marker
+        searchMarker?.let {
+            mapLibreMap?.removeMarker(it)
         }
+        // Add new marker
+        searchMarker = mapLibreMap?.addMarker(
+            org.maplibre.android.annotations.MarkerOptions()
+                .position(point)
+                .title(title)
+        )
+        /* SHOW INFO
+        binding.map?.let { mapView ->
+            searchMarker?.showInfoWindow(mapLibreMap!!, mapView)
+        }*/
     }
+
+    // --------------------------------------------------
+    // LOCATION
+    // --------------------------------------------------
 
     private fun checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            setupLocationOverlay()
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            enableLocation()
         } else {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
-    private fun setupLocationOverlay()
+    @SuppressLint("MissingPermission")
+    private fun enableLocation()
     {
-        // 1. Initialize the provider and overlay
-        val provider = GpsMyLocationProvider(requireContext())
-        locationOverlay = MyLocationNewOverlay(provider, binding.map).apply {
-            enableMyLocation()
-
-            // 2. Load custom icons (Using Helper function for Vector support)
-            val personBitmap = drawableToBitmap(requireContext(), org.osmdroid.bonuspack.R.drawable.person)
-            val arrowBitmap = drawableToBitmap(requireContext(), org.osmdroid.bonuspack.R.drawable.moreinfo_arrow)
-            // 3. Apply the custom icons
-            if (personBitmap != null) {
-                setPersonIcon(personBitmap)
-                setPersonAnchor(0.5f, 0.5f) // Center the icon
-            }
-            if (arrowBitmap != null) {
-                // Parameters: (Arrow Bitmap, Stationary Bitmap)
-                setDirectionArrow(arrowBitmap, arrowBitmap)
-                setDirectionAnchor(0.5f, 0.5f)
-            }
-            // 4. Handle first fix
-            runOnFirstFix {
-                activity?.runOnUiThread {
-                    val map = binding.map ?: return@runOnUiThread
-                    val myLocation = locationOverlay.myLocation ?: return@runOnUiThread
-
-                    // 1. Move map to user's real city
-                    map.controller.animateTo(myLocation)
-                    map.controller.setZoom(14.0)
-
-                    // 2. TRIGGER REFRESH: Move markers to this city
-                    transformViewModel.texts.value?.let { items ->
-                        refreshMarkers(items)
-                    }
-                }
-            }
-        }
-        binding.map?.overlays?.add(locationOverlay)
-    }
-
-    /**
-     * Security/Performance Helper: Safely converts Vector Drawables to Bitmaps.
-     * Raw Bitmaps from resources can sometimes cause memory leaks or resolution issues.
-     */
-    private fun drawableToBitmap(context: Context, drawableId: Int): Bitmap? {
-        val drawable = ContextCompat.getDrawable(context, drawableId) ?: return null
-        val bitmap = createBitmap(
-            drawable.intrinsicWidth.coerceAtLeast(1),
-            drawable.intrinsicHeight.coerceAtLeast(1)
+        if (!hasLocationPermission()) return
+        val map = mapLibreMap ?: return
+        val style = map.style ?: return
+        val locationComponent = map.locationComponent
+        locationComponent.activateLocationComponent(
+            LocationComponentActivationOptions.builder(requireContext(), style)
+                .build()
         )
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        return bitmap
+        locationComponent.isLocationComponentEnabled = true
+        locationComponent.cameraMode = CameraMode.TRACKING
+        locationComponent.renderMode = RenderMode.COMPASS
     }
 
+    private fun hasLocationPermission(): Boolean
+    {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
+    // --------------------------------------------------
+    // LIFECYCLE (IMPORTANT)
+    // --------------------------------------------------
+
+    override fun onStart() { super.onStart(); binding.map?.onStart() }
     override fun onResume() { super.onResume(); binding.map?.onResume() }
-    override fun onPause() { super.onPause(); binding.map?.onPause() }
-    override fun onDestroyView() { binding.map?.onDetach(); _binding = null; super.onDestroyView() }
-}
+    override fun onPause() { binding.map?.onPause(); super.onPause() }
+    override fun onStop() { binding.map?.onStop(); super.onStop() }
 
-
-
-// -----------------------------------------------------
-// ADAPTER & VIEWHOLDER
-// -----------------------------------------------------
-
-class TransformAdapter : ListAdapter<String, TransformViewHolder>(object : DiffUtil.ItemCallback<String>() {
-    override fun areItemsTheSame(oldItem: String, newItem: String) = oldItem == newItem
-    override fun areContentsTheSame(oldItem: String, newItem: String) = oldItem == newItem
-}) {
-    private val drawables = listOf(
-        R.drawable.avatar_1, R.drawable.avatar_2, R.drawable.avatar_3, R.drawable.avatar_4,
-        R.drawable.avatar_5, R.drawable.avatar_6, R.drawable.avatar_7, R.drawable.avatar_8,
-        R.drawable.avatar_9, R.drawable.avatar_10, R.drawable.avatar_11, R.drawable.avatar_12,
-        R.drawable.avatar_13, R.drawable.avatar_14, R.drawable.avatar_15, R.drawable.avatar_16
-    )
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransformViewHolder {
-        val binding = ItemTransformBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return TransformViewHolder(binding)
+    override fun onDestroyView() {
+        binding.map?.onDestroy()
+        _binding = null
+        super.onDestroyView()
     }
 
-    override fun onBindViewHolder(holder: TransformViewHolder, position: Int) {
-        holder.textView.text = getItem(position)
-        holder.imageView.setImageDrawable(ResourcesCompat.getDrawable(holder.imageView.resources, drawables[position % drawables.size], null))
+    override fun onLowMemory() {
+        super.onLowMemory()
+        binding.map?.onLowMemory()
     }
-}
-
-class TransformViewHolder(binding: ItemTransformBinding) : RecyclerView.ViewHolder(binding.root) {
-    val imageView: ImageView = binding.imageViewItemTransform
-    val textView: TextView = binding.textViewItemTransform
 }

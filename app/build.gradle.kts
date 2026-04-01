@@ -56,23 +56,18 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    //OSMDroid
-    implementation(libs.osmdroid.android)
-    // Open Source Map Engine
-    implementation("org.osmdroid:osmdroid-android:6.1.18")
-    // Open Source Clustering and Utilities
-    implementation("com.github.MKergall:osmbonuspack:6.9.0")
-    // Security: Secure storage for your JWT tokens
+    // JWT TOKENS
     implementation("androidx.security:security-crypto:1.1.0")
-
-    // Networking
+    // NETWORKING
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
-    //
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // MAPS
+    implementation ("org.maplibre.gl:android-sdk:13.0.2")
+    
 
 }
