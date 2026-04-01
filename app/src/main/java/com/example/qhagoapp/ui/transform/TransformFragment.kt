@@ -1,15 +1,20 @@
 package com.example.qhagoapp.ui.transform
 
+import com.example.qhagoapp.R
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import android.view.inputmethod.InputMethodManager
+import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -37,8 +42,6 @@ class TransformFragment : Fragment()
     private var _binding: FragmentTransformBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TransformViewModel by viewModels()
-    private var mapLibreMap: MapLibreMap? = null
-    private var searchMarker: org.maplibre.android.annotations.Marker? = null
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted && hasLocationPermission())
@@ -46,18 +49,27 @@ class TransformFragment : Fragment()
         else
             Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
     }
+    //private var activePopupLatLng: org.maplibre.android.geometry.LatLng? = null
+    //private var infoView: View? = null
+    private var mapLibreMap: MapLibreMap? = null
+    private var searchClickListener: MapLibreMap.OnMapClickListener? = null
+    private var searchMarker: org.maplibre.android.annotations.Marker? = null
+    private val SEARCH_LAYER_ID = "search-layer"
+    private val SEARCH_SOURCE_ID = "search-source"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapLibre.getInstance(requireContext())
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View
+    {
         _binding = FragmentTransformBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?)
+    {
         setupMap()
         setupRecyclerView()
         setupUI()
@@ -67,11 +79,22 @@ class TransformFragment : Fragment()
     // --------------------------------------------------
     // MAP SETUP
     // --------------------------------------------------
-
     private fun setupMap()
     {
         binding.map?.getMapAsync { map ->
             mapLibreMap = map
+            // Enable compass
+            map.uiSettings.isCompassEnabled = true
+            // ✅ Dynamic margin based on search bar height
+            binding.map?.post {
+                val mapHeight = binding.map?.height ?: 0
+                map.uiSettings.setCompassMargins(
+                    0,
+                    0,
+                    32,
+                    (mapHeight * 0.25).toInt()
+                )
+            }
             val isDark = binding.switchMapMode!!.isChecked
             applyMapStyle(isDark)
         }
@@ -83,27 +106,23 @@ class TransformFragment : Fragment()
             "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
         else
             "https://tiles.openfreemap.org/styles/liberty"
+
         mapLibreMap?.setStyle(styleUrl) { style ->
-            // 🔥 VERY IMPORTANT → re-add everything after style reload
-            enableLocation()
-            viewModel.users.value?.let {
-                refreshMarkers(it)
+            // TINT LOGIC: Change icon color based on theme
+            val iconColor = if (isDark) Color.CYAN else Color.RED
+            val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_searched_place)
+
+            drawable?.let {
+                val wrappedDrawable = androidx.core.graphics.drawable.DrawableCompat.wrap(it).mutate()
+                androidx.core.graphics.drawable.DrawableCompat.setTint(wrappedDrawable, iconColor)
+                style.addImage("search-icon", wrappedDrawable.toBitmap())
             }
+
+            enableLocation()
+            viewModel.users.value?.let { refreshMarkers(it) }
         }
     }
 
-
-
-    private fun moveToDefaultLocation()
-    {
-        mapLibreMap?.animateCamera(
-            org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
-                org.maplibre.android.geometry.LatLng(48.8583, 2.2944),
-                12.0
-            ),
-            1500 // duration in ms
-        )
-    }
 
     // --------------------------------------------------
     // RECYCLER
@@ -118,22 +137,34 @@ class TransformFragment : Fragment()
     // UI
     // --------------------------------------------------
 
-    private fun setupUI() {
-        binding.fabMyLocation?.setOnClickListener()
-        {
-            binding.fabMyLocation?.setOnClickListener {
-                val location = mapLibreMap?.locationComponent?.lastKnownLocation
-                location?.let {
-                    mapLibreMap?.animateCamera(
-                        org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
-                            org.maplibre.android.geometry.LatLng(it.latitude, it.longitude),
-                            14.0
-                        )
-                    )
-                }
+    private fun setupUI()
+    {
+        binding.fabMyLocation?.setOnClickListener {
+            val map = mapLibreMap ?: return@setOnClickListener
+            val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
+            // Wait until search bar is measured
+            binding.searchCard?.post {
+                val topPadding = binding.searchCard!!.height + 80
+                // Shift camera center DOWN to avoid compass overlap
+                map.setPadding(
+                    50,            // left
+                    topPadding,    // top
+                    50,            // right
+                    50             // bottom
+                )
+                // Smooth camera animation
+                map.animateCamera(
+                    org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                        org.maplibre.android.geometry.LatLng(location.latitude, location.longitude),
+                        14.0
+                    ),
+                    1000
+                )
             }
         }
-        binding.btnSearch?.setOnClickListener { performSearch() }
+        binding.btnSearch?.setOnClickListener {
+            performSearch()
+        }
         binding.editSearch?.setOnEditorActionListener { _, _, _ ->
             performSearch()
             true
@@ -164,6 +195,7 @@ class TransformFragment : Fragment()
     private fun refreshMarkers(users: List<MapUser>)
     {
         val style = mapLibreMap?.style ?: return
+
         val features = users.map {
             Feature.fromGeometry(
                 Point.fromLngLat(it.lng, it.lat)
@@ -171,12 +203,22 @@ class TransformFragment : Fragment()
                 addStringProperty("name", it.name)
             }
         }
-        val source = GeoJsonSource("users-source", FeatureCollection.fromFeatures(features))
-        if (style.getSource("users-source") != null)
-            style.removeSource("users-source")
+
+        val source = GeoJsonSource(
+            "users-source",
+            FeatureCollection.fromFeatures(features)
+        )
+
+        // Remove old
         if (style.getLayer("users-layer") != null)
             style.removeLayer("users-layer")
+
+        if (style.getSource("users-source") != null)
+            style.removeSource("users-source")
+
+        // Add new
         style.addSource(source)
+
         val layer = SymbolLayer("users-layer", "users-source")
             .withProperties(
                 textField("{name}"),
@@ -184,6 +226,7 @@ class TransformFragment : Fragment()
                 textOffset(arrayOf(0f, 1.5f)),
                 textColor("#FFFFFF")
             )
+
         style.addLayer(layer)
     }
 
@@ -191,7 +234,8 @@ class TransformFragment : Fragment()
     // MAP SEARCH
     // --------------------------------------------------
 
-    private fun performSearch() {
+    private fun performSearch()
+    {
         val query = binding.editSearch?.text.toString().trim()
         if (query.isEmpty()) return
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -205,23 +249,43 @@ class TransformFragment : Fragment()
             try
             {
                 val encodedQuery = URLEncoder.encode(query, "UTF-8")
-                val url = "https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=1"
+                val url =
+                    "https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=1"
+
                 val connection = java.net.URL(url).openConnection()
-                connection.setRequestProperty("User-Agent", "qhago-app")
-                val response = connection.getInputStream().bufferedReader().use { it.readText() }
+                connection.setRequestProperty("User-Agent", requireContext().packageName)
+
+                val response = connection.getInputStream()
+                    .bufferedReader()
+                    .use { it.readText() }
+
                 val jsonArray = org.json.JSONArray(response)
-                if (jsonArray.length() > 0) {
-                    val obj = jsonArray.getJSONObject(0)
-                    val lat = obj.getDouble("lat")
-                    val lon = obj.getDouble("lon")
+
+                if (jsonArray.length() == 0) {
                     withContext(Dispatchers.Main) {
-                        moveToSearchResult(lat, lon, query)
+                        Toast.makeText(context, "No results found", Toast.LENGTH_SHORT).show()
                     }
+                    return@launch
+                }
+
+                val obj = jsonArray.getJSONObject(0)
+                val lat = obj.getDouble("lat")
+                val lon = obj.getDouble("lon")
+
+                withContext(Dispatchers.Main) {
+                    moveToSearchResult(lat, lon, query)
                 }
             }
-            catch (e: Exception) {
+            catch (e: Exception)
+            {
+                e.printStackTrace() // 👈 IMPORTANT for debugging
+
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Search failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Network error: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -229,26 +293,51 @@ class TransformFragment : Fragment()
 
     private fun moveToSearchResult(lat: Double, lon: Double, title: String)
     {
-        val point = org.maplibre.android.geometry.LatLng(lat, lon)
+        val style = mapLibreMap?.style ?: return
+        val point = Point.fromLngLat(lon, lat)
         // Move camera
         mapLibreMap?.animateCamera(
-            org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(point, 14.0),
+            org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                org.maplibre.android.geometry.LatLng(lat, lon),
+                14.0
+            ),
             2000
         )
-        // Remove previous marker
-        searchMarker?.let {
-            mapLibreMap?.removeMarker(it)
+        val feature = Feature.fromGeometry(point).apply {
+            addStringProperty("title", title)
         }
-        // Add new marker
-        searchMarker = mapLibreMap?.addMarker(
-            org.maplibre.android.annotations.MarkerOptions()
-                .position(point)
-                .title(title)
-        )
-        /* SHOW INFO
-        binding.map?.let { mapView ->
-            searchMarker?.showInfoWindow(mapLibreMap!!, mapView)
-        }*/
+        val source = style.getSource(SEARCH_SOURCE_ID) as? GeoJsonSource
+        if (source == null)
+        {
+            style.addSource(
+                GeoJsonSource(
+                    SEARCH_SOURCE_ID,
+                    FeatureCollection.fromFeatures(listOf(feature))
+                )
+            )
+            val layer = SymbolLayer(SEARCH_LAYER_ID, SEARCH_SOURCE_ID)
+                .withProperties(
+                    iconImage("search-icon"),
+                    iconAllowOverlap(true),
+                    iconIgnorePlacement(true),
+                    textField("{title}"),
+                    textSize(14f),
+                    textAnchor("top"),
+                    textOffset(arrayOf(0f, 1.2f)),
+                    textColor("#FFFFFF"),
+                    textAllowOverlap(true),
+                    // ✅ background effect
+                    textHaloColor("#000000"),
+                    textHaloWidth(2f),
+                    textHaloBlur(1f)
+                )
+            if (style.getLayer("users-layer") != null)
+                style.addLayerAbove(layer, "users-layer")
+            else
+                style.addLayer(layer)
+        }
+        else
+            source.setGeoJson(FeatureCollection.fromFeatures(listOf(feature)))
     }
 
     // --------------------------------------------------

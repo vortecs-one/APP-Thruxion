@@ -6,29 +6,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- MapLIBRE -->
-    <org.maplibre.android.maps.MapView
-        android:id="@+id/map"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintHeight_percent="0.6"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/recyclerView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- SEARCH BAR (floating, clean spacing) -->
+    <!-- 🔍 SEARCH BAR -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/search_card"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="12dp"
         app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
-        app:layout_constraintTop_toTopOf="@id/map"
-        app:layout_constraintStart_toStartOf="@id/map"
-        app:layout_constraintEnd_toEndOf="@id/map">
+        app:cardElevation="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -43,22 +32,19 @@
                 android:layout_height="48dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:hint="Search place..."
+                android:hint="Search..."
                 android:imeOptions="actionSearch"
                 android:inputType="text"
                 android:textSize="14sp" />
 
-            <!-- DARK MODE SWITCH -->
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switch_map_mode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=""
                 android:layout_marginEnd="4dp"
                 android:scaleX="0.8"
                 android:scaleY="0.8"/>
 
-            <!-- SEARCH BUTTON -->
             <ImageButton
                 android:id="@+id/btn_search"
                 android:layout_width="48dp"
@@ -67,22 +53,35 @@
                 android:src="@android:drawable/ic_menu_search"
                 app:tint="?attr/colorPrimary" />
         </LinearLayout>
+
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- MY LOCATION FAB (moved BELOW search, not overlapping) -->
+    <!-- 🗺️ MAP -->
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/map"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/search_card"
+        app:layout_constraintBottom_toTopOf="@id/recyclerView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- 📍 MY LOCATION FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_my_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:contentDescription="My Location"
+        android:contentDescription="@string/my_location"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/search_card"
+        app:layout_constraintBottom_toBottomOf="@id/map"
         app:layout_constraintEnd_toEndOf="@id/map"
         app:srcCompat="@drawable/ic_my_location"
         app:tint="?attr/colorPrimary" />
 
-    <!-- RECYCLER VIEW -->
+    <!-- 📋 RECYCLER VIEW -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
