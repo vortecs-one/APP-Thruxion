@@ -28,16 +28,9 @@ class TransformAdapter(private val onItemClicked: (MapUser) -> Unit) :
     override fun onBindViewHolder(holder: TransformViewHolder, position: Int) {
         val user = getItem(position)
         holder.textView.text = user.name
-
-        holder.imageView.setImageDrawable(
-            ResourcesCompat.getDrawable(
-                holder.imageView.resources,
-                drawables[position % drawables.size],
-                null
-            )
-        )
-
-        // Security/UX: Clicking the list item triggers the callback to center the map
+        val resName = "avatar_${user.avatarIndex + 1}"
+        val resId = holder.imageView.resources.getIdentifier(resName, "drawable", holder.imageView.context.packageName)
+        holder.imageView.setImageResource(resId)
         holder.itemView.setOnClickListener { onItemClicked(user) }
     }
 }

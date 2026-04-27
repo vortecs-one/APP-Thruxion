@@ -106,18 +106,24 @@ class TransformFragment : Fragment()
             "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
         else
             "https://tiles.openfreemap.org/styles/liberty"
-
         mapLibreMap?.setStyle(styleUrl) { style ->
             // TINT LOGIC: Change icon color based on theme
             val iconColor = if (isDark) Color.CYAN else Color.RED
             val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_searched_place)
-
             drawable?.let {
                 val wrappedDrawable = androidx.core.graphics.drawable.DrawableCompat.wrap(it).mutate()
                 androidx.core.graphics.drawable.DrawableCompat.setTint(wrappedDrawable, iconColor)
                 style.addImage("search-icon", wrappedDrawable.toBitmap())
             }
-
+            //  Register all 16 avatars into the style
+            for (i in 0 until 16) {
+                val resName = "avatar_${i + 1}"
+                val resId = resources.getIdentifier(resName, "drawable", requireContext().packageName)
+                ContextCompat.getDrawable(requireContext(), resId)?.let { drawable ->
+                    // We convert the drawable to a bitmap (100x100px is usually good for markers)
+                    style.addImage("avatar-$i", drawable.toBitmap(100, 100))
+                }
+            }
             enableLocation()
             viewModel.users.value?.let { refreshMarkers(it) }
         }
@@ -204,38 +210,42 @@ class TransformFragment : Fragment()
     private fun refreshMarkers(users: List<MapUser>)
     {
         val style = mapLibreMap?.style ?: return
-
-        val features = users.map {
+        val features = users.map { user ->
             Feature.fromGeometry(
-                Point.fromLngLat(it.lng, it.lat)
+                Point.fromLngLat(user.lng, user.lat)
             ).apply {
-                addStringProperty("name", it.name)
+                addStringProperty("name", user.name)
+                addStringProperty("avatar-id", "avatar-${user.avatarIndex}")
             }
         }
-
         val source = GeoJsonSource(
             "users-source",
             FeatureCollection.fromFeatures(features)
         )
-
         // Remove old
         if (style.getLayer("users-layer") != null)
             style.removeLayer("users-layer")
-
         if (style.getSource("users-source") != null)
             style.removeSource("users-source")
-
         // Add new
         style.addSource(source)
-
         val layer = SymbolLayer("users-layer", "users-source")
             .withProperties(
+                // ICON CONFIGURATION
+                iconImage("{avatar-id}"),
+                iconSize(0.6f),
+                iconAllowOverlap(true),
+                iconIgnorePlacement(true),
+                // TEXT CONFIGURATION
                 textField("{name}"),
                 textSize(12f),
-                textOffset(arrayOf(0f, 1.5f)),
-                textColor("#FFFFFF")
+                textColor(if (binding.switchMapMode!!.isChecked) "#00FFFF" else "#000000"),
+                textHaloColor("#FFFFFF"),
+                textHaloWidth(1f),
+                // POSITIONING (Image above, Text below)
+                textAnchor(org.maplibre.android.style.layers.Property.TEXT_ANCHOR_TOP),
+                textOffset(arrayOf(0f, 1.2f)) // Pushes the text down below the icon
             )
-
         style.addLayer(layer)
     }
 
