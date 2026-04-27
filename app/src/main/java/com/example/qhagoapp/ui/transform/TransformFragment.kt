@@ -128,9 +128,21 @@ class TransformFragment : Fragment()
     // RECYCLER
     // --------------------------------------------------
 
-    private fun setupRecyclerView() {
+    private fun setupRecyclerView()
+    {
         binding.recyclerView?.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView?.adapter = TransformAdapter()
+        // Create adapter with click logic
+        val adapter = TransformAdapter { user ->
+            // When a list item is clicked, focus the map on that user
+            mapLibreMap?.animateCamera(
+                org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                    org.maplibre.android.geometry.LatLng(user.lat, user.lng),
+                    16.0 // Zoom closer to the specific person
+                ),
+                1500
+            )
+        }
+        binding.recyclerView?.adapter = adapter
     }
 
     // --------------------------------------------------
@@ -139,20 +151,13 @@ class TransformFragment : Fragment()
 
     private fun setupUI()
     {
-        binding.fabMyLocation?.setOnClickListener {
-            val map = mapLibreMap ?: return@setOnClickListener
+        binding.fabMyLocation?.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
-            // Wait until search bar is measured
+            viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
             binding.searchCard?.post {
                 val topPadding = binding.searchCard!!.height + 80
-                // Shift camera center DOWN to avoid compass overlap
-                map.setPadding(
-                    50,            // left
-                    topPadding,    // top
-                    50,            // right
-                    50             // bottom
-                )
-                // Smooth camera animation
+                map.setPadding(50, topPadding, 50, 50)
+
                 map.animateCamera(
                     org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
                         org.maplibre.android.geometry.LatLng(location.latitude, location.longitude),
@@ -178,13 +183,17 @@ class TransformFragment : Fragment()
     // --------------------------------------------------
     // DATA OBSERVER
     // --------------------------------------------------
-
-    private fun observeData()
-    {
+    private fun observeData() {
         viewModel.users.observe(viewLifecycleOwner) { users ->
-            (binding.recyclerView?.adapter as? TransformAdapter)
-                ?.submitList(users.map { it.name })
+            // Submit the whole object list to the adapter
+            (binding.recyclerView?.adapter as? TransformAdapter)?.submitList(users)
+            // Refresh markers on the map
             refreshMarkers(users)
+            // TESTING: If you want to center the map on the first person found initially
+            if (users.isNotEmpty()) {
+                val firstUser = users[0]
+                // Optional: mapLibreMap?.moveCamera(...)
+            }
         }
     }
 
@@ -338,6 +347,7 @@ class TransformFragment : Fragment()
         }
         else
             source.setGeoJson(FeatureCollection.fromFeatures(listOf(feature)))
+        viewModel.updateUsersAroundLocation(lat, lon)
     }
 
     // --------------------------------------------------
@@ -368,6 +378,10 @@ class TransformFragment : Fragment()
         locationComponent.isLocationComponentEnabled = true
         locationComponent.cameraMode = CameraMode.TRACKING
         locationComponent.renderMode = RenderMode.COMPASS
+        // Get the actual device location and update the random users
+        locationComponent.lastKnownLocation?.let { location ->
+            viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
+        }
     }
 
     private fun hasLocationPermission(): Boolean

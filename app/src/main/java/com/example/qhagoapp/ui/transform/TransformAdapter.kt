@@ -9,7 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.qhagoapp.R
 import com.example.qhagoapp.databinding.ItemTransformBinding
 
-class TransformAdapter : ListAdapter<String, TransformViewHolder>(DiffCallback())
+// Added a click listener lambda for map interaction
+class TransformAdapter(private val onItemClicked: (MapUser) -> Unit) :
+    ListAdapter<MapUser, TransformViewHolder>(DiffCallback())
 {
     private val drawables = listOf(
         R.drawable.avatar_1, R.drawable.avatar_2, R.drawable.avatar_3, R.drawable.avatar_4,
@@ -18,20 +20,15 @@ class TransformAdapter : ListAdapter<String, TransformViewHolder>(DiffCallback()
         R.drawable.avatar_13, R.drawable.avatar_14, R.drawable.avatar_15, R.drawable.avatar_16
     )
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransformViewHolder
-    {
-        val binding = ItemTransformBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransformViewHolder {
+        val binding = ItemTransformBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return TransformViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: TransformViewHolder, position: Int)
-    {
-        val item = getItem(position)
-        holder.textView.text = item
+    override fun onBindViewHolder(holder: TransformViewHolder, position: Int) {
+        val user = getItem(position)
+        holder.textView.text = user.name
+
         holder.imageView.setImageDrawable(
             ResourcesCompat.getDrawable(
                 holder.imageView.resources,
@@ -39,26 +36,18 @@ class TransformAdapter : ListAdapter<String, TransformViewHolder>(DiffCallback()
                 null
             )
         )
-    }
 
+        // Security/UX: Clicking the list item triggers the callback to center the map
+        holder.itemView.setOnClickListener { onItemClicked(user) }
+    }
 }
 
-// -----------------------------------------------------
-// VIEW HOLDER
-// -----------------------------------------------------
-
-class TransformViewHolder(binding: ItemTransformBinding) :
-    RecyclerView.ViewHolder(binding.root) {
-
+class TransformViewHolder(binding: ItemTransformBinding) : RecyclerView.ViewHolder(binding.root) {
     val imageView = binding.imageViewItemTransform
     val textView = binding.textViewItemTransform
 }
 
-// -----------------------------------------------------
-// DIFF UTIL
-// -----------------------------------------------------
-
-class DiffCallback : DiffUtil.ItemCallback<String>() {
-    override fun areItemsTheSame(oldItem: String, newItem: String) = oldItem == newItem
-    override fun areContentsTheSame(oldItem: String, newItem: String) = oldItem == newItem
+class DiffCallback : DiffUtil.ItemCallback<MapUser>() {
+    override fun areItemsTheSame(oldItem: MapUser, newItem: MapUser) = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: MapUser, newItem: MapUser) = oldItem == newItem
 }

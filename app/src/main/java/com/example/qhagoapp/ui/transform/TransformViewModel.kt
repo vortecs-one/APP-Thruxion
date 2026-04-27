@@ -10,6 +10,7 @@ import kotlin.random.Random
 
 // Data model for map
 data class MapUser(
+    val id: String = java.util.UUID.randomUUID().toString(),
     val name: String,
     val lat: Double,
     val lng: Double
@@ -19,7 +20,7 @@ class TransformViewModel : ViewModel()
 {
     private val _healthStatus = MutableLiveData<String>()
     val healthStatus: LiveData<String> = _healthStatus
-    // 🔥 NEW: Map-ready data
+    // Security: private MutableLiveData and public LiveData
     private val _users = MutableLiveData<List<MapUser>>()
     val users: LiveData<List<MapUser>> = _users
 
@@ -50,13 +51,11 @@ class TransformViewModel : ViewModel()
         _users.value = users
     }
 
-    /**
-     * Future-ready method (when using real GPS location)
-     */
-    fun updateUsersAroundLocation(baseLat: Double, baseLng: Double)
-    {
-        val currentNames = _users.value?.map { it.name } ?: return
-        val updated = currentNames.map { name ->
+    fun updateUsersAroundLocation(baseLat: Double, baseLng: Double) {
+        val names = listOf("S.O.S", "QHago?", "MyWitness") + (1..10).map { "Lawyer #$it" }
+
+        val updated = names.map { name ->
+            // 0.02 offset is roughly 2km radius
             val latOffset = (Random.nextDouble() - 0.5) * 0.04
             val lngOffset = (Random.nextDouble() - 0.5) * 0.04
             MapUser(
