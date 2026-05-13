@@ -1,5 +1,6 @@
 package com.example.qhagoapp.ui.login
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import androidx.lifecycle.Observer
@@ -21,26 +22,28 @@ import com.example.qhagoapp.R
 import com.example.qhagoapp.network.ApiRegistry.communicationsApi
 import com.example.qhagoapp.network.ApiRegistry.humansApi
 import com.example.qhagoapp.network.model.SystemLoginRequest
+import com.example.qhagoapp.network.model.UserLoginRequest
 import com.example.qhagoapp.network.security.TokenManager
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity()
 {
-
     private lateinit var loginViewModel: LoginViewModel
     private lateinit var binding: ActivityLoginBinding
 
+    @SuppressLint("UnsafeIntentLaunch")
     override fun onCreate(savedInstanceState: Bundle?)
     {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        val intent = Intent(this, MainActivity::class.java)
         // Get a reference to the bypass button from the layout
         val bypassButton = binding.bypassButton
         // Set an OnClickListener
         bypassButton?.setOnClickListener {
             // Create an Intent to start MainActivity
-            val intent = Intent(this, MainActivity::class.java)
+
             startActivity(intent)
             // Finish LoginActivity so the user can't press "back" to return here
             finish()
@@ -111,9 +114,56 @@ class LoginActivity : AppCompatActivity()
             }
 
             login.setOnClickListener {
+                val emailInput = username.text.toString().trim()
+                val passwordInput = password.text.toString().trim()
+
+                if (emailInput.isEmpty() || passwordInput.isEmpty()) {
+                    Toast.makeText(this@LoginActivity, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
                 loading.visibility = View.VISIBLE
-                loginViewModel.login(username.text.toString(), password.text.toString())
+                lifecycleScope.launch {
+                    try {
+                        val rawToken = TokenManager.getHumansToken()
+                        if (rawToken.isNullOrBlank()) {
+                            Toast.makeText(this@LoginActivity, "System not ready", Toast.LENGTH_LONG).show()
+                            loading.visibility = View.GONE
+                            return@launch
+                        }
+
+                        // Ensure Bearer is only added once
+                        val authHeader = if (rawToken.startsWith("Bearer ")) rawToken else "Bearer $rawToken"
+                        Log.d("USER_LOGIN", "AUTH HEADER = $authHeader")
+                        val response = humansApi.userLogin(
+                            request = UserLoginRequest(
+                                email = emailInput,
+                                password = passwordInput
+                            )
+                        )
+
+                        loading.visibility = View.GONE
+
+                        if (response.isSuccessful)
+                        {
+                            startActivity(intent)
+                            // Finish LoginActivity so the user can't press "back" to return here
+                            finish()
+                        }
+                        else
+                        {
+                            val errorBody = response.errorBody()?.string()
+                            Log.e("USER_LOGIN", "400 Error Body: $errorBody")
+                            Toast.makeText(this@LoginActivity, "Error: $errorBody", Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        loading.visibility = View.GONE
+                        Log.e("USER_LOGIN", "Failure: ${e.message}")
+                    }
+                }
             }
+
+
         }
 
         // Observe the API Health Status
@@ -135,24 +185,17 @@ class LoginActivity : AppCompatActivity()
             val humansResponse = humansApi.systemLogin(
                 SystemLoginRequest("admin","admin")
             )
-            if(humansResponse.isSuccessful) {
+            login.isEnabled = false
+            if(humansResponse.isSuccessful)
+            {
                 Log.d("JWT_TEST", "HUMAN RAW RESPONSE: ${humansResponse.body()}")
                 humansResponse.body()?.token?.let {
                     TokenManager.saveHumansToken(it)
+                    login.isEnabled = true // Enable now that we are "Secure"
                 }
             }
-            //
-            /*
-            val commToken = TokenManager.getCommunicationsToken()
-            val humanToken = TokenManager.getHumansToken()
-            Log.d("JWT_TEST", "C TOKEN: $commToken")
-            Log.d("JWT_TEST", "H TOKEN: $humanToken")
-            */
         }
-
-
     }
-
 
     private fun updateUiWithUser(model: LoggedInUserView) {
         val welcome = getString(R.string.welcome)
