@@ -37,40 +37,32 @@ class LoginActivity : AppCompatActivity()
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        // Global variable for current intent
         val intent = Intent(this, MainActivity::class.java)
-        // Get a reference to the bypass button from the layout
-        val bypassButton = binding.bypassButton
-        // Set an OnClickListener
-        bypassButton?.setOnClickListener {
-            // Create an Intent to start MainActivity
-
-            startActivity(intent)
-            // Finish LoginActivity so the user can't press "back" to return here
-            finish()
-        }
-
+        // Login inputs
         val username = binding.username
         val password = binding.password
         val login = binding.login
         val loading = binding.loading
 
+        // Demo button (login bypass)
+        val bypassButton = binding.bypassButton
+        bypassButton?.setOnClickListener {
+            startActivity(intent)
+            finish()
+        }
+
         loginViewModel = ViewModelProvider(this, LoginViewModelFactory())
             .get(LoginViewModel::class.java)
-
         loginViewModel.loginFormState.observe(this@LoginActivity, Observer {
             val loginState = it ?: return@Observer
-
             // disable login button unless both username / password is valid
             login.isEnabled = loginState.isDataValid
-
-            if (loginState.usernameError != null) {
+            if (loginState.usernameError != null)
                 username.error = getString(loginState.usernameError)
-            }
-            if (loginState.passwordError != null) {
+            if (loginState.passwordError != null)
                 password.error = getString(loginState.passwordError)
-            }
         })
-
         loginViewModel.loginResult.observe(this@LoginActivity, Observer {
             val loginResult = it ?: return@Observer
 
@@ -82,18 +74,14 @@ class LoginActivity : AppCompatActivity()
                 updateUiWithUser(loginResult.success)
             }
             setResult(Activity.RESULT_OK)
-
-            //Complete and destroy login activity once successful
             finish()
         })
-
         username.afterTextChanged {
             loginViewModel.loginDataChanged(
                 username.text.toString(),
                 password.text.toString()
             )
         }
-
         password.apply {
             afterTextChanged {
                 loginViewModel.loginDataChanged(
@@ -101,7 +89,6 @@ class LoginActivity : AppCompatActivity()
                     password.text.toString()
                 )
             }
-
             setOnEditorActionListener { _, actionId, _ ->
                 when (actionId) {
                     EditorInfo.IME_ACTION_DONE ->
@@ -112,16 +99,13 @@ class LoginActivity : AppCompatActivity()
                 }
                 false
             }
-
             login.setOnClickListener {
                 val emailInput = username.text.toString().trim()
                 val passwordInput = password.text.toString().trim()
-
                 if (emailInput.isEmpty() || passwordInput.isEmpty()) {
                     Toast.makeText(this@LoginActivity, "Please fill all fields", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-
                 loading.visibility = View.VISIBLE
                 lifecycleScope.launch {
                     try {
@@ -131,7 +115,6 @@ class LoginActivity : AppCompatActivity()
                             loading.visibility = View.GONE
                             return@launch
                         }
-
                         // Ensure Bearer is only added once
                         val authHeader = if (rawToken.startsWith("Bearer ")) rawToken else "Bearer $rawToken"
                         Log.d("USER_LOGIN", "AUTH HEADER = $authHeader")
@@ -141,9 +124,7 @@ class LoginActivity : AppCompatActivity()
                                 password = passwordInput
                             )
                         )
-
                         loading.visibility = View.GONE
-
                         if (response.isSuccessful)
                         {
                             startActivity(intent)
@@ -156,7 +137,8 @@ class LoginActivity : AppCompatActivity()
                             Log.e("USER_LOGIN", "400 Error Body: $errorBody")
                             Toast.makeText(this@LoginActivity, "Error: $errorBody", Toast.LENGTH_LONG).show()
                         }
-                    } catch (e: Exception) {
+                    }
+                    catch (e: Exception) {
                         loading.visibility = View.GONE
                         Log.e("USER_LOGIN", "Failure: ${e.message}")
                     }
