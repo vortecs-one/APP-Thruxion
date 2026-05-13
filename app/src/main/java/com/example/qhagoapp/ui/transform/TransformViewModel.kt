@@ -25,15 +25,12 @@ class TransformViewModel : ViewModel()
     private val _users = MutableLiveData<List<MapUser>>()
     val users: LiveData<List<MapUser>> = _users
 
-    init {
+    init
+    {
         generateMockUsers() // replaces old "texts"
         checkApis() // Automatically runs when the fragment/viewmodel is created
     }
 
-    /**
-     * 🔥 Generates mock users near a base location
-     * (Later you replace this with backend API)
-     */
     private fun generateMockUsers()
     {
         val baseLat = 48.8583
@@ -100,5 +97,6 @@ class TransformViewModel : ViewModel()
             }
         }
     }
+
 
 }
