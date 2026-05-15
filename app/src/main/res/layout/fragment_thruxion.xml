@@ -93,6 +93,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/item_transform" />
+        tools:listitem="@layout/item_thruxion" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

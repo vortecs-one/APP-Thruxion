@@ -1,4 +1,4 @@
-package com.example.qhagoapp.ui.reflow
+package com.example.qhagoapp.ui.h2h
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -12,7 +12,7 @@ import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import com.example.qhagoapp.R
 
-class ReflowFragment : Fragment()
+class H2HFragment : Fragment()
 {
     private lateinit var webView: WebView
 
@@ -22,7 +22,7 @@ class ReflowFragment : Fragment()
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = inflater.inflate(R.layout.fragment_reflow, container, false)
+        val view = inflater.inflate(R.layout.fragment_h2h, container, false)
 
         webView = view.findViewById(R.id.webView)
 

@@ -1,4 +1,4 @@
-package com.example.qhagoapp.ui.transform
+package com.example.qhagoapp.ui.thruxion
 
 import com.example.qhagoapp.R
 import android.Manifest
@@ -9,8 +9,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import android.view.inputmethod.InputMethodManager
-import android.widget.FrameLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -19,7 +17,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.qhagoapp.databinding.FragmentTransformBinding
+import com.example.qhagoapp.databinding.FragmentThruxionBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,9 +35,9 @@ import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.location.LocationComponentActivationOptions
 import java.net.URLEncoder
 
-class TransformFragment : Fragment()
+class ThruxionFragment : Fragment()
 {
-    private var _binding: FragmentTransformBinding? = null
+    private var _binding: FragmentThruxionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TransformViewModel by viewModels()
 
@@ -64,7 +62,7 @@ class TransformFragment : Fragment()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View
     {
-        _binding = FragmentTransformBinding.inflate(inflater, container, false)
+        _binding = FragmentThruxionBinding.inflate(inflater, container, false)
         return binding.root
     }
 

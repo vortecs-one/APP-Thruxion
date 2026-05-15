@@ -7,21 +7,21 @@
 
     <fragment
         android:id="@+id/nav_transform"
-        android:name="com.example.qhagoapp.ui.transform.TransformFragment"
+        android:name="com.example.qhagoapp.ui.thruxion.ThruxionFragment"
         android:label="@string/menu_transform"
-        tools:layout="@layout/fragment_transform" />
+        tools:layout="@layout/fragment_thruxion" />
 
     <fragment
         android:id="@+id/nav_reflow"
-        android:name="com.example.qhagoapp.ui.reflow.ReflowFragment"
+        android:name="com.example.qhagoapp.ui.h2h.H2HFragment"
         android:label="@string/menu_reflow"
-        tools:layout="@layout/fragment_reflow" />
+        tools:layout="@layout/fragment_h2h" />
 
     <fragment
         android:id="@+id/nav_slideshow"
-        android:name="com.example.qhagoapp.ui.slideshow.SlideshowFragment"
+        android:name="com.example.qhagoapp.ui.profile.ProfileFragment"
         android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/nav_settings"

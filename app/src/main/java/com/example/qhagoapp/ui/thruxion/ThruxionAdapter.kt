@@ -1,16 +1,16 @@
-package com.example.qhagoapp.ui.transform
+package com.example.qhagoapp.ui.thruxion
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.qhagoapp.databinding.ItemTransformBinding
+import com.example.qhagoapp.databinding.ItemThruxionBinding
 
 class TransformAdapter(private val onItemClicked: (MapUser) -> Unit) : ListAdapter<MapUser, TransformViewHolder>(DiffCallback())
 {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransformViewHolder
     {
-        val binding = ItemTransformBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = ItemThruxionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return TransformViewHolder(binding)
     }
 
@@ -26,7 +26,7 @@ class TransformAdapter(private val onItemClicked: (MapUser) -> Unit) : ListAdapt
     }
 }
 
-class TransformViewHolder(binding: ItemTransformBinding) : RecyclerView.ViewHolder(binding.root)
+class TransformViewHolder(binding: ItemThruxionBinding) : RecyclerView.ViewHolder(binding.root)
 {
     val imageView = binding.imageViewItemTransform
     val textView = binding.textViewItemTransform
