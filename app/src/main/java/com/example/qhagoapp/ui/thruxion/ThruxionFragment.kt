@@ -190,6 +190,67 @@ class ThruxionFragment : Fragment()
                 ),
                 1500
             )
+
+            if (isSearchMode) {
+
+                val result =
+                    currentSearchResults.find {
+                        it.lat == user.lat &&
+                                it.lon == user.lng
+                    }
+
+                result?.let {
+
+                    val feature = Feature.fromGeometry(
+                        Point.fromLngLat(
+                            it.lon,
+                            it.lat
+                        )
+                    ).apply {
+
+                        addStringProperty(
+                            "title",
+                            it.shortName
+                        )
+
+                        addStringProperty(
+                            "full_name",
+                            it.displayName
+                        )
+
+                        addStringProperty(
+                            "type",
+                            it.type ?: "Place"
+                        )
+                    }
+
+                    showLocationDetails(feature)
+
+                    handleSelection(it)
+                }
+
+            } else {
+
+                val feature = Feature.fromGeometry(
+                    Point.fromLngLat(
+                        user.lng,
+                        user.lat
+                    )
+                ).apply {
+
+                    addStringProperty(
+                        "name",
+                        user.name
+                    )
+
+                    addStringProperty(
+                        "avatar-id",
+                        "avatar-${user.avatarIndex}"
+                    )
+                }
+
+                showUserDetails(feature)
+            }
         }
         binding.recyclerView?.adapter = transformAdapter
     }
@@ -909,22 +970,44 @@ class ThruxionFragment : Fragment()
     }
 
     private fun handleSelection(selected: SearchResult) {
-        // 1. Clear the adapter to hide the search list
-        transformAdapter.submitList(emptyList())
 
-        // 2. Clear the Map Source to only show ONE marker
         val style = mapLibreMap?.style ?: return
-        val source = style.getSource(SEARCH_SOURCE_ID) as? GeoJsonSource
-        val singleFeature = Feature.fromGeometry(Point.fromLngLat(selected.lon, selected.lat)).apply {
-            addStringProperty("title", selected.shortName)
-        }
-        source?.setGeoJson(FeatureCollection.fromFeatures(arrayOf(singleFeature)))
 
-        // 3. Draw the visual radius circle
-        drawSearchRadius(LatLng(selected.lat, selected.lon))
+        val source =
+            style.getSource(SEARCH_SOURCE_ID)
+                    as? GeoJsonSource
 
-        // 4. Update Backend
-        viewModel.updateUsersAroundLocation(selected.lat, selected.lon)
+        val singleFeature =
+            Feature.fromGeometry(
+                Point.fromLngLat(
+                    selected.lon,
+                    selected.lat
+                )
+            ).apply {
+
+                addStringProperty(
+                    "title",
+                    selected.shortName
+                )
+            }
+
+        source?.setGeoJson(
+            FeatureCollection.fromFeatures(
+                arrayOf(singleFeature)
+            )
+        )
+
+        drawSearchRadius(
+            LatLng(
+                selected.lat,
+                selected.lon
+            )
+        )
+
+        viewModel.updateUsersAroundLocation(
+            selected.lat,
+            selected.lon
+        )
     }
 
     // --------------------------------------------------
