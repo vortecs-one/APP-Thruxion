@@ -10,9 +10,14 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.style.Style
+import androidx.compose.remote.creation.dsl.visibility
+import androidx.compose.ui.semantics.text
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.widget.doOnTextChanged
@@ -42,6 +47,8 @@ import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.location.LocationComponentActivationOptions
 import java.net.URLEncoder
 import androidx.core.graphics.toColorInt
+import org.maplibre.android.style.layers.FillLayer
+import org.maplibre.geojson.LineString
 
 class ThruxionFragment : Fragment()
 {
@@ -103,31 +110,25 @@ class ThruxionFragment : Fragment()
             }
 
             map.addOnMapClickListener { latLng ->
-
-                if (!isSearchMode)
-                    return@addOnMapClickListener false
-
-                val screenPoint =
-                    map.projection.toScreenLocation(latLng)
-
-                val features =
-                    map.queryRenderedFeatures(
-                        screenPoint,
-                        SEARCH_LAYER_ID
-                    )
-
-                if (features.isEmpty())
-                    return@addOnMapClickListener false
-
-                val feature = features.first()
-
-                Toast.makeText(
-                    context,
-                    feature.getStringProperty("full_name"),
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                true
+                val screenPoint = map.projection.toScreenLocation(latLng)
+                // Check Search Layer first
+                val searchFeatures = map.queryRenderedFeatures(screenPoint, SEARCH_LAYER_ID)
+                if (searchFeatures.isNotEmpty()) {
+                    val feature = searchFeatures.first()
+                    showLocationDetails(feature)
+                    return@addOnMapClickListener true
+                }
+                // Check Users Layer
+                val userFeatures = map.queryRenderedFeatures(screenPoint, "users-layer")
+                if (userFeatures.isNotEmpty()) {
+                    val feature = userFeatures.first()
+                    val name = feature.getStringProperty("name")
+                    showUserDetails(feature)
+                    return@addOnMapClickListener true
+                }
+                // If tapping empty map space, hide cards
+                binding.userDetailCard?.visibility = View.GONE
+                false
             }
 
             applyMapStyle(binding.switchMapMode!!.isChecked)
@@ -377,7 +378,9 @@ class ThruxionFragment : Fragment()
     private fun searchLocation(query: String)
     {
         searchJob?.cancel()
-
+        // Security check: Limit query length and characters
+        val sanitizedQuery = query.take(100).replace(Regex("[^a-zA-Z0-9 ,]"), "")
+        if (sanitizedQuery.length < 3) return
         searchJob =
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO)
             {
@@ -543,53 +546,34 @@ class ThruxionFragment : Fragment()
             }
     }
 
-    private fun displaySearchResults(
-        results: List<SearchResult>
-    )
+    private fun displaySearchResults(results: List<SearchResult>)
     {
-        val style =
-            mapLibreMap?.style ?: return
+        val style = mapLibreMap?.style ?: return
 
         val source =
             style.getSource(SEARCH_SOURCE_ID)
                     as? GeoJsonSource
                 ?: return
-
         val features =
             results.map { result ->
-
                 Feature.fromGeometry(
                     Point.fromLngLat(
                         result.lon,
                         result.lat
                     )
                 ).apply {
-
-                    addStringProperty(
-                        "title",
-                        result.shortName
-                    )
-
-                    addStringProperty(
-                        "full_name",
-                        result.displayName
-                    )
+                    addStringProperty("title",result.shortName)
+                    addStringProperty("full_name",result.displayName)
+                    addStringProperty("type", result.type ?: "Place")
                 }
             }
-
-        source.setGeoJson(
-            FeatureCollection.fromFeatures(features)
-        )
-
+        source.setGeoJson(FeatureCollection.fromFeatures(features))
         moveCameraToResults(results)
     }
 
-    private fun moveCameraToResults(
-        results: List<SearchResult>
-    )
+    private fun moveCameraToResults(results: List<SearchResult>)
     {
         val map = mapLibreMap ?: return
-
         if (results.size == 1)
         {
             map.animateCamera(
@@ -878,8 +862,204 @@ class ThruxionFragment : Fragment()
         }
     }
 
+    private fun calculateDistanceInKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6371.0 // Earth's radius in kilometers
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return r * c
+    }
 
+    private fun drawSearchRadius(center: LatLng) {
+        val style = mapLibreMap?.style ?: return
 
+        // Create a circle geometry (FOSS approach using Math)
+        val points = mutableListOf<Point>()
+        val radiusKm = 5.0 // Match your backend search radius
+        val steps = 64
+        for (i in 0 until steps) {
+            val angle = Math.toRadians((i * 360.0 / steps))
+            val lat = Math.toRadians(center.latitude)
+            val lng = Math.toRadians(center.longitude)
+
+            val newLat = Math.asin(Math.sin(lat) * Math.cos(radiusKm / 6371) +
+                    Math.cos(lat) * Math.sin(radiusKm / 6371) * Math.cos(angle))
+            val newLng = lng + Math.atan2(Math.sin(angle) * Math.sin(radiusKm / 6371) * Math.cos(lat),
+                Math.cos(radiusKm / 6371) - Math.sin(lat) * Math.sin(newLat))
+
+            points.add(Point.fromLngLat(Math.toDegrees(newLng), Math.toDegrees(newLat)))
+        }
+        points.add(points[0]) // Close the circle
+
+        val circleFeature = Feature.fromGeometry(LineString.fromLngLats(points))
+        val source = style.getSource("radius-source") as? GeoJsonSource
+        if (source != null) {
+            source.setGeoJson(circleFeature)
+        } else {
+            style.addSource(GeoJsonSource("radius-source", circleFeature))
+            style.addLayerBelow(
+                FillLayer("radius-layer", "radius-source").withProperties(
+                fillColor(Color.parseColor("#3300FFFF")), // Translucent Cyan
+                fillOpacity(0.4f)
+            ), "users-layer")
+        }
+    }
+
+    private fun handleSelection(selected: SearchResult) {
+        // 1. Clear the adapter to hide the search list
+        transformAdapter.submitList(emptyList())
+
+        // 2. Clear the Map Source to only show ONE marker
+        val style = mapLibreMap?.style ?: return
+        val source = style.getSource(SEARCH_SOURCE_ID) as? GeoJsonSource
+        val singleFeature = Feature.fromGeometry(Point.fromLngLat(selected.lon, selected.lat)).apply {
+            addStringProperty("title", selected.shortName)
+        }
+        source?.setGeoJson(FeatureCollection.fromFeatures(arrayOf(singleFeature)))
+
+        // 3. Draw the visual radius circle
+        drawSearchRadius(LatLng(selected.lat, selected.lon))
+
+        // 4. Update Backend
+        viewModel.updateUsersAroundLocation(selected.lat, selected.lon)
+    }
+
+    // --------------------------------------------------
+    // UI DETAIL CARDS (Security & UX)
+    // --------------------------------------------------
+    private fun showUserDetails(feature: Feature) {
+        val name = feature.getStringProperty("name") ?: "Unknown"
+        val avatarId = feature.getStringProperty("avatar-id") ?: "avatar-0"
+
+        // Setup Card UI
+        binding.userDetailCard.apply {
+            this!!.findViewById<TextView>(R.id.tvUserName).text = name
+
+            // Set Avatar
+            val avatarIndex = avatarId.split("-").lastOrNull()?.toIntOrNull() ?: 0
+            val resId = resources.getIdentifier("avatar_${avatarIndex + 1}", "drawable", requireContext().packageName)
+            findViewById<ImageView>(R.id.ivUserAvatar).apply {
+                setImageResource(resId)
+                clearColorFilter() // Remove tint if previously applied for places
+            }
+
+            // Calculate Distance
+            updateDistanceOnCard(feature)
+
+            findViewById<Button>(R.id.btnConnect).text = "Send Message"
+
+            // Interaction logic
+            findViewById<View>(R.id.btnCloseCard).setOnClickListener {
+                visibility = View.GONE
+                resetMapPadding()
+            }
+
+            visibility = View.VISIBLE
+            applyMapPaddingForCard()
+        }
+    }
+
+    private fun showLocationDetails(feature: Feature) {
+        val title = feature.getStringProperty("title") ?: "Place"
+        val type = feature.getStringProperty("type") ?: "Location"
+
+        binding.userDetailCard.apply {
+            this!!.findViewById<TextView>(R.id.tvUserName).text = title
+
+            // Location Icon
+            findViewById<ImageView>(R.id.ivUserAvatar).apply {
+                setImageResource(R.drawable.ic_searched_place)
+                setColorFilter(Color.parseColor("#FF4500"))
+            }
+
+            updateDistanceOnCard(feature)
+
+            val actionBtn = findViewById<Button>(R.id.btnConnect)
+            actionBtn.text = "Navigate"
+            actionBtn.setOnClickListener { openFossNavigation(feature) }
+
+            this!!.findViewById<View>(R.id.btnCloseCard).setOnClickListener {
+                visibility = View.GONE
+                resetMapPadding()
+            }
+
+            visibility = View.VISIBLE
+            applyMapPaddingForCard()
+        }
+    }
+
+    // Helper to ensure the map centers below the floating card
+    private fun applyMapPaddingForCard() {
+        binding.userDetailCard?.post {
+            val cardHeight = binding.userDetailCard!!.height
+            val searchHeight = binding.searchCard?.height
+            // Set top padding so markers center in the visible area below the cards
+            mapLibreMap?.setPadding(0, cardHeight + searchHeight!! + 40, 0, 0)
+        }
+    }
+
+    private fun resetMapPadding() {
+        // Use camelCase: searchCard instead of search_card
+        val searchHeight = binding.searchCard?.height
+        if (searchHeight != null) {
+            mapLibreMap?.setPadding(0, searchHeight + 40, 0, 0)
+        }
+    }
+
+    private fun openFossNavigation(feature: Feature)
+    {
+        val point = feature.geometry() as? Point ?: return
+        val uri = "geo:${point.latitude()},${point.longitude()}?q=${point.latitude()},${point.longitude()}"
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uri))
+        try {
+            startActivity(intent)
+        }
+        catch (e: Exception) {
+            Toast.makeText(context, "No navigation app found", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * FOSS Logic: Calculates distance locally to protect user privacy.
+     * Updates the distance label on the detail card without calling external APIs.
+     */
+    private fun updateDistanceOnCard(feature: Feature) {
+        val distanceTv = binding.userDetailCard?.findViewById<TextView>(R.id.tvUserDistance) ?: return
+
+        // 1. Get Target Coordinates from the Map Feature
+        val point = feature.geometry() as? Point ?: return
+        val targetLat = point.latitude()
+        val targetLon = point.longitude()
+
+        // 2. Get Current Device Location from MapLibre LocationComponent
+        val lastLocation = mapLibreMap?.locationComponent?.lastKnownLocation
+
+        if (lastLocation != null) {
+            // 3. Calculate Distance using the FOSS Haversine formula (already in your code)
+            val distance = calculateDistanceInKm(
+                lastLocation.latitude,
+                lastLocation.longitude,
+                targetLat,
+                targetLon
+            )
+
+            // 4. Update UI with formatted text
+            // If it's a place, we might want to append the 'type' property if available
+            val type = feature.getStringProperty("type")
+            if (!type.isNullOrEmpty() && type != "null") {
+                distanceTv.text = String.format("%.2f km · %s", distance, type.replaceFirstChar { it.uppercase() })
+            } else {
+                distanceTv.text = String.format("%.2f km away", distance)
+            }
+            distanceTv.visibility = View.VISIBLE
+        } else {
+            // Fallback if GPS is not yet ready or permission denied
+            distanceTv.visibility = View.GONE
+        }
+    }
 
     // --------------------------------------------------
     // LIFECYCLE (IMPORTANT)
