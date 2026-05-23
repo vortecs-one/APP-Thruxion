@@ -36,4 +36,6 @@
     <string name="logout">Logout</string>
     <string name="reset_user_location">Reset user location</string>
     <string name="my_location">My Location</string>
+    <string name="search">Search...</string>
+    <string name="todo">TODO</string>
 </resources>

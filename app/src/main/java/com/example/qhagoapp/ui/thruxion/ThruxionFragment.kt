@@ -7,24 +7,31 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.style.Style
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.qhagoapp.databinding.FragmentThruxionBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 // MapLibre
 import org.maplibre.geojson.Point
 import org.maplibre.geojson.Feature
 import org.maplibre.android.MapLibre
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.android.style.layers.SymbolLayer
@@ -34,26 +41,30 @@ import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.location.LocationComponentActivationOptions
 import java.net.URLEncoder
+import androidx.core.graphics.toColorInt
 
 class ThruxionFragment : Fragment()
 {
     private var _binding: FragmentThruxionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TransformViewModel by viewModels()
-
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted && hasLocationPermission())
             enableLocation()
         else
             Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
     }
-    //private var activePopupLatLng: org.maplibre.android.geometry.LatLng? = null
-    //private var infoView: View? = null
     private var mapLibreMap: MapLibreMap? = null
-    private var searchClickListener: MapLibreMap.OnMapClickListener? = null
-    private var searchMarker: org.maplibre.android.annotations.Marker? = null
+    private var currentSearchResults: List<SearchResult> = emptyList()
+    private var searchJob: Job? = null
+    private var isLocationInitialized = false
     private val SEARCH_LAYER_ID = "search-layer"
     private val SEARCH_SOURCE_ID = "search-source"
+    private lateinit var transformAdapter: TransformAdapter
+    private var defaultUsers: List<MapUser> = emptyList()
+    private var isSearchMode = false
+    private var styleReady = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,51 +90,84 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     private fun setupMap()
     {
+        binding.map?.onCreate(null)
+
         binding.map?.getMapAsync { map ->
+
             mapLibreMap = map
-            // Enable compass
-            map.uiSettings.isCompassEnabled = true
-            // ✅ Dynamic margin based on search bar height
-            binding.map?.post {
-                val mapHeight = binding.map?.height ?: 0
-                map.uiSettings.setCompassMargins(
-                    0,
-                    0,
-                    32,
-                    (mapHeight * 0.25).toInt()
-                )
+
+            map.uiSettings.apply {
+                isCompassEnabled = true
+                isLogoEnabled = true
+                isAttributionEnabled = true
             }
-            val isDark = binding.switchMapMode!!.isChecked
-            applyMapStyle(isDark)
+
+            map.addOnMapClickListener { latLng ->
+
+                if (!isSearchMode)
+                    return@addOnMapClickListener false
+
+                val screenPoint =
+                    map.projection.toScreenLocation(latLng)
+
+                val features =
+                    map.queryRenderedFeatures(
+                        screenPoint,
+                        SEARCH_LAYER_ID
+                    )
+
+                if (features.isEmpty())
+                    return@addOnMapClickListener false
+
+                val feature = features.first()
+
+                Toast.makeText(
+                    context,
+                    feature.getStringProperty("full_name"),
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                true
+            }
+
+            applyMapStyle(binding.switchMapMode!!.isChecked)
         }
     }
 
+
     private fun applyMapStyle(isDark: Boolean)
     {
-        val styleUrl = if (isDark)
-            "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-        else
-            "https://tiles.openfreemap.org/styles/liberty"
+        styleReady = false
+
+        val styleUrl =
+            if (isDark)
+                "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+            else
+                "https://tiles.openfreemap.org/styles/liberty"
+
         mapLibreMap?.setStyle(styleUrl) { style ->
-            // TINT LOGIC: Change icon color based on theme
-            val iconColor = if (isDark) Color.CYAN else Color.RED
-            val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_searched_place)
-            drawable?.let {
-                val wrappedDrawable = androidx.core.graphics.drawable.DrawableCompat.wrap(it).mutate()
-                androidx.core.graphics.drawable.DrawableCompat.setTint(wrappedDrawable, iconColor)
-                style.addImage("search-icon", wrappedDrawable.toBitmap())
+
+            setupSearchIcon(style)
+
+            setupAvatarImages(style)
+
+            setupUserSourceAndLayer(style)
+
+            setupSearchSourceAndLayer(style)
+
+            styleReady = true
+
+            checkLocationPermission()
+
+            viewModel.users.value?.let {
+                refreshMarkers(it)
             }
-            //  Register all 16 avatars into the style
-            for (i in 0 until 16) {
-                val resName = "avatar_${i + 1}"
-                val resId = resources.getIdentifier(resName, "drawable", requireContext().packageName)
-                ContextCompat.getDrawable(requireContext(), resId)?.let { drawable ->
-                    // We convert the drawable to a bitmap (100x100px is usually good for markers)
-                    style.addImage("avatar-$i", drawable.toBitmap(100, 100))
-                }
+
+            if (currentSearchResults.isNotEmpty()) {
+                displaySearchResults(currentSearchResults)
             }
-            enableLocation()
-            viewModel.users.value?.let { refreshMarkers(it) }
+
+            Log.d("MAP", "STYLE READY")
         }
     }
 
@@ -131,22 +175,22 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     // RECYCLER
     // --------------------------------------------------
-
     private fun setupRecyclerView()
     {
-        binding.recyclerView?.layoutManager = LinearLayoutManager(requireContext())
-        // Create adapter with click logic
-        val adapter = TransformAdapter { user ->
-            // When a list item is clicked, focus the map on that user
+        binding.recyclerView?.layoutManager =
+            LinearLayoutManager(requireContext())
+
+        transformAdapter = TransformAdapter { user ->
+
             mapLibreMap?.animateCamera(
-                org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
-                    org.maplibre.android.geometry.LatLng(user.lat, user.lng),
-                    16.0 // Zoom closer to the specific person
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(user.lat, user.lng),
+                    16.0
                 ),
                 1500
             )
         }
-        binding.recyclerView?.adapter = adapter
+        binding.recyclerView?.adapter = transformAdapter
     }
 
     // --------------------------------------------------
@@ -182,22 +226,52 @@ class ThruxionFragment : Fragment()
         binding.switchMapMode?.setOnCheckedChangeListener { _, isChecked ->
             applyMapStyle(isChecked)
         }
+        binding.editSearch?.doOnTextChanged { text, _, _, _ ->
+
+            val query = text?.toString()?.trim().orEmpty()
+
+            // If search was cleared with the X button
+            if (query.isEmpty() && isSearchMode) {
+
+                isSearchMode = false
+
+                // Restore nearby users list
+                transformAdapter.submitList(defaultUsers)
+
+                // Restore nearby user markers
+                refreshMarkers(defaultUsers)
+
+                // Remove search markers
+                clearSearchMarkers()
+            }
+        }
+
+    }
+
+    private fun clearSearchMarkers()
+    {
+        val style = mapLibreMap?.style ?: return
+        val source =
+            style.getSource(SEARCH_SOURCE_ID)
+                    as? GeoJsonSource
+        source?.setGeoJson(
+            FeatureCollection.fromFeatures(emptyArray())
+        )
+        currentSearchResults = emptyList()
     }
 
     // --------------------------------------------------
     // DATA OBSERVER
     // --------------------------------------------------
-    private fun observeData() {
+    private fun observeData()
+    {
         viewModel.users.observe(viewLifecycleOwner) { users ->
-            // Submit the whole object list to the adapter
-            (binding.recyclerView?.adapter as? TransformAdapter)?.submitList(users)
-            // Refresh markers on the map
+            // Save default nearby users
+            defaultUsers = users
+            // Only update list if NOT searching
+            if (!isSearchMode)
+                transformAdapter.submitList(users)
             refreshMarkers(users)
-            // TESTING: If you want to center the map on the first person found initially
-            if (users.isNotEmpty()) {
-                val firstUser = users[0]
-                // Optional: mapLibreMap?.moveCamera(...)
-            }
         }
     }
 
@@ -205,9 +279,9 @@ class ThruxionFragment : Fragment()
     // MARKERS (MapLibre)
     // --------------------------------------------------
 
-    private fun refreshMarkers(users: List<MapUser>)
-    {
+    private fun refreshMarkers(users: List<MapUser>) {
         val style = mapLibreMap?.style ?: return
+
         val features = users.map { user ->
             Feature.fromGeometry(
                 Point.fromLngLat(user.lng, user.lat)
@@ -216,146 +290,340 @@ class ThruxionFragment : Fragment()
                 addStringProperty("avatar-id", "avatar-${user.avatarIndex}")
             }
         }
-        val source = GeoJsonSource(
-            "users-source",
-            FeatureCollection.fromFeatures(features)
-        )
-        // Remove old
-        if (style.getLayer("users-layer") != null)
-            style.removeLayer("users-layer")
-        if (style.getSource("users-source") != null)
-            style.removeSource("users-source")
-        // Add new
+
+        val collection = FeatureCollection.fromFeatures(features)
+
+        val existingSource =
+            style.getSource("users-source") as? GeoJsonSource
+
+        if (existingSource != null) {
+            existingSource.setGeoJson(collection)
+            return
+        }
+
+        // Create ONLY ONCE
+        val source = GeoJsonSource("users-source", collection)
         style.addSource(source)
+
         val layer = SymbolLayer("users-layer", "users-source")
             .withProperties(
-                // ICON CONFIGURATION
                 iconImage("{avatar-id}"),
                 iconSize(0.6f),
                 iconAllowOverlap(true),
                 iconIgnorePlacement(true),
-                // TEXT CONFIGURATION
                 textField("{name}"),
                 textSize(12f),
-                textColor(if (binding.switchMapMode!!.isChecked) "#00FFFF" else "#000000"),
+                textColor(if (binding.switchMapMode!!.isChecked)
+                    "#00FFFF"
+                else
+                    "#000000"),
                 textHaloColor("#FFFFFF"),
                 textHaloWidth(1f),
-                // POSITIONING (Image above, Text below)
-                textAnchor(org.maplibre.android.style.layers.Property.TEXT_ANCHOR_TOP),
-                textOffset(arrayOf(0f, 1.2f)) // Pushes the text down below the icon
+                textAnchor("top"),
+                textOffset(arrayOf(0f, 1.2f))
             )
+
         style.addLayer(layer)
     }
 
     // --------------------------------------------------
     // MAP SEARCH
     // --------------------------------------------------
-
     private fun performSearch()
     {
-        val query = binding.editSearch?.text.toString().trim()
-        if (query.isEmpty()) return
-        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(view?.windowToken, 0)
+        if (!styleReady)
+        {
+            Toast.makeText(
+                context,
+                "Map initializing...",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val query =
+            binding.editSearch?.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+
+        if (query.isBlank())
+        {
+            isSearchMode = false
+
+            transformAdapter.submitList(defaultUsers)
+
+            refreshMarkers(defaultUsers)
+
+            clearSearchMarkers()
+
+            return
+        }
+
+        val imm =
+            requireContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE)
+                    as InputMethodManager
+
+        imm.hideSoftInputFromWindow(
+            view?.windowToken,
+            0
+        )
+
         searchLocation(query)
     }
 
     private fun searchLocation(query: String)
     {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try
+        searchJob?.cancel()
+
+        searchJob =
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO)
             {
-                val encodedQuery = URLEncoder.encode(query, "UTF-8")
-                val url =
-                    "https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=json&limit=1"
+                var connection: java.net.HttpURLConnection? = null
 
-                val connection = java.net.URL(url).openConnection()
-                connection.setRequestProperty("User-Agent", requireContext().packageName)
+                try {
 
-                val response = connection.getInputStream()
-                    .bufferedReader()
-                    .use { it.readText() }
+                    val encodedQuery =
+                        URLEncoder.encode(query, "UTF-8")
 
-                val jsonArray = org.json.JSONArray(response)
+                    val url =
+                        java.net.URL(
+                            "https://nominatim.openstreetmap.org/search" +
+                                    "?q=$encodedQuery" +
+                                    "&format=json" +
+                                    "&addressdetails=1" +
+                                    "&limit=5"
+                        )
 
-                if (jsonArray.length() == 0) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "No results found", Toast.LENGTH_SHORT).show()
+                    connection =
+                        (url.openConnection() as java.net.HttpURLConnection).apply {
+
+                            requestMethod = "GET"
+
+                            setRequestProperty(
+                                "User-Agent",
+                                "QHagoApp/1.0"
+                            )
+
+                            setRequestProperty(
+                                "Accept",
+                                "application/json"
+                            )
+
+                            connectTimeout = 10000
+                            readTimeout = 10000
+
+                            doInput = true
+                        }
+
+                    // IMPORTANT
+                    connection.connect()
+
+                    val responseCode =
+                        connection.responseCode
+
+                    if (responseCode != 200)
+                    {
+                        withContext(Dispatchers.Main)
+                        {
+                            Toast.makeText(
+                                context,
+                                "Search unavailable ($responseCode)",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        return@launch
                     }
-                    return@launch
+
+                    val response =
+                        connection.inputStream
+                            .bufferedReader()
+                            .use { it.readText() }
+
+                    val jsonArray =
+                        org.json.JSONArray(response)
+
+                    val results =
+                        mutableListOf<SearchResult>()
+
+                    for (i in 0 until jsonArray.length())
+                    {
+                        val obj =
+                            jsonArray.getJSONObject(i)
+
+                        val address =
+                            obj.optJSONObject("address")
+
+                        results.add(
+                            SearchResult(
+                                id = obj.optString("place_id"),
+
+                                displayName =
+                                    obj.optString("display_name"),
+
+                                shortName =
+                                    obj.optString("name")
+                                        .ifBlank {
+                                            obj.optString("display_name")
+                                                .split(",")
+                                                .firstOrNull()
+                                                ?: "Location"
+                                        },
+
+                                lat =
+                                    obj.optString("lat").toDouble(),
+
+                                lon =
+                                    obj.optString("lon").toDouble(),
+
+                                type =
+                                    obj.optString("type"),
+
+                                importance =
+                                    obj.optDouble("importance"),
+
+                                country =
+                                    address?.optString("country"),
+
+                                city =
+                                    address?.optString("city")
+                                        ?: address?.optString("town")
+                            )
+                        )
+                    }
+
+                    withContext(Dispatchers.Main)
+                    {
+                        if (results.isEmpty())
+                        {
+                            Toast.makeText(
+                                context,
+                                "No locations found",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            return@withContext
+                        }
+
+                        isSearchMode = true
+                        currentSearchResults = results
+
+                        val mappedUsers =
+                            convertSearchResultsToUsers(results)
+
+                        transformAdapter.submitList(mappedUsers)
+
+                        displaySearchResults(results)
+                    }
+
                 }
+                catch (e: Exception)
+                {
+                    Log.e(
+                        "SEARCH_ERROR",
+                        e.stackTraceToString()
+                    )
 
-                val obj = jsonArray.getJSONObject(0)
-                val lat = obj.getDouble("lat")
-                val lon = obj.getDouble("lon")
-
-                withContext(Dispatchers.Main) {
-                    moveToSearchResult(lat, lon, query)
+                    withContext(Dispatchers.Main)
+                    {
+                        Toast.makeText(
+                            context,
+                            "Connection error",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                finally
+                {
+                    connection?.disconnect()
                 }
             }
-            catch (e: Exception)
-            {
-                e.printStackTrace() // 👈 IMPORTANT for debugging
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        "Network error: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
     }
 
-    private fun moveToSearchResult(lat: Double, lon: Double, title: String)
+    private fun displaySearchResults(
+        results: List<SearchResult>
+    )
     {
-        val style = mapLibreMap?.style ?: return
-        val point = Point.fromLngLat(lon, lat)
-        // Move camera
-        mapLibreMap?.animateCamera(
-            org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
-                org.maplibre.android.geometry.LatLng(lat, lon),
-                14.0
-            ),
-            2000
+        val style =
+            mapLibreMap?.style ?: return
+
+        val source =
+            style.getSource(SEARCH_SOURCE_ID)
+                    as? GeoJsonSource
+                ?: return
+
+        val features =
+            results.map { result ->
+
+                Feature.fromGeometry(
+                    Point.fromLngLat(
+                        result.lon,
+                        result.lat
+                    )
+                ).apply {
+
+                    addStringProperty(
+                        "title",
+                        result.shortName
+                    )
+
+                    addStringProperty(
+                        "full_name",
+                        result.displayName
+                    )
+                }
+            }
+
+        source.setGeoJson(
+            FeatureCollection.fromFeatures(features)
         )
-        val feature = Feature.fromGeometry(point).apply {
-            addStringProperty("title", title)
-        }
-        val source = style.getSource(SEARCH_SOURCE_ID) as? GeoJsonSource
-        if (source == null)
+
+        moveCameraToResults(results)
+    }
+
+    private fun moveCameraToResults(
+        results: List<SearchResult>
+    )
+    {
+        val map = mapLibreMap ?: return
+
+        if (results.size == 1)
         {
-            style.addSource(
-                GeoJsonSource(
-                    SEARCH_SOURCE_ID,
-                    FeatureCollection.fromFeatures(listOf(feature))
-                )
+            map.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(
+                        results[0].lat,
+                        results[0].lon
+                    ),
+                    15.0
+                ),
+                1200
             )
-            val layer = SymbolLayer(SEARCH_LAYER_ID, SEARCH_SOURCE_ID)
-                .withProperties(
-                    iconImage("search-icon"),
-                    iconAllowOverlap(true),
-                    iconIgnorePlacement(true),
-                    textField("{title}"),
-                    textSize(14f),
-                    textAnchor("top"),
-                    textOffset(arrayOf(0f, 1.2f)),
-                    textColor("#FFFFFF"),
-                    textAllowOverlap(true),
-                    // ✅ background effect
-                    textHaloColor("#000000"),
-                    textHaloWidth(2f),
-                    textHaloBlur(1f)
-                )
-            if (style.getLayer("users-layer") != null)
-                style.addLayerAbove(layer, "users-layer")
-            else
-                style.addLayer(layer)
+
+            return
         }
-        else
-            source.setGeoJson(FeatureCollection.fromFeatures(listOf(feature)))
-        viewModel.updateUsersAroundLocation(lat, lon)
+
+        val bounds =
+            LatLngBounds.Builder().apply {
+
+                results.forEach {
+                    include(
+                        LatLng(it.lat, it.lon)
+                    )
+                }
+
+            }.build()
+
+        map.animateCamera(
+            CameraUpdateFactory.newLatLngBounds(
+                bounds,
+                160
+            ),
+            1500
+        )
     }
 
     // --------------------------------------------------
@@ -375,20 +643,64 @@ class ThruxionFragment : Fragment()
     @SuppressLint("MissingPermission")
     private fun enableLocation()
     {
-        if (!hasLocationPermission()) return
+        if (!hasLocationPermission())
+            return
+
         val map = mapLibreMap ?: return
         val style = map.style ?: return
+
         val locationComponent = map.locationComponent
+
         locationComponent.activateLocationComponent(
-            LocationComponentActivationOptions.builder(requireContext(), style)
+            LocationComponentActivationOptions
+                .builder(requireContext(), style)
                 .build()
         )
+
         locationComponent.isLocationComponentEnabled = true
         locationComponent.cameraMode = CameraMode.TRACKING
         locationComponent.renderMode = RenderMode.COMPASS
-        // Get the actual device location and update the random users
-        locationComponent.lastKnownLocation?.let { location ->
-            viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
+
+        // IMPORTANT:
+        // Don't block app logic waiting for GPS
+        isLocationInitialized = true
+
+        val location = locationComponent.lastKnownLocation
+
+        if (location != null)
+        {
+            val userLatLng = LatLng(
+                location.latitude,
+                location.longitude
+            )
+
+            viewModel.updateUsersAroundLocation(
+                location.latitude,
+                location.longitude
+            )
+
+            binding.map?.postDelayed({
+
+                map.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        userLatLng,
+                        14.5
+                    ),
+                    1800
+                )
+
+            }, 400)
+        }
+        else
+        {
+            // Fallback position while GPS initializes
+            map.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(-33.4489, -70.6693), // Santiago fallback
+                    11.0
+                ),
+                1200
+            )
         }
     }
 
@@ -399,6 +711,175 @@ class ThruxionFragment : Fragment()
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
+
+    private fun convertSearchResultsToUsers(
+        results: List<SearchResult>
+    ): List<MapUser>
+    {
+        return results.mapIndexed { index, result ->
+
+            MapUser(
+                id = result.id.hashCode().toString(),
+                name = result.shortName,
+                lat = result.lat,
+                lng = result.lon,
+                avatarIndex = index % 16
+            )
+        }
+    }
+
+    private fun setupSearchIcon(style: org.maplibre.android.maps.Style)
+    {
+        val iconColor =
+            if (binding.switchMapMode!!.isChecked)
+                Color.CYAN
+            else
+                "#FF4500".toColorInt()
+
+        ContextCompat.getDrawable(
+            requireContext(),
+            R.drawable.ic_searched_place
+        )?.let {
+
+            val wrapped =
+                androidx.core.graphics.drawable.DrawableCompat
+                    .wrap(it)
+                    .mutate()
+
+            androidx.core.graphics.drawable.DrawableCompat
+                .setTint(wrapped, iconColor)
+
+            style.addImage(
+                "search-icon",
+                wrapped.toBitmap()
+            )
+        }
+    }
+
+    private fun setupAvatarImages(style: org.maplibre.android.maps.Style)
+    {
+        for (i in 0 until 16)
+        {
+            val resId =
+                resources.getIdentifier(
+                    "avatar_${i + 1}",
+                    "drawable",
+                    requireContext().packageName
+                )
+
+            ContextCompat.getDrawable(
+                requireContext(),
+                resId
+            )?.let {
+
+                style.addImage(
+                    "avatar-$i",
+                    it.toBitmap(100, 100)
+                )
+            }
+        }
+    }
+
+    private fun setupUserSourceAndLayer(style: org.maplibre.android.maps.Style)
+    {
+        if (style.getSource("users-source") == null)
+        {
+            style.addSource(
+                GeoJsonSource(
+                    "users-source",
+                    FeatureCollection.fromFeatures(emptyArray())
+                )
+            )
+        }
+
+        if (style.getLayer("users-layer") == null)
+        {
+            val layer =
+                SymbolLayer(
+                    "users-layer",
+                    "users-source"
+                ).withProperties(
+
+                    iconImage("{avatar-id}"),
+                    iconSize(0.6f),
+                    iconAllowOverlap(true),
+                    iconIgnorePlacement(true),
+
+                    textField("{name}"),
+                    textSize(12f),
+
+                    textColor(
+                        if (binding.switchMapMode!!.isChecked)
+                            "#00FFFF"
+                        else
+                            "#000000"
+                    ),
+
+                    textHaloColor("#FFFFFF"),
+                    textHaloWidth(1f),
+
+                    textAnchor("top"),
+                    textOffset(arrayOf(0f, 1.2f))
+                )
+
+            style.addLayer(layer)
+        }
+    }
+
+    private fun setupSearchSourceAndLayer(style: org.maplibre.android.maps.Style)
+    {
+        if (style.getSource(SEARCH_SOURCE_ID) == null)
+        {
+            style.addSource(
+                GeoJsonSource(
+                    SEARCH_SOURCE_ID,
+                    FeatureCollection.fromFeatures(emptyArray())
+                )
+            )
+        }
+
+        if (style.getLayer(SEARCH_LAYER_ID) == null)
+        {
+            val searchLayer =
+                SymbolLayer(
+                    SEARCH_LAYER_ID,
+                    SEARCH_SOURCE_ID
+                ).withProperties(
+
+                    iconImage("search-icon"),
+                    iconSize(0.9f),
+
+                    iconAllowOverlap(true),
+                    iconIgnorePlacement(true),
+
+                    textField("{title}"),
+                    textSize(11f),
+
+                    textPadding(2f),
+
+                    textAnchor("top"),
+                    textOffset(arrayOf(0f, 1.2f)),
+
+                    textColor(
+                        if (binding.switchMapMode!!.isChecked)
+                            "#00FFFF"
+                        else
+                            "#000000"
+                    ),
+
+                    textHaloColor("#FFFFFF"),
+                    textHaloWidth(1.5f)
+                )
+
+            style.addLayerAbove(
+                searchLayer,
+                "users-layer"
+            )
+        }
+    }
+
+
+
 
     // --------------------------------------------------
     // LIFECYCLE (IMPORTANT)
@@ -420,3 +901,16 @@ class ThruxionFragment : Fragment()
         binding.map?.onLowMemory()
     }
 }
+
+data class SearchResult(
+    val id: String,
+    val displayName: String,
+    val shortName: String,
+    val lat: Double,
+    val lon: Double,
+    val type: String?,
+    val importance: Double?,
+    val country: String?,
+    val city: String?
+)
+

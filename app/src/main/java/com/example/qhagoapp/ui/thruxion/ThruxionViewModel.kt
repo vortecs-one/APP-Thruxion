@@ -6,11 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qhagoapp.network.ApiRegistry
 import kotlinx.coroutines.launch
+import java.util.UUID
 import kotlin.random.Random
 
 // Data model for map
 data class MapUser(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     val name: String,
     val lat: Double,
     val lng: Double,
