@@ -15,9 +15,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.style.Style
-import androidx.compose.remote.creation.dsl.visibility
-import androidx.compose.ui.semantics.text
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.widget.doOnTextChanged
@@ -73,7 +70,8 @@ class ThruxionFragment : Fragment()
     private var styleReady = false
 
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?)
+    {
         super.onCreate(savedInstanceState)
         MapLibre.getInstance(requireContext())
     }
@@ -98,17 +96,13 @@ class ThruxionFragment : Fragment()
     private fun setupMap()
     {
         binding.map?.onCreate(null)
-
         binding.map?.getMapAsync { map ->
-
             mapLibreMap = map
-
             map.uiSettings.apply {
                 isCompassEnabled = true
                 isLogoEnabled = true
                 isAttributionEnabled = true
             }
-
             map.addOnMapClickListener { latLng ->
                 val screenPoint = map.projection.toScreenLocation(latLng)
                 // Check Search Layer first
@@ -130,59 +124,41 @@ class ThruxionFragment : Fragment()
                 binding.userDetailCard?.visibility = View.GONE
                 false
             }
-
             applyMapStyle(binding.switchMapMode!!.isChecked)
         }
     }
 
-
     private fun applyMapStyle(isDark: Boolean)
     {
         styleReady = false
-
         val styleUrl =
             if (isDark)
                 "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
             else
                 "https://tiles.openfreemap.org/styles/liberty"
-
         mapLibreMap?.setStyle(styleUrl) { style ->
-
             setupSearchIcon(style)
-
             setupAvatarImages(style)
-
             setupUserSourceAndLayer(style)
-
             setupSearchSourceAndLayer(style)
-
             styleReady = true
-
             checkLocationPermission()
-
             viewModel.users.value?.let {
                 refreshMarkers(it)
             }
-
-            if (currentSearchResults.isNotEmpty()) {
+            if (currentSearchResults.isNotEmpty())
                 displaySearchResults(currentSearchResults)
-            }
-
             Log.d("MAP", "STYLE READY")
         }
     }
-
 
     // --------------------------------------------------
     // RECYCLER
     // --------------------------------------------------
     private fun setupRecyclerView()
     {
-        binding.recyclerView?.layoutManager =
-            LinearLayoutManager(requireContext())
-
+        binding.recyclerView?.layoutManager = LinearLayoutManager(requireContext())
         transformAdapter = TransformAdapter { user ->
-
             mapLibreMap?.animateCamera(
                 CameraUpdateFactory.newLatLngZoom(
                     LatLng(user.lat, user.lng),
@@ -190,65 +166,27 @@ class ThruxionFragment : Fragment()
                 ),
                 1500
             )
-
-            if (isSearchMode) {
-
-                val result =
-                    currentSearchResults.find {
-                        it.lat == user.lat &&
-                                it.lon == user.lng
-                    }
-
+            if (isSearchMode)
+            {
+                val result = currentSearchResults.find { it.lat == user.lat && it.lon == user.lng }
                 result?.let {
-
-                    val feature = Feature.fromGeometry(
-                        Point.fromLngLat(
-                            it.lon,
-                            it.lat
-                        )
+                    val feature = Feature.fromGeometry(Point.fromLngLat(it.lon,it.lat)
                     ).apply {
-
-                        addStringProperty(
-                            "title",
-                            it.shortName
-                        )
-
-                        addStringProperty(
-                            "full_name",
-                            it.displayName
-                        )
-
-                        addStringProperty(
-                            "type",
-                            it.type ?: "Place"
-                        )
+                        addStringProperty("title",it.shortName)
+                        addStringProperty("full_name",it.displayName)
+                        addStringProperty("type",it.type ?: "Place")
                     }
-
                     showLocationDetails(feature)
-
                     handleSelection(it)
                 }
-
-            } else {
-
-                val feature = Feature.fromGeometry(
-                    Point.fromLngLat(
-                        user.lng,
-                        user.lat
-                    )
+            }
+            else
+            {
+                val feature = Feature.fromGeometry(Point.fromLngLat(user.lng,user.lat)
                 ).apply {
-
-                    addStringProperty(
-                        "name",
-                        user.name
-                    )
-
-                    addStringProperty(
-                        "avatar-id",
-                        "avatar-${user.avatarIndex}"
-                    )
+                    addStringProperty("name",user.name)
+                    addStringProperty("avatar-id","avatar-${user.avatarIndex}")
                 }
-
                 showUserDetails(feature)
             }
         }
@@ -258,7 +196,6 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     // UI
     // --------------------------------------------------
-
     private fun setupUI()
     {
         binding.fabMyLocation?.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
@@ -267,7 +204,6 @@ class ThruxionFragment : Fragment()
             binding.searchCard?.post {
                 val topPadding = binding.searchCard!!.height + 80
                 map.setPadding(50, topPadding, 50, 50)
-
                 map.animateCamera(
                     org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
                         org.maplibre.android.geometry.LatLng(location.latitude, location.longitude),
@@ -289,36 +225,26 @@ class ThruxionFragment : Fragment()
             applyMapStyle(isChecked)
         }
         binding.editSearch?.doOnTextChanged { text, _, _, _ ->
-
             val query = text?.toString()?.trim().orEmpty()
-
             // If search was cleared with the X button
-            if (query.isEmpty() && isSearchMode) {
-
+            if (query.isEmpty() && isSearchMode)
+            {
                 isSearchMode = false
-
                 // Restore nearby users list
                 transformAdapter.submitList(defaultUsers)
-
                 // Restore nearby user markers
                 refreshMarkers(defaultUsers)
-
                 // Remove search markers
                 clearSearchMarkers()
             }
         }
-
     }
 
     private fun clearSearchMarkers()
     {
         val style = mapLibreMap?.style ?: return
-        val source =
-            style.getSource(SEARCH_SOURCE_ID)
-                    as? GeoJsonSource
-        source?.setGeoJson(
-            FeatureCollection.fromFeatures(emptyArray())
-        )
+        val source = style.getSource(SEARCH_SOURCE_ID) as? GeoJsonSource
+        source?.setGeoJson(FeatureCollection.fromFeatures(emptyArray()))
         currentSearchResults = emptyList()
     }
 
@@ -340,7 +266,6 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     // MARKERS (MapLibre)
     // --------------------------------------------------
-
     private fun refreshMarkers(users: List<MapUser>) {
         val style = mapLibreMap?.style ?: return
 
@@ -352,21 +277,16 @@ class ThruxionFragment : Fragment()
                 addStringProperty("avatar-id", "avatar-${user.avatarIndex}")
             }
         }
-
         val collection = FeatureCollection.fromFeatures(features)
-
         val existingSource =
             style.getSource("users-source") as? GeoJsonSource
-
         if (existingSource != null) {
             existingSource.setGeoJson(collection)
             return
         }
-
         // Create ONLY ONCE
         val source = GeoJsonSource("users-source", collection)
         style.addSource(source)
-
         val layer = SymbolLayer("users-layer", "users-source")
             .withProperties(
                 iconImage("{avatar-id}"),
@@ -384,7 +304,6 @@ class ThruxionFragment : Fragment()
                 textAnchor("top"),
                 textOffset(arrayOf(0f, 1.2f))
             )
-
         style.addLayer(layer)
     }
 
@@ -395,44 +314,20 @@ class ThruxionFragment : Fragment()
     {
         if (!styleReady)
         {
-            Toast.makeText(
-                context,
-                "Map initializing...",
-                Toast.LENGTH_SHORT
-            ).show()
-
+            Toast.makeText(context,"Map initializing...",Toast.LENGTH_SHORT).show()
             return
         }
-
-        val query =
-            binding.editSearch?.text
-                ?.toString()
-                ?.trim()
-                .orEmpty()
-
+        val query = binding.editSearch?.text?.toString()?.trim().orEmpty()
         if (query.isBlank())
         {
             isSearchMode = false
-
             transformAdapter.submitList(defaultUsers)
-
             refreshMarkers(defaultUsers)
-
             clearSearchMarkers()
-
             return
         }
-
-        val imm =
-            requireContext()
-                .getSystemService(Context.INPUT_METHOD_SERVICE)
-                    as InputMethodManager
-
-        imm.hideSoftInputFromWindow(
-            view?.windowToken,
-            0
-        )
-
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view?.windowToken,0)
         searchLocation(query)
     }
 
@@ -446,12 +341,9 @@ class ThruxionFragment : Fragment()
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO)
             {
                 var connection: java.net.HttpURLConnection? = null
-
                 try {
-
                     val encodedQuery =
                         URLEncoder.encode(query, "UTF-8")
-
                     val url =
                         java.net.URL(
                             "https://nominatim.openstreetmap.org/search" +
@@ -460,34 +352,19 @@ class ThruxionFragment : Fragment()
                                     "&addressdetails=1" +
                                     "&limit=5"
                         )
-
                     connection =
                         (url.openConnection() as java.net.HttpURLConnection).apply {
-
                             requestMethod = "GET"
-
-                            setRequestProperty(
-                                "User-Agent",
-                                "QHagoApp/1.0"
-                            )
-
-                            setRequestProperty(
-                                "Accept",
-                                "application/json"
-                            )
-
+                            setRequestProperty("User-Agent","QHagoApp/1.0")
+                            setRequestProperty("Accept","application/json")
                             connectTimeout = 10000
                             readTimeout = 10000
-
                             doInput = true
                         }
-
                     // IMPORTANT
                     connection.connect()
-
                     val responseCode =
                         connection.responseCode
-
                     if (responseCode != 200)
                     {
                         withContext(Dispatchers.Main)
@@ -498,36 +375,26 @@ class ThruxionFragment : Fragment()
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-
                         return@launch
                     }
-
                     val response =
                         connection.inputStream
                             .bufferedReader()
                             .use { it.readText() }
-
                     val jsonArray =
                         org.json.JSONArray(response)
-
                     val results =
                         mutableListOf<SearchResult>()
-
                     for (i in 0 until jsonArray.length())
                     {
                         val obj =
                             jsonArray.getJSONObject(i)
-
                         val address =
                             obj.optJSONObject("address")
-
                         results.add(
                             SearchResult(
                                 id = obj.optString("place_id"),
-
-                                displayName =
-                                    obj.optString("display_name"),
-
+                                displayName = obj.optString("display_name"),
                                 shortName =
                                     obj.optString("name")
                                         .ifBlank {
@@ -536,29 +403,15 @@ class ThruxionFragment : Fragment()
                                                 .firstOrNull()
                                                 ?: "Location"
                                         },
-
-                                lat =
-                                    obj.optString("lat").toDouble(),
-
-                                lon =
-                                    obj.optString("lon").toDouble(),
-
-                                type =
-                                    obj.optString("type"),
-
-                                importance =
-                                    obj.optDouble("importance"),
-
-                                country =
-                                    address?.optString("country"),
-
-                                city =
-                                    address?.optString("city")
-                                        ?: address?.optString("town")
+                                lat = obj.optString("lat").toDouble(),
+                                lon = obj.optString("lon").toDouble(),
+                                type = obj.optString("type"),
+                                importance = obj.optDouble("importance"),
+                                country = address?.optString("country"),
+                                city = address?.optString("city") ?: address?.optString("town")
                             )
                         )
                     }
-
                     withContext(Dispatchers.Main)
                     {
                         if (results.isEmpty())
@@ -568,36 +421,22 @@ class ThruxionFragment : Fragment()
                                 "No locations found",
                                 Toast.LENGTH_SHORT
                             ).show()
-
                             return@withContext
                         }
-
                         isSearchMode = true
                         currentSearchResults = results
-
                         val mappedUsers =
                             convertSearchResultsToUsers(results)
-
                         transformAdapter.submitList(mappedUsers)
-
                         displaySearchResults(results)
                     }
-
                 }
                 catch (e: Exception)
                 {
-                    Log.e(
-                        "SEARCH_ERROR",
-                        e.stackTraceToString()
-                    )
-
+                    Log.e("SEARCH_ERROR",e.stackTraceToString())
                     withContext(Dispatchers.Main)
                     {
-                        Toast.makeText(
-                            context,
-                            "Connection error",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context,"Connection error",Toast.LENGTH_SHORT).show()
                     }
                 }
                 finally
@@ -610,7 +449,6 @@ class ThruxionFragment : Fragment()
     private fun displaySearchResults(results: List<SearchResult>)
     {
         val style = mapLibreMap?.style ?: return
-
         val source =
             style.getSource(SEARCH_SOURCE_ID)
                     as? GeoJsonSource
@@ -638,51 +476,29 @@ class ThruxionFragment : Fragment()
         if (results.size == 1)
         {
             map.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(
-                        results[0].lat,
-                        results[0].lon
-                    ),
-                    15.0
-                ),
+                CameraUpdateFactory.newLatLngZoom(LatLng(results[0].lat,results[0].lon),15.0),
                 1200
             )
-
             return
         }
-
         val bounds =
             LatLngBounds.Builder().apply {
-
                 results.forEach {
-                    include(
-                        LatLng(it.lat, it.lon)
-                    )
+                    include(LatLng(it.lat, it.lon))
                 }
-
             }.build()
-
-        map.animateCamera(
-            CameraUpdateFactory.newLatLngBounds(
-                bounds,
-                160
-            ),
-            1500
-        )
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds,160),1500)
     }
 
     // --------------------------------------------------
     // LOCATION
     // --------------------------------------------------
-
-    private fun checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
+    private fun checkLocationPermission()
+    {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
             enableLocation()
-        } else {
+        else
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
     }
 
     @SuppressLint("MissingPermission")
@@ -690,63 +506,27 @@ class ThruxionFragment : Fragment()
     {
         if (!hasLocationPermission())
             return
-
         val map = mapLibreMap ?: return
         val style = map.style ?: return
-
         val locationComponent = map.locationComponent
-
         locationComponent.activateLocationComponent(
             LocationComponentActivationOptions
                 .builder(requireContext(), style)
                 .build()
         )
-
         locationComponent.isLocationComponentEnabled = true
         locationComponent.cameraMode = CameraMode.TRACKING
         locationComponent.renderMode = RenderMode.COMPASS
-
-        // IMPORTANT:
-        // Don't block app logic waiting for GPS
         isLocationInitialized = true
-
         val location = locationComponent.lastKnownLocation
-
         if (location != null)
         {
-            val userLatLng = LatLng(
-                location.latitude,
-                location.longitude
-            )
-
-            viewModel.updateUsersAroundLocation(
-                location.latitude,
-                location.longitude
-            )
-
-            binding.map?.postDelayed({
-
-                map.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(
-                        userLatLng,
-                        14.5
-                    ),
-                    1800
-                )
-
-            }, 400)
+            val userLatLng = LatLng(location.latitude,location.longitude)
+            viewModel.updateUsersAroundLocation(location.latitude,location.longitude)
+            binding.map?.postDelayed({ map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLatLng,14.5),1800)}, 400)
         }
         else
-        {
-            // Fallback position while GPS initializes
-            map.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(-33.4489, -70.6693), // Santiago fallback
-                    11.0
-                ),
-                1200
-            )
-        }
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(-33.4489, -70.6693), 11.0),1200)
     }
 
     private fun hasLocationPermission(): Boolean
@@ -757,12 +537,9 @@ class ThruxionFragment : Fragment()
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun convertSearchResultsToUsers(
-        results: List<SearchResult>
-    ): List<MapUser>
+    private fun convertSearchResultsToUsers(results: List<SearchResult>): List<MapUser>
     {
         return results.mapIndexed { index, result ->
-
             MapUser(
                 id = result.id.hashCode().toString(),
                 name = result.shortName,
@@ -780,20 +557,16 @@ class ThruxionFragment : Fragment()
                 Color.CYAN
             else
                 "#FF4500".toColorInt()
-
         ContextCompat.getDrawable(
             requireContext(),
             R.drawable.ic_searched_place
         )?.let {
-
             val wrapped =
                 androidx.core.graphics.drawable.DrawableCompat
                     .wrap(it)
                     .mutate()
-
             androidx.core.graphics.drawable.DrawableCompat
                 .setTint(wrapped, iconColor)
-
             style.addImage(
                 "search-icon",
                 wrapped.toBitmap()
@@ -805,22 +578,9 @@ class ThruxionFragment : Fragment()
     {
         for (i in 0 until 16)
         {
-            val resId =
-                resources.getIdentifier(
-                    "avatar_${i + 1}",
-                    "drawable",
-                    requireContext().packageName
-                )
-
-            ContextCompat.getDrawable(
-                requireContext(),
-                resId
-            )?.let {
-
-                style.addImage(
-                    "avatar-$i",
-                    it.toBitmap(100, 100)
-                )
+            val resId = resources.getIdentifier("avatar_${i + 1}","drawable",requireContext().packageName)
+            ContextCompat.getDrawable(requireContext(),resId)?.let {
+                style.addImage("avatar-$i",it.toBitmap(100, 100))
             }
         }
     }
@@ -828,45 +588,26 @@ class ThruxionFragment : Fragment()
     private fun setupUserSourceAndLayer(style: org.maplibre.android.maps.Style)
     {
         if (style.getSource("users-source") == null)
-        {
-            style.addSource(
-                GeoJsonSource(
-                    "users-source",
-                    FeatureCollection.fromFeatures(emptyArray())
-                )
-            )
-        }
-
+            style.addSource(GeoJsonSource("users-source",FeatureCollection.fromFeatures(emptyArray())))
         if (style.getLayer("users-layer") == null)
         {
-            val layer =
-                SymbolLayer(
-                    "users-layer",
-                    "users-source"
-                ).withProperties(
-
-                    iconImage("{avatar-id}"),
-                    iconSize(0.6f),
-                    iconAllowOverlap(true),
-                    iconIgnorePlacement(true),
-
-                    textField("{name}"),
-                    textSize(12f),
-
-                    textColor(
-                        if (binding.switchMapMode!!.isChecked)
-                            "#00FFFF"
-                        else
-                            "#000000"
-                    ),
-
-                    textHaloColor("#FFFFFF"),
-                    textHaloWidth(1f),
-
-                    textAnchor("top"),
-                    textOffset(arrayOf(0f, 1.2f))
-                )
-
+            val layer = SymbolLayer("users-layer","users-source").withProperties(
+                iconImage("{avatar-id}"),
+                iconSize(0.6f),
+                iconAllowOverlap(true),
+                iconIgnorePlacement(true),
+                textField("{name}"),
+                textSize(12f),
+                textColor(
+                if (binding.switchMapMode!!.isChecked)
+                    "#00FFFF"
+                else
+                    "#000000"),
+                textHaloColor("#FFFFFF"),
+                textHaloWidth(1f),
+                textAnchor("top"),
+                textOffset(arrayOf(0f, 1.2f))
+            )
             style.addLayer(layer)
         }
     }
@@ -882,40 +623,28 @@ class ThruxionFragment : Fragment()
                 )
             )
         }
-
         if (style.getLayer(SEARCH_LAYER_ID) == null)
         {
             val searchLayer =
-                SymbolLayer(
-                    SEARCH_LAYER_ID,
-                    SEARCH_SOURCE_ID
-                ).withProperties(
-
+                SymbolLayer(SEARCH_LAYER_ID,SEARCH_SOURCE_ID).withProperties(
                     iconImage("search-icon"),
                     iconSize(0.9f),
-
                     iconAllowOverlap(true),
                     iconIgnorePlacement(true),
-
                     textField("{title}"),
                     textSize(11f),
-
                     textPadding(2f),
-
                     textAnchor("top"),
                     textOffset(arrayOf(0f, 1.2f)),
-
                     textColor(
                         if (binding.switchMapMode!!.isChecked)
                             "#00FFFF"
                         else
                             "#000000"
                     ),
-
                     textHaloColor("#FFFFFF"),
                     textHaloWidth(1.5f)
                 )
-
             style.addLayerAbove(
                 searchLayer,
                 "users-layer"
@@ -923,7 +652,8 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun calculateDistanceInKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    private fun calculateDistanceInKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double
+    {
         val r = 6371.0 // Earth's radius in kilometers
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
@@ -934,9 +664,9 @@ class ThruxionFragment : Fragment()
         return r * c
     }
 
-    private fun drawSearchRadius(center: LatLng) {
+    private fun drawSearchRadius(center: LatLng)
+    {
         val style = mapLibreMap?.style ?: return
-
         // Create a circle geometry (FOSS approach using Math)
         val points = mutableListOf<Point>()
         val radiusKm = 5.0 // Match your backend search radius
@@ -945,21 +675,19 @@ class ThruxionFragment : Fragment()
             val angle = Math.toRadians((i * 360.0 / steps))
             val lat = Math.toRadians(center.latitude)
             val lng = Math.toRadians(center.longitude)
-
             val newLat = Math.asin(Math.sin(lat) * Math.cos(radiusKm / 6371) +
                     Math.cos(lat) * Math.sin(radiusKm / 6371) * Math.cos(angle))
             val newLng = lng + Math.atan2(Math.sin(angle) * Math.sin(radiusKm / 6371) * Math.cos(lat),
                 Math.cos(radiusKm / 6371) - Math.sin(lat) * Math.sin(newLat))
-
             points.add(Point.fromLngLat(Math.toDegrees(newLng), Math.toDegrees(newLat)))
         }
         points.add(points[0]) // Close the circle
-
         val circleFeature = Feature.fromGeometry(LineString.fromLngLats(points))
         val source = style.getSource("radius-source") as? GeoJsonSource
-        if (source != null) {
+        if (source != null)
             source.setGeoJson(circleFeature)
-        } else {
+        else
+        {
             style.addSource(GeoJsonSource("radius-source", circleFeature))
             style.addLayerBelow(
                 FillLayer("radius-layer", "radius-source").withProperties(
@@ -969,58 +697,28 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun handleSelection(selected: SearchResult) {
-
+    private fun handleSelection(selected: SearchResult)
+    {
         val style = mapLibreMap?.style ?: return
-
-        val source =
-            style.getSource(SEARCH_SOURCE_ID)
-                    as? GeoJsonSource
-
-        val singleFeature =
-            Feature.fromGeometry(
-                Point.fromLngLat(
-                    selected.lon,
-                    selected.lat
-                )
-            ).apply {
-
-                addStringProperty(
-                    "title",
-                    selected.shortName
-                )
-            }
-
-        source?.setGeoJson(
-            FeatureCollection.fromFeatures(
-                arrayOf(singleFeature)
-            )
-        )
-
-        drawSearchRadius(
-            LatLng(
-                selected.lat,
-                selected.lon
-            )
-        )
-
-        viewModel.updateUsersAroundLocation(
-            selected.lat,
-            selected.lon
-        )
+        val source = style.getSource(SEARCH_SOURCE_ID) as? GeoJsonSource
+        val singleFeature = Feature.fromGeometry(Point.fromLngLat(selected.lon,selected.lat)).apply {
+            addStringProperty("title",selected.shortName)
+        }
+        source?.setGeoJson(FeatureCollection.fromFeatures(arrayOf(singleFeature)))
+        drawSearchRadius(LatLng(selected.lat,selected.lon))
+        viewModel.updateUsersAroundLocation(selected.lat,selected.lon)
     }
 
     // --------------------------------------------------
     // UI DETAIL CARDS (Security & UX)
     // --------------------------------------------------
-    private fun showUserDetails(feature: Feature) {
+    private fun showUserDetails(feature: Feature)
+    {
         val name = feature.getStringProperty("name") ?: "Unknown"
         val avatarId = feature.getStringProperty("avatar-id") ?: "avatar-0"
-
         // Setup Card UI
         binding.userDetailCard.apply {
             this!!.findViewById<TextView>(R.id.tvUserName).text = name
-
             // Set Avatar
             val avatarIndex = avatarId.split("-").lastOrNull()?.toIntOrNull() ?: 0
             val resId = resources.getIdentifier("avatar_${avatarIndex + 1}", "drawable", requireContext().packageName)
@@ -1028,54 +726,46 @@ class ThruxionFragment : Fragment()
                 setImageResource(resId)
                 clearColorFilter() // Remove tint if previously applied for places
             }
-
             // Calculate Distance
             updateDistanceOnCard(feature)
-
             findViewById<Button>(R.id.btnConnect).text = "Send Message"
-
             // Interaction logic
             findViewById<View>(R.id.btnCloseCard).setOnClickListener {
                 visibility = View.GONE
                 resetMapPadding()
             }
-
             visibility = View.VISIBLE
             applyMapPaddingForCard()
         }
     }
 
-    private fun showLocationDetails(feature: Feature) {
+    private fun showLocationDetails(feature: Feature)
+    {
         val title = feature.getStringProperty("title") ?: "Place"
         val type = feature.getStringProperty("type") ?: "Location"
-
         binding.userDetailCard.apply {
             this!!.findViewById<TextView>(R.id.tvUserName).text = title
-
             // Location Icon
             findViewById<ImageView>(R.id.ivUserAvatar).apply {
                 setImageResource(R.drawable.ic_searched_place)
-                setColorFilter(Color.parseColor("#FF4500"))
+                setColorFilter("#FF4500".toColorInt())
             }
-
             updateDistanceOnCard(feature)
-
             val actionBtn = findViewById<Button>(R.id.btnConnect)
             actionBtn.text = "Navigate"
             actionBtn.setOnClickListener { openFossNavigation(feature) }
-
-            this!!.findViewById<View>(R.id.btnCloseCard).setOnClickListener {
+            this.findViewById<View>(R.id.btnCloseCard).setOnClickListener {
                 visibility = View.GONE
                 resetMapPadding()
             }
-
             visibility = View.VISIBLE
             applyMapPaddingForCard()
         }
     }
 
     // Helper to ensure the map centers below the floating card
-    private fun applyMapPaddingForCard() {
+    private fun applyMapPaddingForCard()
+    {
         binding.userDetailCard?.post {
             val cardHeight = binding.userDetailCard!!.height
             val searchHeight = binding.searchCard?.height
@@ -1084,12 +774,12 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun resetMapPadding() {
+    private fun resetMapPadding()
+    {
         // Use camelCase: searchCard instead of search_card
         val searchHeight = binding.searchCard?.height
-        if (searchHeight != null) {
+        if (searchHeight != null)
             mapLibreMap?.setPadding(0, searchHeight + 40, 0, 0)
-        }
     }
 
     private fun openFossNavigation(feature: Feature)
@@ -1111,55 +801,52 @@ class ThruxionFragment : Fragment()
      */
     private fun updateDistanceOnCard(feature: Feature) {
         val distanceTv = binding.userDetailCard?.findViewById<TextView>(R.id.tvUserDistance) ?: return
-
-        // 1. Get Target Coordinates from the Map Feature
+        // Get Target Coordinates from the Map Feature
         val point = feature.geometry() as? Point ?: return
         val targetLat = point.latitude()
         val targetLon = point.longitude()
-
-        // 2. Get Current Device Location from MapLibre LocationComponent
+        // Get Current Device Location from MapLibre LocationComponent
         val lastLocation = mapLibreMap?.locationComponent?.lastKnownLocation
-
-        if (lastLocation != null) {
-            // 3. Calculate Distance using the FOSS Haversine formula (already in your code)
+        if (lastLocation != null)
+        {
+            // Calculate Distance using the FOSS Haversine formula (already in your code)
             val distance = calculateDistanceInKm(
                 lastLocation.latitude,
                 lastLocation.longitude,
                 targetLat,
                 targetLon
             )
-
-            // 4. Update UI with formatted text
+            // Update UI with formatted text
             // If it's a place, we might want to append the 'type' property if available
             val type = feature.getStringProperty("type")
-            if (!type.isNullOrEmpty() && type != "null") {
+            if (!type.isNullOrEmpty() && type != "null")
                 distanceTv.text = String.format("%.2f km · %s", distance, type.replaceFirstChar { it.uppercase() })
-            } else {
+            else
                 distanceTv.text = String.format("%.2f km away", distance)
-            }
             distanceTv.visibility = View.VISIBLE
-        } else {
+        }
+        else
             // Fallback if GPS is not yet ready or permission denied
             distanceTv.visibility = View.GONE
-        }
     }
 
     // --------------------------------------------------
     // LIFECYCLE (IMPORTANT)
     // --------------------------------------------------
-
     override fun onStart() { super.onStart(); binding.map?.onStart() }
     override fun onResume() { super.onResume(); binding.map?.onResume() }
     override fun onPause() { binding.map?.onPause(); super.onPause() }
     override fun onStop() { binding.map?.onStop(); super.onStop() }
 
-    override fun onDestroyView() {
+    override fun onDestroyView()
+    {
         binding.map?.onDestroy()
         _binding = null
         super.onDestroyView()
     }
 
-    override fun onLowMemory() {
+    override fun onLowMemory()
+    {
         super.onLowMemory()
         binding.map?.onLowMemory()
     }
@@ -1176,4 +863,3 @@ data class SearchResult(
     val country: String?,
     val city: String?
 )
-
