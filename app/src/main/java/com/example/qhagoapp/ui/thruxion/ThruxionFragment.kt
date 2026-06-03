@@ -69,6 +69,7 @@ class ThruxionFragment : Fragment()
     private var defaultUsers: List<MapUser> = emptyList()
     private var isSearchMode = false
     private var styleReady = false
+    private var keyboardLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?)
@@ -842,6 +843,10 @@ class ThruxionFragment : Fragment()
 
     override fun onDestroyView()
     {
+        keyboardLayoutListener?.let {
+            _binding?.root?.viewTreeObserver?.removeOnGlobalLayoutListener(it)
+        }
+        keyboardLayoutListener = null
         binding.map?.onDestroy()
         _binding = null
         super.onDestroyView()
@@ -855,24 +860,28 @@ class ThruxionFragment : Fragment()
 
     private fun setupKeyboardListener() {
         val root = binding.root
-        root.viewTreeObserver.addOnGlobalLayoutListener {
+        keyboardLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
             val rect = Rect()
             root.getWindowVisibleDisplayFrame(rect)
             val screenHeight = root.rootView.height
             val keypadHeight = screenHeight - rect.bottom
 
+            // Safety check: avoid NPE if fragment view is being destroyed
+            val currentBinding = _binding ?: return@OnGlobalLayoutListener
+
             // If keyboard is visible (occupies more than 15% of the screen)
             if (keypadHeight > screenHeight * 0.15) {
-                if (binding.bottomListCard?.visibility != View.GONE) {
-                    binding.bottomListCard?.visibility = View.GONE
+                if (currentBinding.bottomListCard?.visibility != View.GONE) {
+                    currentBinding.bottomListCard?.visibility = View.GONE
                 }
             } else {
                 // Keyboard is hidden
-                if (binding.bottomListCard?.visibility != View.VISIBLE) {
-                    binding.bottomListCard?.visibility = View.VISIBLE
+                if (currentBinding.bottomListCard?.visibility != View.VISIBLE) {
+                    currentBinding.bottomListCard?.visibility = View.VISIBLE
                 }
             }
         }
+        root.viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
     }
 }
 
