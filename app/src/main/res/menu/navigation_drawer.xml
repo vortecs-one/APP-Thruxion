@@ -10,7 +10,7 @@
             android:title="@string/menu_slideshow" />
         <item
             android:id="@+id/nav_webview"
-            android:icon="@drawable/ic_gallery_black_24dp"
+            android:icon="@drawable/ic_arrow"
             android:title="@string/menu_webview" />
         <item
             android:id="@+id/nav_transform"
