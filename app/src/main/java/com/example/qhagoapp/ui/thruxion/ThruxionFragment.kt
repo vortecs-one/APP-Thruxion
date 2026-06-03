@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -88,6 +89,7 @@ class ThruxionFragment : Fragment()
         setupRecyclerView()
         setupUI()
         observeData()
+        setupKeyboardListener()
     }
 
     // --------------------------------------------------
@@ -849,6 +851,28 @@ class ThruxionFragment : Fragment()
     {
         super.onLowMemory()
         binding.map?.onLowMemory()
+    }
+
+    private fun setupKeyboardListener() {
+        val root = binding.root
+        root.viewTreeObserver.addOnGlobalLayoutListener {
+            val rect = Rect()
+            root.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = root.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+
+            // If keyboard is visible (occupies more than 15% of the screen)
+            if (keypadHeight > screenHeight * 0.15) {
+                if (binding.bottomListCard?.visibility != View.GONE) {
+                    binding.bottomListCard?.visibility = View.GONE
+                }
+            } else {
+                // Keyboard is hidden
+                if (binding.bottomListCard?.visibility != View.VISIBLE) {
+                    binding.bottomListCard?.visibility = View.VISIBLE
+                }
+            }
+        }
     }
 }
 
