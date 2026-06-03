@@ -105,6 +105,10 @@ class ThruxionFragment : Fragment()
                 isCompassEnabled = true
                 isLogoEnabled = true
                 isAttributionEnabled = true
+                // Shift the compass (reset position button) down so it's not hidden by the search bar
+                setCompassMargins(0, 280, 40, 0)
+                setLogoMargins(40, 0, 0, 40)
+                setAttributionMargins(140, 0, 0, 40)
             }
             map.addOnMapClickListener { latLng ->
                 val screenPoint = map.projection.toScreenLocation(latLng)
@@ -128,6 +132,9 @@ class ThruxionFragment : Fragment()
                 false
             }
             applyMapStyle(binding.switchMapMode!!.isChecked)
+            binding.map?.post {
+                resetMapPadding()
+            }
         }
     }
 
