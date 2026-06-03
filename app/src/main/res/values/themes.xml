@@ -19,6 +19,20 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="Theme.QhagoApp.Login" parent="Theme.QhagoApp">
+        <!-- Force the ActionBar background color -->
+        <item name="actionBarStyle">@style/Theme.QhagoApp.Login.ActionBar</item>
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/login_blue</item>
+
+        <!-- If you want the buttons to stay yellow, keep these as purple_500 -->
+        <item name="colorPrimary">@color/purple_500</item>
+    </style>
+
+    <style name="Theme.QhagoApp.Login.ActionBar" parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="background">@color/teal_700</item>
+    </style>
+
     <style name="Theme.QhagoApp.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.QhagoApp.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
