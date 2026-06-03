@@ -9,6 +9,10 @@
             android:icon="@drawable/ic_profile"
             android:title="@string/menu_slideshow" />
         <item
+            android:id="@+id/nav_webview"
+            android:icon="@drawable/ic_gallery_black_24dp"
+            android:title="@string/menu_webview" />
+        <item
             android:id="@+id/nav_transform"
             android:icon="@drawable/ic_justice"
             android:title="@string/menu_transform" />
@@ -20,6 +24,7 @@
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_settings_black_24dp"
             android:title="@string/menu_settings" />
+
     </group>
     <!-- ADD THIS LOGOUT ITEM -->
     <group android:id="@+id/group_logout" android:checkableBehavior="none">

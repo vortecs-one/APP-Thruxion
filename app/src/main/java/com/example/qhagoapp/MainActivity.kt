@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // IMPORTANT: Include binding.drawerLayout here so the hamburger icon knows which drawer to open
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings
+                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings, R.id.nav_webview
             ),
             binding.drawerLayout
         )
