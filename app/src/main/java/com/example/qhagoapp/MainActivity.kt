@@ -54,6 +54,10 @@ class MainActivity : AppCompatActivity() {
         // 4. Connect ActionBar to NavController
         setupActionBarWithNavController(navController, appBarConfiguration)
 
+        navController.addOnDestinationChangedListener { _, _, _ ->
+            invalidateOptionsMenu()
+        }
+
         // 5. Setup Side Navigation Drawer
         binding.navView?.let { navView ->
             navView.setupWithNavController(navController)
@@ -97,7 +101,9 @@ class MainActivity : AppCompatActivity() {
         menuInflater.inflate(R.menu.overflow, menu)
 
         val themeItem = menu.findItem(R.id.action_theme_switch)
-        val themeSwitch = themeItem.actionView?.findViewById<SwitchMaterial>(R.id.theme_switch)
+        // Set state immediately on inflation
+        val themeSwitch = (themeItem.actionView as? SwitchMaterial) 
+            ?: themeItem.actionView?.findViewById(R.id.theme_switch)
 
         themeSwitch?.apply {
             setOnCheckedChangeListener(null)

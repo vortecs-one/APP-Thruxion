@@ -24,7 +24,11 @@
         <item name="background">@color/login_blue</item>
     </style>
 
-    <style name="Theme.QhagoApp.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="Theme.QhagoApp.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorControlNormal">@color/white</item>
+    </style>
 
     <style name="Theme.QhagoApp.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
 </resources>

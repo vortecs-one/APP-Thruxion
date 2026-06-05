@@ -6,4 +6,5 @@
     android:layout_gravity="center_vertical"
     android:scaleX="0.82"
     android:scaleY="0.82"
-    android:paddingEnd="16dp" />
+    android:paddingEnd="16dp"
+    android:saveEnabled="false" />

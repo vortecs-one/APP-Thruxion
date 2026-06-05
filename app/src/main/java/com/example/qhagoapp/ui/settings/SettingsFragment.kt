@@ -37,12 +37,31 @@ class SettingsFragment : Fragment() {
             textView.text = it
         }
 
-        setupUI()
+        // Set the switch state immediately after inflation
+        syncSwitchState()
 
         return root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupUI()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        syncSwitchState()
+    }
+
     private fun setupUI() {
+        binding.layoutSelectLanguage.setOnClickListener {
+            showLanguageSelectionDialog()
+        }
+
+        updateLanguageText()
+    }
+
+    private fun syncSwitchState() {
         binding.switchDarkMode.apply {
             setOnCheckedChangeListener(null)
             isChecked = ThemeManager.isDarkMode()
@@ -50,12 +69,6 @@ class SettingsFragment : Fragment() {
                 ThemeManager.setDarkMode(isChecked)
             }
         }
-
-        binding.layoutSelectLanguage.setOnClickListener {
-            showLanguageSelectionDialog()
-        }
-
-        updateLanguageText()
     }
 
     private fun updateLanguageText() {
