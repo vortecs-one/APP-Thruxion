@@ -5,8 +5,8 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class HumanResponse(
-    @Json(name = "id") val id: Int,
-    @Json(name = "unique_id") val unique_id: String,
+    @Json(name = "id") val id: Int?,
+    @Json(name = "unique_id") val unique_id: String?,
     @Json(name = "legal_id") val legal_id: String?,
     @Json(name = "name") val name: String?,
     @Json(name = "lastname") val lastname: String?,
@@ -24,7 +24,7 @@ data class HumanResponse(
 
 @JsonClass(generateAdapter = true)
 data class UserSummary(
-    @Json(name = "id") val id: Int,
-    @Json(name = "email") val email: String,
-    @Json(name = "created_at") val created_at: String
+    @Json(name = "id") val id: Int?,
+    @Json(name = "email") val email: String?,
+    @Json(name = "created_at") val created_at: String?
 )

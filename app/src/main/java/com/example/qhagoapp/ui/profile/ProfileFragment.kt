@@ -1,23 +1,19 @@
 package com.example.qhagoapp.ui.profile
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import com.example.qhagoapp.R
 import com.example.qhagoapp.databinding.DialogChangePasswordBinding
 import com.example.qhagoapp.databinding.FragmentProfileBinding
-import com.example.qhagoapp.network.ApiRegistry.humansApi
-import com.example.qhagoapp.network.security.TokenManager
+import com.example.qhagoapp.data.Result
 import com.google.android.material.datepicker.MaterialDatePicker
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -37,19 +33,59 @@ class ProfileFragment : Fragment() {
 
         setupUI()
         setupObservers()
-        loadUserData()
+        
+        viewModel.fetchHuman()
 
         return root
     }
 
     private fun setupUI() {
+        // Gender Dropdown
+        val genderOptions = arrayOf("Male", "Female", "Non-binary", "Other")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, genderOptions)
+        binding.actGender.setAdapter(adapter)
+
         binding.etBirthdate.setOnClickListener {
             showDatePicker()
         }
 
+        binding.tilLegalId.setEndIconOnClickListener {
+            Toast.makeText(context, "Camera scanning coming soon...", Toast.LENGTH_SHORT).show()
+        }
+
         binding.btnSaveProfile.setOnClickListener {
-            // TODO: Implement update logic
-            findNavController().navigateUp()
+            val names = binding.etNames.text.toString().trim()
+            val lastnames = binding.etLastnames.text.toString().trim()
+            val legalId = binding.etLegalId.text.toString().trim()
+            val birthdate = binding.etBirthdate.text.toString().trim()
+            val gender = binding.actGender.text.toString().trim()
+
+            var isValid = true
+            if (names.isBlank()) {
+                binding.tilNames.error = "Name is required"
+                isValid = false
+            } else {
+                binding.tilNames.error = null
+            }
+
+            if (lastnames.isBlank()) {
+                binding.tilLastnames.error = "Last name is required"
+                isValid = false
+            } else {
+                binding.tilLastnames.error = null
+            }
+
+            if (legalId.isBlank()) {
+                binding.tilLegalId.error = "Legal ID is required"
+                isValid = false
+            } else {
+                binding.tilLegalId.error = null
+            }
+
+            if (!isValid) return@setOnClickListener
+
+            binding.pbProfileLoading.visibility = View.VISIBLE
+            viewModel.updateHuman(legalId, names, lastnames, birthdate, gender)
         }
 
         binding.btnChangePassword.setOnClickListener {
@@ -58,13 +94,38 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupObservers() {
+        viewModel.humanData.observe(viewLifecycleOwner) { human ->
+            binding.etNames.setText(human.name)
+            binding.etLastnames.setText(human.lastname)
+            binding.etLegalId.setText(human.legal_id)
+            binding.etEmail.setText(human.users?.firstOrNull()?.email)
+            binding.etBirthdate.setText(human.birthdate?.split("T")?.firstOrNull())
+            binding.actGender.setText(human.gender, false)
+        }
+
+        viewModel.updateResult.observe(viewLifecycleOwner) { result ->
+            binding.pbProfileLoading.visibility = View.GONE
+            when (result) {
+                is Result.Success -> {
+                    Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
+                }
+                is Result.Error -> {
+                    val message = when (result.exception) {
+                        is java.io.IOException -> "Network error. Please check your connection."
+                        else -> result.exception.message ?: "Unknown error occurred"
+                    }
+                    Toast.makeText(context, "Update failed: $message", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         viewModel.changePasswordResult.observe(viewLifecycleOwner) { result ->
             binding.pbProfileLoading.visibility = View.GONE
             when (result) {
-                is com.example.qhagoapp.data.Result.Success -> {
+                is Result.Success -> {
                     Toast.makeText(context, R.string.password_changed_successfully, Toast.LENGTH_SHORT).show()
                 }
-                is com.example.qhagoapp.data.Result.Error -> {
+                is Result.Error -> {
                     Toast.makeText(context, result.exception.message ?: "Error", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -90,35 +151,6 @@ class ProfileFragment : Fragment() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
-    }
-
-    private fun loadUserData() {
-        val humanId = TokenManager.getHumanId()
-        if (humanId == -1) return
-
-        binding.pbProfileLoading.visibility = View.VISIBLE
-        lifecycleScope.launch {
-            try {
-                val response = humansApi.getHumanById(humanId)
-                binding.pbProfileLoading.visibility = View.GONE
-                
-                if (response.isSuccessful) {
-                    response.body()?.let { human ->
-                        binding.etName.setText("${human.name} ${human.lastname}")
-                        binding.etEmail.setText(human.users?.firstOrNull()?.email ?: TokenManager.getUserEmail())
-                        // Note: Backend JSON didn't show phone, but we have it in UI
-                        // binding.etPhone.setText(...) 
-                        binding.etBirthdate.setText(human.birthdate?.split("T")?.firstOrNull() ?: "")
-                    }
-                } else {
-                    Toast.makeText(context, "Error loading profile", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                binding.pbProfileLoading.visibility = View.GONE
-                Log.e("PROFILE", "Fetch error", e)
-                Toast.makeText(context, "Network error", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     private fun showDatePicker() {
