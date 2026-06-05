@@ -28,6 +28,10 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".ui.register.RegisterActivity"
+            android:theme="@style/Theme.QhagoApp.Login"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:resizeableActivity="true"
             android:theme="@style/Theme.QhagoApp.NoActionBar"

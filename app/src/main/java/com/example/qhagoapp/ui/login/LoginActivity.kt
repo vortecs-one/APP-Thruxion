@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.qhagoapp.MainActivity
 import com.example.qhagoapp.databinding.ActivityLoginBinding
 import com.example.qhagoapp.R
+import com.example.qhagoapp.ui.register.RegisterActivity
 import com.example.qhagoapp.network.ApiRegistry.communicationsApi
 import com.example.qhagoapp.network.ApiRegistry.humansApi
 import com.example.qhagoapp.network.model.SystemLoginRequest
@@ -61,6 +62,11 @@ class LoginActivity : AppCompatActivity()
             TokenManager.setLoggedIn(true)
             startActivity(intent)
             finish()
+        }
+
+        binding.register?.setOnClickListener {
+            val registerIntent = Intent(this, RegisterActivity::class.java)
+            startActivity(registerIntent)
         }
 
         loginViewModel = ViewModelProvider(this, LoginViewModelFactory())

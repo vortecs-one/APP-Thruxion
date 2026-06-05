@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prompt_names">Nombres</string>
+    <string name="prompt_lastnames">Apellidos</string>
+    <string name="prompt_legal_id">ID Legal (Pasaporte, DNI, RUT)</string>
+    <string name="prompt_gender">Género</string>
+    <string name="prompt_birthdate">Fecha de nacimiento</string>
+    <string name="action_register">Registrarse</string>
+    <string name="action_back_to_login">Volver al Inicio</string>
+    <string name="prompt_email">Correo electrónico</string>
+    <string name="prompt_password">Contraseña</string>
+</resources>
