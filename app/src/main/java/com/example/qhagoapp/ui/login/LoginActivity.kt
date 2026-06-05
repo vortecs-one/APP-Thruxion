@@ -145,8 +145,9 @@ class LoginActivity : AppCompatActivity()
                         if (response.isSuccessful)
                         {
                             val loginResponse = response.body()
-                            loginResponse?.user?.email?.let {
-                                TokenManager.saveUserEmail(it)
+                            loginResponse?.user?.let { userData ->
+                                TokenManager.saveUserEmail(userData.email)
+                                TokenManager.saveHumanId(userData.human_id)
                             }
                             TokenManager.setLoggedIn(true)
                             startActivity(intent)

@@ -1,14 +1,19 @@
 package com.example.qhagoapp.ui.profile
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.qhagoapp.databinding.FragmentProfileBinding
+import com.example.qhagoapp.network.ApiRegistry.humansApi
 import com.example.qhagoapp.network.security.TokenManager
 import com.google.android.material.datepicker.MaterialDatePicker
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,25 +31,48 @@ class ProfileFragment : Fragment() {
         val root: View = binding.root
 
         setupUI()
+        loadUserData()
 
         return root
     }
 
     private fun setupUI() {
-        // Mock/Logged user data
-        binding.etName.setText("John Doe")
-        binding.etEmail.setText(TokenManager.getUserEmail() ?: "user@qhago.com")
-        binding.etPhone.setText("+1 234 567 890")
-        binding.etBirthdate.setText("1990-01-01")
-
         binding.etBirthdate.setOnClickListener {
             showDatePicker()
         }
 
         binding.btnSaveProfile.setOnClickListener {
-            // TODO: Implement save logic using ProfileViewModel
-            // After saving, navigate back
+            // TODO: Implement update logic
             findNavController().navigateUp()
+        }
+    }
+
+    private fun loadUserData() {
+        val humanId = TokenManager.getHumanId()
+        if (humanId == -1) return
+
+        binding.pbProfileLoading.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            try {
+                val response = humansApi.getHumanById(humanId)
+                binding.pbProfileLoading.visibility = View.GONE
+                
+                if (response.isSuccessful) {
+                    response.body()?.let { human ->
+                        binding.etName.setText("${human.name} ${human.lastname}")
+                        binding.etEmail.setText(human.users?.firstOrNull()?.email ?: TokenManager.getUserEmail())
+                        // Note: Backend JSON didn't show phone, but we have it in UI
+                        // binding.etPhone.setText(...) 
+                        binding.etBirthdate.setText(human.birthdate?.split("T")?.firstOrNull() ?: "")
+                    }
+                } else {
+                    Toast.makeText(context, "Error loading profile", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                binding.pbProfileLoading.visibility = View.GONE
+                Log.e("PROFILE", "Fetch error", e)
+                Toast.makeText(context, "Network error", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
