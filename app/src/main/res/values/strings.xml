@@ -43,4 +43,10 @@
     <string name="close" />
     <string name="send_secure_ping">Send Secure Ping</string>
     <string name="action">Action</string>
+
+    <string name="prompt_name">Full Name</string>
+    <string name="prompt_phone">Phone Number</string>
+    <string name="prompt_birthdate">Birthdate</string>
+    <string name="action_save_profile">Save Profile</string>
+    <string name="profile_image_content_description">Profile Picture</string>
 </resources>

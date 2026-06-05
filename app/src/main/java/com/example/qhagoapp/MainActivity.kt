@@ -8,17 +8,13 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
+import androidx.navigation.ui.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import com.example.qhagoapp.databinding.ActivityMainBinding
 import com.example.qhagoapp.ui.login.LoginActivity
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
-
+class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
@@ -44,7 +40,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navController = navHostFragment.navController
 
         // 3. Setup Unified AppBarConfiguration
-        // IMPORTANT: Include binding.drawerLayout here so the hamburger icon knows which drawer to open
         appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings, R.id.nav_webview
@@ -52,47 +47,35 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             binding.drawerLayout
         )
 
-        // 4. Connect ActionBar to NavController with the config
+        // 4. Connect ActionBar to NavController
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        // 5. Setup Side Navigation Drawer (Hamburger Menu)
-        binding.navView?.let {
-            it.setupWithNavController(navController)
-            it.setNavigationItemSelectedListener(this)
+        // 5. Setup Side Navigation Drawer
+        binding.navView?.let { navView ->
+            navView.setupWithNavController(navController)
+            navView.setNavigationItemSelectedListener { item ->
+                if (item.itemId == R.id.nav_logout) {
+                    logout()
+                    true
+                } else {
+                    // Use onNavDestinationSelected for standard navigation items
+                    val handled = NavigationUI.onNavDestinationSelected(item, navController)
+                    if (handled) {
+                        binding.drawerLayout?.closeDrawer(GravityCompat.START)
+                    }
+                    handled
+                }
+            }
         }
 
-        // 6. Setup Bottom Navigation (if it exists in current layout)
+        // 6. Setup Bottom Navigation
         binding.appBarMain.contentMain.bottomNavView?.setupWithNavController(navController)
-
-
-    }
-
-    // Add the onNavigationItemSelected method to handle all menu clicks
-    override fun onNavigationItemSelected(item: MenuItem): Boolean
-    {
-        // Find the NavController
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        // Handle logout separately
-        if (item.itemId == R.id.nav_logout) {
-            logout()
-            return true // Indicate the item was handled
-        }
-        // For all other items, let the Navigation Component handle it
-        // This will navigate to the correct fragment
-        navController.navigate(item.itemId)
-        // Close the navigation drawer
-        binding.drawerLayout?.closeDrawer(GravityCompat.START)
-        return true
     }
 
     private fun logout() {
-        // Create an Intent to go back to LoginActivity
         val intent = Intent(this, LoginActivity::class.java)
-        // Set flags to clear the activity stack, preventing users from going "back"
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        // Start the LoginActivity
         startActivity(intent)
-        // Finish MainActivity to remove it from memory
         finish()
     }
 
@@ -105,21 +88,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onOptionsItemSelected(item: MenuItem): Boolean
     {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
-        // Handle clicks on the overflow menu (e.g., top-right settings)
+        // Handle logout manually, let NavigationUI handle the rest
         return when (item.itemId) {
-            R.id.nav_settings -> {
-                navController.navigate(R.id.nav_settings)
-                true
-            }
-            R.id.nav_slideshow -> {
-                navController.navigate(R.id.nav_slideshow)
-                true
-            }
             R.id.nav_logout -> {
                 logout()
                 true
             }
-            else -> super.onOptionsItemSelected(item)
+            else -> item.onNavDestinationSelected(navController) || super.onOptionsItemSelected(item)
         }
     }
 
