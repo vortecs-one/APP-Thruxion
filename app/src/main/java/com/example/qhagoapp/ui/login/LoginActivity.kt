@@ -48,6 +48,7 @@ class LoginActivity : AppCompatActivity()
         // Demo button (login bypass)
         val bypassButton = binding.bypassButton
         bypassButton?.setOnClickListener {
+            TokenManager.saveUserEmail("demo@qhago.com")
             startActivity(intent)
             finish()
         }
@@ -127,6 +128,10 @@ class LoginActivity : AppCompatActivity()
                         loading.visibility = View.GONE
                         if (response.isSuccessful)
                         {
+                            val loginResponse = response.body()
+                            loginResponse?.user?.email?.let {
+                                TokenManager.saveUserEmail(it)
+                            }
                             startActivity(intent)
                             // Finish LoginActivity so the user can't press "back" to return here
                             finish()

@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.qhagoapp.databinding.FragmentProfileBinding
+import com.example.qhagoapp.network.security.TokenManager
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,9 +31,9 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupUI() {
-        // Mock data
+        // Mock/Logged user data
         binding.etName.setText("John Doe")
-        binding.etEmail.setText("john.doe@example.com")
+        binding.etEmail.setText(TokenManager.getUserEmail() ?: "user@qhago.com")
         binding.etPhone.setText("+1 234 567 890")
         binding.etBirthdate.setText("1990-01-01")
 

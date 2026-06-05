@@ -11,7 +11,9 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import android.widget.TextView
 import com.example.qhagoapp.databinding.ActivityMainBinding
+import com.example.qhagoapp.network.security.TokenManager
 import com.example.qhagoapp.ui.login.LoginActivity
 
 class MainActivity : AppCompatActivity() {
@@ -53,6 +55,14 @@ class MainActivity : AppCompatActivity() {
         // 5. Setup Side Navigation Drawer
         binding.navView?.let { navView ->
             navView.setupWithNavController(navController)
+            
+            // Update Header with user email
+            val headerView = navView.getHeaderView(0)
+            val userEmailTv = headerView.findViewById<TextView>(R.id.textView)
+            TokenManager.getUserEmail()?.let { 
+                userEmailTv.text = it
+            }
+
             navView.setNavigationItemSelectedListener { item ->
                 if (item.itemId == R.id.nav_logout) {
                     logout()
