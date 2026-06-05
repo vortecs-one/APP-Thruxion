@@ -14,7 +14,7 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.QhagoApp.NoActionBar">
+    <style name="Theme.QhagoApp.NoActionBar" parent="Theme.QhagoApp">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>

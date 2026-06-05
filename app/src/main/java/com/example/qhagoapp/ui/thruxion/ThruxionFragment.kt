@@ -24,6 +24,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.qhagoapp.databinding.FragmentThruxionBinding
+import com.example.qhagoapp.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -86,9 +87,9 @@ class ThruxionFragment : Fragment()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?)
     {
+        setupUI()
         setupMap()
         setupRecyclerView()
-        setupUI()
         observeData()
         setupKeyboardListener()
     }
@@ -131,7 +132,7 @@ class ThruxionFragment : Fragment()
                 binding.userDetailCard?.visibility = View.GONE
                 false
             }
-            applyMapStyle(binding.switchMapMode!!.isChecked)
+            applyMapStyle(ThemeManager.isDarkMode())
             binding.map?.post {
                 resetMapPadding()
             }
@@ -147,10 +148,10 @@ class ThruxionFragment : Fragment()
             else
                 "https://tiles.openfreemap.org/styles/liberty"
         mapLibreMap?.setStyle(styleUrl) { style ->
-            setupSearchIcon(style)
+            setupSearchIcon(style, isDark)
             setupAvatarImages(style)
-            setupUserSourceAndLayer(style)
-            setupSearchSourceAndLayer(style)
+            setupUserSourceAndLayer(style, isDark)
+            setupSearchSourceAndLayer(style, isDark)
             styleReady = true
             checkLocationPermission()
             viewModel.users.value?.let {
@@ -230,9 +231,12 @@ class ThruxionFragment : Fragment()
             performSearch()
             true
         }
-        binding.switchMapMode?.isChecked = true
-        binding.switchMapMode?.setOnCheckedChangeListener { _, isChecked ->
-            applyMapStyle(isChecked)
+        binding.switchMapMode?.apply {
+            setOnCheckedChangeListener(null)
+            isChecked = ThemeManager.isDarkMode()
+            setOnCheckedChangeListener { _, isChecked ->
+                applyMapStyle(isChecked)
+            }
         }
         binding.editSearch?.doOnTextChanged { text, _, _, _ ->
             val query = text?.toString()?.trim().orEmpty()
@@ -305,7 +309,7 @@ class ThruxionFragment : Fragment()
                 iconIgnorePlacement(true),
                 textField("{name}"),
                 textSize(12f),
-                textColor(if (binding.switchMapMode!!.isChecked)
+                textColor(if (ThemeManager.isDarkMode())
                     "#00FFFF"
                 else
                     "#000000"),
@@ -560,10 +564,10 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun setupSearchIcon(style: org.maplibre.android.maps.Style)
+    private fun setupSearchIcon(style: org.maplibre.android.maps.Style, isDark: Boolean)
     {
         val iconColor =
-            if (binding.switchMapMode!!.isChecked)
+            if (isDark)
                 Color.CYAN
             else
                 "#FF4500".toColorInt()
@@ -595,7 +599,7 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun setupUserSourceAndLayer(style: org.maplibre.android.maps.Style)
+    private fun setupUserSourceAndLayer(style: org.maplibre.android.maps.Style, isDark: Boolean)
     {
         if (style.getSource("users-source") == null)
             style.addSource(GeoJsonSource("users-source",FeatureCollection.fromFeatures(emptyArray())))
@@ -609,7 +613,7 @@ class ThruxionFragment : Fragment()
                 textField("{name}"),
                 textSize(12f),
                 textColor(
-                if (binding.switchMapMode!!.isChecked)
+                if (isDark)
                     "#00FFFF"
                 else
                     "#000000"),
@@ -622,7 +626,7 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun setupSearchSourceAndLayer(style: org.maplibre.android.maps.Style)
+    private fun setupSearchSourceAndLayer(style: org.maplibre.android.maps.Style, isDark: Boolean)
     {
         if (style.getSource(SEARCH_SOURCE_ID) == null)
         {
@@ -647,7 +651,7 @@ class ThruxionFragment : Fragment()
                     textAnchor("top"),
                     textOffset(arrayOf(0f, 1.2f)),
                     textColor(
-                        if (binding.switchMapMode!!.isChecked)
+                        if (isDark)
                             "#00FFFF"
                         else
                             "#000000"

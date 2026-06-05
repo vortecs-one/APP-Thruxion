@@ -15,6 +15,8 @@ import android.widget.TextView
 import com.example.qhagoapp.databinding.ActivityMainBinding
 import com.example.qhagoapp.network.security.TokenManager
 import com.example.qhagoapp.ui.login.LoginActivity
+import com.example.qhagoapp.utils.ThemeManager
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 class MainActivity : AppCompatActivity() {
 
@@ -93,6 +95,18 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean
     {
         menuInflater.inflate(R.menu.overflow, menu)
+
+        val themeItem = menu.findItem(R.id.action_theme_switch)
+        val themeSwitch = themeItem.actionView?.findViewById<SwitchMaterial>(R.id.theme_switch)
+
+        themeSwitch?.apply {
+            setOnCheckedChangeListener(null)
+            isChecked = ThemeManager.isDarkMode()
+            setOnCheckedChangeListener { _, isChecked ->
+                ThemeManager.setDarkMode(isChecked)
+            }
+        }
+
         return true
     }
 
