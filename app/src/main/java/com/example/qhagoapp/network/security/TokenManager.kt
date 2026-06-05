@@ -1,39 +1,66 @@
 package com.example.qhagoapp.network.security
 
-object TokenManager
-{
-    private var communicationsToken: String? = null
-    private var humansToken: String? = null
-    private var userEmail: String? = null
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+
+object TokenManager {
+    private const val PREF_NAME = "secure_prefs"
+    private const val KEY_COMM_TOKEN = "comm_token"
+    private const val KEY_HUMANS_TOKEN = "humans_token"
+    private const val KEY_USER_EMAIL = "user_email"
+    private const val KEY_IS_LOGGED_IN = "is_logged_in"
+
+    private var sharedPreferences: SharedPreferences? = null
+
+    fun init(context: Context) {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        sharedPreferences = EncryptedSharedPreferences.create(
+            context,
+            PREF_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
 
     fun saveCommunicationsToken(token: String) {
-        communicationsToken = token
+        sharedPreferences?.edit()?.putString(KEY_COMM_TOKEN, token)?.apply()
     }
 
     fun saveHumansToken(token: String) {
-        humansToken = token
+        sharedPreferences?.edit()?.putString(KEY_HUMANS_TOKEN, token)?.apply()
     }
 
     fun saveUserEmail(email: String) {
-        userEmail = email
+        sharedPreferences?.edit()?.putString(KEY_USER_EMAIL, email)?.apply()
+    }
+
+    fun setLoggedIn(loggedIn: Boolean) {
+        sharedPreferences?.edit()?.putBoolean(KEY_IS_LOGGED_IN, loggedIn)?.apply()
     }
 
     fun getCommunicationsToken(): String? {
-        return communicationsToken
+        return sharedPreferences?.getString(KEY_COMM_TOKEN, null)
     }
 
     fun getHumansToken(): String? {
-        return humansToken
+        return sharedPreferences?.getString(KEY_HUMANS_TOKEN, null)
     }
 
     fun getUserEmail(): String? {
-        return userEmail
+        return sharedPreferences?.getString(KEY_USER_EMAIL, null)
     }
 
     fun clearTokens() {
-        communicationsToken = null
-        humansToken = null
-        userEmail = null
+        sharedPreferences?.edit()?.clear()?.apply()
     }
 
+    fun hasValidSession(): Boolean {
+        return sharedPreferences?.getBoolean(KEY_IS_LOGGED_IN, false) == true
+    }
 }

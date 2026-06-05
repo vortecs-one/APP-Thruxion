@@ -35,6 +35,15 @@ class LoginActivity : AppCompatActivity()
     override fun onCreate(savedInstanceState: Bundle?)
     {
         super.onCreate(savedInstanceState)
+        
+        // 1. Check for valid session first
+        if (TokenManager.hasValidSession()) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
         // Global variable for current intent
@@ -49,6 +58,7 @@ class LoginActivity : AppCompatActivity()
         val bypassButton = binding.bypassButton
         bypassButton?.setOnClickListener {
             TokenManager.saveUserEmail("demo@qhago.com")
+            TokenManager.setLoggedIn(true)
             startActivity(intent)
             finish()
         }
@@ -132,6 +142,7 @@ class LoginActivity : AppCompatActivity()
                             loginResponse?.user?.email?.let {
                                 TokenManager.saveUserEmail(it)
                             }
+                            TokenManager.setLoggedIn(true)
                             startActivity(intent)
                             // Finish LoginActivity so the user can't press "back" to return here
                             finish()
