@@ -6,9 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.example.qhagoapp.R
+import com.example.qhagoapp.databinding.DialogChangePasswordBinding
 import com.example.qhagoapp.databinding.FragmentProfileBinding
 import com.example.qhagoapp.network.ApiRegistry.humansApi
 import com.example.qhagoapp.network.security.TokenManager
@@ -21,6 +25,7 @@ class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: ProfileViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,6 +36,7 @@ class ProfileFragment : Fragment() {
         val root: View = binding.root
 
         setupUI()
+        setupObservers()
         loadUserData()
 
         return root
@@ -45,6 +51,45 @@ class ProfileFragment : Fragment() {
             // TODO: Implement update logic
             findNavController().navigateUp()
         }
+
+        binding.btnChangePassword.setOnClickListener {
+            showChangePasswordDialog()
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.changePasswordResult.observe(viewLifecycleOwner) { result ->
+            binding.pbProfileLoading.visibility = View.GONE
+            when (result) {
+                is com.example.qhagoapp.data.Result.Success -> {
+                    Toast.makeText(context, R.string.password_changed_successfully, Toast.LENGTH_SHORT).show()
+                }
+                is com.example.qhagoapp.data.Result.Error -> {
+                    Toast.makeText(context, result.exception.message ?: "Error", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showChangePasswordDialog() {
+        val dialogBinding = DialogChangePasswordBinding.inflate(layoutInflater)
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.action_change_password)
+            .setView(dialogBinding.root)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val currentPassword = dialogBinding.etCurrentPassword.text.toString()
+                val newPassword = dialogBinding.etNewPassword.text.toString()
+
+                if (currentPassword.isBlank() || newPassword.isBlank()) {
+                    Toast.makeText(context, "Fields cannot be empty", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                binding.pbProfileLoading.visibility = View.VISIBLE
+                viewModel.changePassword(currentPassword, newPassword)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun loadUserData() {

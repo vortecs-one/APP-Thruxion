@@ -148,6 +148,7 @@ class LoginActivity : AppCompatActivity()
                             loginResponse?.user?.let { userData ->
                                 TokenManager.saveUserEmail(userData.email)
                                 TokenManager.saveHumanId(userData.human_id)
+                                TokenManager.saveUserId(userData.id)
                             }
                             TokenManager.setLoggedIn(true)
                             startActivity(intent)

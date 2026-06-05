@@ -117,10 +117,20 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_marginTop="32dp"
-            android:layout_marginBottom="16dp"
             android:text="@string/action_save_profile"
             app:cornerRadius="12dp"
-            app:layout_constraintTop_toBottomOf="@id/til_birthdate"
+            app:layout_constraintTop_toBottomOf="@id/til_birthdate" />
+
+        <!-- CHANGE PASSWORD BUTTON -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_change_password"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/action_change_password"
+            app:layout_constraintTop_toBottomOf="@id/btn_save_profile"
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <ProgressBar

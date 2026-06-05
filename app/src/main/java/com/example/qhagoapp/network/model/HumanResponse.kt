@@ -1,27 +1,30 @@
 package com.example.qhagoapp.network.model
 
 import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class HumanResponse(
-    val id: Int,
-    val unique_id: String,
-    val legal_id: String?,
-    val name: String?,
-    val lastname: String?,
-    val birthdate: String?,
-    val gender: String?,
-    val created_at: String?,
-    val updated_at: String?,
-    val users: List<UserSummary>?,
-    val skills: List<Any>? = null,
-    val certificates: List<Any>? = null,
-    val facial_recognitions: List<Any>? = null,
-    val cards: List<Any>? = null,
-    val space_time: List<Any>? = null
+    @Json(name = "id") val id: Int,
+    @Json(name = "unique_id") val unique_id: String,
+    @Json(name = "legal_id") val legal_id: String?,
+    @Json(name = "name") val name: String?,
+    @Json(name = "lastname") val lastname: String?,
+    @Json(name = "birthdate") val birthdate: String?,
+    @Json(name = "gender") val gender: String?,
+    @Json(name = "created_at") val created_at: String?,
+    @Json(name = "updated_at") val updated_at: String?,
+    @Json(name = "users") val users: List<UserSummary>?,
+    @Json(name = "skills") val skills: List<Any>? = null,
+    @Json(name = "certificates") val certificates: List<Any>? = null,
+    @Json(name = "facial_recognitions") val facial_recognitions: List<Any>? = null,
+    @Json(name = "cards") val cards: List<Any>? = null,
+    @Json(name = "space_time") val space_time: List<Any>? = null
 )
 
+@JsonClass(generateAdapter = true)
 data class UserSummary(
-    val id: Int,
-    val email: String,
-    val created_at: String
+    @Json(name = "id") val id: Int,
+    @Json(name = "email") val email: String,
+    @Json(name = "created_at") val created_at: String
 )

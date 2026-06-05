@@ -5,6 +5,7 @@ import com.example.qhagoapp.network.model.SystemLoginResponse
 import com.example.qhagoapp.network.model.UserLoginRequest
 import com.example.qhagoapp.network.model.UserLoginResponse
 import com.example.qhagoapp.network.model.HumanResponse
+import com.example.qhagoapp.network.model.ChangePasswordRequest
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -30,4 +31,11 @@ interface HumansApiService
     suspend fun getHumanById(
         @Path("id") id: Int
     ): Response<HumanResponse>
+
+    // CHANGE PASSWORD
+    @POST("user/{id}/change-password")
+    suspend fun changePassword(
+        @Path("id") id: Int,
+        @Body request: ChangePasswordRequest
+    ): Response<Any>
 }

@@ -55,5 +55,9 @@
     <string name="prompt_phone">Phone Number</string>
     <string name="prompt_birthdate">Birthdate</string>
     <string name="action_save_profile">Save Profile</string>
+    <string name="action_change_password">Change Password</string>
+    <string name="prompt_current_password">Current Password</string>
+    <string name="prompt_new_password">New Password</string>
+    <string name="password_changed_successfully">Password changed successfully</string>
     <string name="profile_image_content_description">Profile Picture</string>
 </resources>

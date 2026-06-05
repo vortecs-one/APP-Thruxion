@@ -9,4 +9,8 @@
     <string name="action_back_to_login">Volver al Inicio</string>
     <string name="prompt_email">Correo electrónico</string>
     <string name="prompt_password">Contraseña</string>
+    <string name="action_change_password">Cambiar Contraseña</string>
+    <string name="prompt_current_password">Contraseña Actual</string>
+    <string name="prompt_new_password">Nueva Contraseña</string>
+    <string name="password_changed_successfully">Contraseña cambiada con éxito</string>
 </resources>
