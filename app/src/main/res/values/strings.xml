@@ -61,4 +61,11 @@
     <string name="password_changed_successfully">Password changed successfully</string>
     <string name="profile_image_content_description">Profile Picture</string>
     <string name="theme_switch_title">Dark Mode</string>
+    <string name="settings_appearance_header">Appearance</string>
+    <string name="settings_dark_mode_description">Toggle between dark and light themes</string>
+    <string name="settings_language_header">Language</string>
+    <string name="settings_language_title">Preferred Language</string>
+    <string name="settings_language_description">Select the application language</string>
+    <string name="language_english">English</string>
+    <string name="language_spanish">Spanish</string>
 </resources>

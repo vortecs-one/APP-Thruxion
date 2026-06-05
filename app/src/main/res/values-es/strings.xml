@@ -1,17 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Thruxion</string>
+    <string name="navigation_drawer_open">Abrir panel de navegación</string>
+    <string name="navigation_drawer_close">Cerrar panel de navegación</string>
+    <string name="nav_header_title">Thuxion App</string>
+    <string name="nav_header_subtitle">qhago@thruxion.com</string>
+    <string name="nav_header_desc">Encabezado de navegación</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="action_account">Cuenta</string>
+
+    <string name="menu_transform">Thruxion</string>
+    <string name="menu_reflow">H2H</string>
+    <string name="menu_slideshow">Perfil</string>
+    <string name="menu_settings">Ajustes</string>
+    <string name="menu_webview">Flecha</string>
+
+    <string name="lorem_ipsum_title">Lorem Ipsum"</string>
+    <string name="lorem_ipsum">Lorem Ipsum es simplemente el texto de relleno de las imprentas y archivos de texto. Lorem Ipsum ha sido el texto de relleno estándar de las industrias desde el año 1500, cuando un impresor (N. del T. persona que se dedica a la imprenta) desconocido usó una galería de textos y los mezcló de tal manera que logró hacer un libro de textos especimen.
+    </string>
+    <string name="fab_content_description">Representa una vista para invocar una acción</string>
+    <string name="image_view_item_transform_content_description">Representa una vista de imagen en el elemento</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="prompt_email">Correo electrónico</string>
+    <string name="prompt_password">Contraseña</string>
+    <string name="action_sign_in">Iniciar sesión o registrarse</string>
+    <string name="action_sign_in_short">Iniciar sesión</string>
+    <string name="action_register">Registrarse</string>
+    <string name="action_back_to_login">Volver al Inicio</string>
+    <string name="title_activity_register">Registrarse</string>
+    <string name="welcome">"¡Bienvenido!"</string>
+    <string name="invalid_username">Usuario no válido</string>
+    <string name="invalid_password">La contraseña debe tener más de 5 caracteres</string>
+    <string name="login_failed">"Error al iniciar sesión"</string>
+    <string name="thruxion_icon">Icono de Thruxion</string>
+    <string name="demo">Demo</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="reset_user_location">Restablecer ubicación del usuario</string>
+    <string name="my_location">Mi ubicación</string>
+    <string name="search">Buscar...</string>
+    <string name="todo">PENDIENTE</string>
+    <string name="close">Cerrar</string>
+    <string name="send_secure_ping">Enviar Ping Seguro</string>
+    <string name="action">Acción</string>
+
+    <string name="prompt_name">Nombre completo</string>
     <string name="prompt_names">Nombres</string>
     <string name="prompt_lastnames">Apellidos</string>
     <string name="prompt_legal_id">ID Legal (Pasaporte, DNI, RUT)</string>
     <string name="prompt_gender">Género</string>
+    <string name="prompt_phone">Número de teléfono</string>
     <string name="prompt_birthdate">Fecha de nacimiento</string>
-    <string name="action_register">Registrarse</string>
-    <string name="action_back_to_login">Volver al Inicio</string>
-    <string name="prompt_email">Correo electrónico</string>
-    <string name="prompt_password">Contraseña</string>
+    <string name="action_save_profile">Guardar Perfil</string>
     <string name="action_change_password">Cambiar Contraseña</string>
     <string name="prompt_current_password">Contraseña Actual</string>
     <string name="prompt_new_password">Nueva Contraseña</string>
     <string name="password_changed_successfully">Contraseña cambiada con éxito</string>
+    <string name="profile_image_content_description">Foto de perfil</string>
     <string name="theme_switch_title">Modo Oscuro</string>
+    <string name="settings_appearance_header">Apariencia</string>
+    <string name="settings_dark_mode_description">Cambiar entre temas oscuro y claro</string>
+    <string name="settings_language_header">Idioma</string>
+    <string name="settings_language_title">Idioma Preferido</string>
+    <string name="settings_language_description">Selecciona el idioma de la aplicación</string>
+    <string name="language_english">Inglés</string>
+    <string name="language_spanish">Español</string>
 </resources>
