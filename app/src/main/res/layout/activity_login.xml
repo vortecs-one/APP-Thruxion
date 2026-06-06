@@ -16,8 +16,8 @@
 
     <ImageView
         android:id="@+id/imageView2"
-        android:layout_width="209dp"
-        android:layout_height="231dp"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
         android:layout_marginTop="50dp"
         android:contentDescription="@string/thruxion_icon"
         app:layout_constraintBottom_toTopOf="@+id/username"
