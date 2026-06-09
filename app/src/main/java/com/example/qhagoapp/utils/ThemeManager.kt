@@ -13,8 +13,8 @@ object ThemeManager {
     var currentTheme: Int = AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         private set
 
-    // Simple listener to notify when theme changes
-    private var onThemeChangeListener: ((Int) -> Unit)? = null
+    // List of listeners to notify when theme changes
+    private val listeners = mutableListOf<(Int) -> Unit>()
 
     fun init(context: Context) {
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -43,13 +43,17 @@ object ThemeManager {
         sharedPreferences?.edit()?.putBoolean(KEY_IS_DARK_MODE, isDarkMode)?.commit()
         currentTheme = newMode
         
-        // Notify listener before applying theme (which might recreate activity)
-        onThemeChangeListener?.invoke(currentTheme)
+        // Notify all listeners before applying theme
+        listeners.forEach { it.invoke(currentTheme) }
         
         AppCompatDelegate.setDefaultNightMode(currentTheme)
     }
 
-    fun setOnThemeChangeListener(listener: (Int) -> Unit) {
-        onThemeChangeListener = listener
+    fun addOnThemeChangeListener(listener: (Int) -> Unit) {
+        listeners.add(listener)
+    }
+
+    fun removeOnThemeChangeListener(listener: (Int) -> Unit) {
+        listeners.remove(listener)
     }
 }
