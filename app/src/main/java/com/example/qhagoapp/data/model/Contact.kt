@@ -23,6 +23,7 @@ data class Contact(
     val latitude: Double,
     val longitude: Double,
     val folderId: Long,
+    val remoteUserId: String? = null,
     val phone: String? = null,
     val email: String? = null
 )

@@ -32,14 +32,14 @@ class SavedPlacesViewModel(application: Application) : AndroidViewModel(applicat
         return repository.insertFolder(Folder(userId = userId, name = name, type = type, concept = concept, city = city, isShared = isShared))
     }
 
-    fun insertPlace(name: String, address: String?, lat: Double, lon: Double, folderId: Long, id: Long = 0) = viewModelScope.launch {
+    fun insertPlace(name: String, address: String?, lat: Double, lon: Double, folderId: Long, remoteUserId: String? = null, id: Long = 0) = viewModelScope.launch {
         val userId = UserSession.userId ?: "guest"
-        repository.insertPlace(SavedPlace(id = id, userId = userId, name = name, address = address, latitude = lat, longitude = lon, folderId = folderId))
+        repository.insertPlace(SavedPlace(id = id, userId = userId, name = name, address = address, latitude = lat, longitude = lon, folderId = folderId, remoteUserId = remoteUserId))
     }
 
-    fun insertContact(name: String, avatarIndex: Int, lat: Double, lon: Double, folderId: Long, id: Long = 0) = viewModelScope.launch {
+    fun insertContact(name: String, avatarIndex: Int, lat: Double, lon: Double, folderId: Long, remoteUserId: String? = null, id: Long = 0) = viewModelScope.launch {
         val userId = UserSession.userId ?: "guest"
-        repository.insertContact(Contact(id = id, userId = userId, name = name, avatarIndex = avatarIndex, latitude = lat, longitude = lon, folderId = folderId))
+        repository.insertContact(Contact(id = id, userId = userId, name = name, avatarIndex = avatarIndex, latitude = lat, longitude = lon, folderId = folderId, remoteUserId = remoteUserId))
     }
 
     fun deletePlace(place: SavedPlace) = viewModelScope.launch {

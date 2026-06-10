@@ -23,5 +23,6 @@ data class SavedPlace(
     val latitude: Double,
     val longitude: Double,
     val folderId: Long,
+    val remoteUserId: String? = null,
     val type: String? = null
 )

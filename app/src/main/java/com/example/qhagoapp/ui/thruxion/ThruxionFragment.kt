@@ -200,9 +200,12 @@ class ThruxionFragment : Fragment()
             setupContactSourceAndLayer(style, isDark)
             styleReady = true
             checkLocationPermission()
-            viewModel.users.value?.let {
-                refreshMarkers(it)
-            }
+            
+            // Re-render all data layers once style is ready
+            viewModel.users.value?.let { refreshMarkers(it) }
+            savedViewModel.allSavedPlaces.value?.let { updateSavedMarkers(it) }
+            savedViewModel.allContacts.value?.let { updateContactMarkers(it) }
+            
             if (currentSearchResults.isNotEmpty())
                 displaySearchResults(currentSearchResults)
             Log.d("MAP", "STYLE READY")
@@ -223,6 +226,7 @@ class ThruxionFragment : Fragment()
                         val feature = Feature.fromGeometry(Point.fromLngLat(item.user.lng, item.user.lat)).apply {
                             addStringProperty("name", item.user.name)
                             addStringProperty("avatar-id", "avatar-${item.user.avatarIndex}")
+                            addStringProperty("remote-user-id", item.user.id)
                         }
                         showUserDetails(feature, isSaved = item.isSaved)
                     }
@@ -231,6 +235,7 @@ class ThruxionFragment : Fragment()
                         val feature = Feature.fromGeometry(Point.fromLngLat(item.result.lon, item.result.lat)).apply {
                             addStringProperty("title", item.result.shortName)
                             addStringProperty("type", item.result.type ?: "Place")
+                            addStringProperty("remote-user-id", item.result.id)
                         }
                         showLocationDetails(feature, isSaved = item.isSaved)
                         handleSelection(item.result)
@@ -328,24 +333,27 @@ class ThruxionFragment : Fragment()
         val lng: Double
         val name: String
         val avatarIndex: Int
+        val remoteUserId: String?
 
         if (originalItem is MapUser) {
             lat = originalItem.lat
             lng = originalItem.lng
             name = originalItem.name
             avatarIndex = originalItem.avatarIndex
+            remoteUserId = originalItem.id
         } else if (originalItem is SearchResult) {
             lat = originalItem.lat
             lng = originalItem.lon
             name = originalItem.shortName
             avatarIndex = 0
+            remoteUserId = originalItem.id
         } else return
 
         if (targetType == "Contact") {
-            savedViewModel.insertContact(name, avatarIndex, lat, lng, folderId)
+            savedViewModel.insertContact(name, avatarIndex, lat, lng, folderId, remoteUserId)
             Toast.makeText(context, "Contact Saved", Toast.LENGTH_SHORT).show()
         } else {
-            savedViewModel.insertPlace(name, null, lat, lng, folderId)
+            savedViewModel.insertPlace(name, null, lat, lng, folderId, remoteUserId)
             Toast.makeText(context, "Place Saved", Toast.LENGTH_SHORT).show()
         }
         currentListMode = ListMode.EXPLORE
@@ -423,6 +431,10 @@ class ThruxionFragment : Fragment()
         viewModel.users.observe(viewLifecycleOwner) { users ->
             defaultUsers = users
             refreshMarkers(users)
+            // Also update saved/contact markers because their real-time positions might have changed
+            savedViewModel.allSavedPlaces.value?.let { updateSavedMarkers(it) }
+            savedViewModel.allContacts.value?.let { updateContactMarkers(it) }
+
             if (currentListMode == ListMode.EXPLORE) updateListContent()
         }
         savedViewModel.allFolders.observe(viewLifecycleOwner) { if (currentListMode != ListMode.EXPLORE) updateListContent() }
@@ -451,14 +463,14 @@ class ThruxionFragment : Fragment()
             ListMode.EXPLORE -> {
                 if (isSearchMode) {
                     currentSearchResults.forEach { res ->
-                        val isSaved = savedPlaces.any { isSameLocation(it.latitude, it.longitude, res.lat, res.lon) } ||
-                                      savedContacts.any { isSameLocation(it.latitude, it.longitude, res.lat, res.lon) }
+                        val isSaved = savedPlaces.any { it.remoteUserId == res.id || isSameLocation(it.latitude, it.longitude, res.lat, res.lon) } ||
+                                      savedContacts.any { it.remoteUserId == res.id || isSameLocation(it.latitude, it.longitude, res.lat, res.lon) }
                         items.add(ThruxionItem.SearchResultItem(res, isSaved))
                     }
                 } else {
                     defaultUsers.forEach { user ->
-                        val isSaved = savedContacts.any { isSameLocation(it.latitude, it.longitude, user.lat, user.lng) } ||
-                                      savedPlaces.any { isSameLocation(it.latitude, it.longitude, user.lat, user.lng) }
+                        val isSaved = savedContacts.any { it.remoteUserId == user.id || (it.name == user.name && isSameLocation(it.latitude, it.longitude, user.lat, user.lng)) } ||
+                                      savedPlaces.any { it.remoteUserId == user.id || (it.name == user.name && isSameLocation(it.latitude, it.longitude, user.lat, user.lng)) }
                         items.add(ThruxionItem.NearbyUser(user, isSaved))
                     }
                 }
@@ -937,9 +949,15 @@ class ThruxionFragment : Fragment()
         val source = style.getSource(SAVED_SOURCE_ID) as? GeoJsonSource ?: return
         
         val features = places.map { place ->
-            Feature.fromGeometry(Point.fromLngLat(place.longitude, place.latitude)).apply {
+            // Link to real-time user if remoteUserId matches
+            val realTimeUser = defaultUsers.find { it.id == place.remoteUserId }
+            val lat = realTimeUser?.lat ?: place.latitude
+            val lng = realTimeUser?.lng ?: place.longitude
+            
+            Feature.fromGeometry(Point.fromLngLat(lng, lat)).apply {
                 addStringProperty("title", place.name)
                 addNumberProperty("id", place.id)
+                addStringProperty("remote-user-id", place.remoteUserId)
                 addStringProperty("type", place.type ?: "Saved Place")
             }
         }
@@ -974,9 +992,15 @@ class ThruxionFragment : Fragment()
         val source = style.getSource(CONTACT_SOURCE_ID) as? GeoJsonSource ?: return
         
         val features = contacts.map { contact ->
-            Feature.fromGeometry(Point.fromLngLat(contact.longitude, contact.latitude)).apply {
+            // Link to real-time user if remoteUserId matches
+            val realTimeUser = defaultUsers.find { it.id == contact.remoteUserId }
+            val lat = realTimeUser?.lat ?: contact.latitude
+            val lng = realTimeUser?.lng ?: contact.longitude
+
+            Feature.fromGeometry(Point.fromLngLat(lng, lat)).apply {
                 addStringProperty("name", contact.name)
                 addNumberProperty("id", contact.id)
+                addStringProperty("remote-user-id", contact.remoteUserId)
                 addStringProperty("avatar-id", "avatar-${contact.avatarIndex}")
             }
         }
@@ -1050,17 +1074,19 @@ class ThruxionFragment : Fragment()
 
         // Check if this person is already a saved contact
         if (!isSaved) {
+            val remoteId = feature.getStringProperty("remote-user-id")
             val point = feature.geometry() as? Point
             if (point != null) {
                 val savedContact = savedViewModel.allContacts.value?.find { 
-                    Math.abs(it.latitude - point.latitude()) < 0.0001 && 
-                    Math.abs(it.longitude - point.longitude()) < 0.0001 
+                    (remoteId != null && it.remoteUserId == remoteId) ||
+                    isSameLocation(it.latitude, it.longitude, point.latitude(), point.longitude())
                 }
                 if (savedContact != null) {
                     finalIsSaved = true
                     finalFeature = Feature.fromGeometry(point).apply {
                         addStringProperty("name", savedContact.name)
                         addNumberProperty("id", savedContact.id)
+                        addStringProperty("remote-user-id", savedContact.remoteUserId)
                         addStringProperty("avatar-id", "avatar-${savedContact.avatarIndex}")
                     }
                 }
@@ -1112,11 +1138,12 @@ class ThruxionFragment : Fragment()
         
         // If not explicitly saved (e.g. from search), check if coordinates match any saved place
         if (!isSaved) {
+            val remoteId = feature.getStringProperty("remote-user-id")
             val point = feature.geometry() as? Point
             if (point != null) {
                 val savedPlace = savedViewModel.allSavedPlaces.value?.find { 
-                    Math.abs(it.latitude - point.latitude()) < 0.0001 && 
-                    Math.abs(it.longitude - point.longitude()) < 0.0001 
+                    (remoteId != null && it.remoteUserId == remoteId) ||
+                    isSameLocation(it.latitude, it.longitude, point.latitude(), point.longitude())
                 }
                 if (savedPlace != null) {
                     finalIsSaved = true
@@ -1124,6 +1151,7 @@ class ThruxionFragment : Fragment()
                     finalFeature = Feature.fromGeometry(point).apply {
                         addStringProperty("title", savedPlace.name)
                         addNumberProperty("id", savedPlace.id)
+                        addStringProperty("remote-user-id", savedPlace.remoteUserId)
                         addStringProperty("type", savedPlace.type ?: "Saved Place")
                     }
                 }
@@ -1197,7 +1225,7 @@ class ThruxionFragment : Fragment()
             .setPositiveButton("Save") { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
-                    savedViewModel.insertPlace(newName, place.address, place.latitude, place.longitude, place.folderId, place.id)
+                    savedViewModel.insertPlace(newName, place.address, place.latitude, place.longitude, place.folderId, place.remoteUserId, place.id)
                     Toast.makeText(requireContext(), "Updated", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -1342,12 +1370,13 @@ class ThruxionFragment : Fragment()
 
     private fun saveCurrentPlace(feature: Feature) {
         val title = feature.getStringProperty("title") ?: "Place"
+        val remoteUserId = feature.getStringProperty("remote-user-id")
         val point = feature.geometry() as? Point ?: return
 
         val folders = savedViewModel.allFolders.value?.filter { it.type == "PLACE" } ?: emptyList()
         if (folders.isEmpty()) {
             showCreateFolderDialog("PLACE") { folderId ->
-                savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId)
+                savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId, remoteUserId)
                 Toast.makeText(context, "Saved to new folder", Toast.LENGTH_SHORT).show()
             }
         } else {
@@ -1355,12 +1384,12 @@ class ThruxionFragment : Fragment()
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Select Folder")
                 .setItems(folderNames) { _, which ->
-                    savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folders[which].id)
+                    savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folders[which].id, remoteUserId)
                     Toast.makeText(context, "Saved to ${folders[which].name}", Toast.LENGTH_SHORT).show()
                 }
                 .setPositiveButton("New Folder") { _, _ ->
                     showCreateFolderDialog("PLACE") { folderId ->
-                        savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId)
+                        savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId, remoteUserId)
                         Toast.makeText(context, "Saved to new folder", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -1371,13 +1400,14 @@ class ThruxionFragment : Fragment()
     private fun saveCurrentContact(feature: Feature) {
         val name = feature.getStringProperty("name") ?: "Person"
         val avatarId = feature.getStringProperty("avatar-id") ?: "avatar-0"
+        val remoteUserId = feature.getStringProperty("remote-user-id")
         val avatarIndex = avatarId.split("-").lastOrNull()?.toIntOrNull() ?: 0
         val point = feature.geometry() as? Point ?: return
 
         val folders = savedViewModel.allFolders.value?.filter { it.type == "CONTACT" } ?: emptyList()
         if (folders.isEmpty()) {
             showCreateFolderDialog("CONTACT") { folderId ->
-                savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId)
+                savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId, remoteUserId)
                 Toast.makeText(context, "Contact saved", Toast.LENGTH_SHORT).show()
             }
         } else {
@@ -1385,12 +1415,12 @@ class ThruxionFragment : Fragment()
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Select Contact Group")
                 .setItems(folderNames) { _, which ->
-                    savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folders[which].id)
+                    savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folders[which].id, remoteUserId)
                     Toast.makeText(context, "Saved to ${folders[which].name}", Toast.LENGTH_SHORT).show()
                 }
                 .setPositiveButton("New Group") { _, _ ->
                     showCreateFolderDialog("CONTACT") { folderId ->
-                        savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId)
+                        savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId, remoteUserId)
                         Toast.makeText(context, "Saved to new group", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -1425,7 +1455,7 @@ class ThruxionFragment : Fragment()
             .setPositiveButton("Save") { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
-                    savedViewModel.insertContact(newName, contact.avatarIndex, contact.latitude, contact.longitude, contact.folderId, contact.id)
+                    savedViewModel.insertContact(newName, contact.avatarIndex, contact.latitude, contact.longitude, contact.folderId, contact.remoteUserId, contact.id)
                     updateListContent()
                 }
             }
