@@ -17,10 +17,8 @@
         android:id="@+id/map_card"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="4dp"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="0dp"
         app:strokeWidth="0dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/bottom_list_card"
@@ -31,80 +29,6 @@
             android:id="@+id/map"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- ===================================================== -->
-    <!-- SEARCH CARD -->
-    <!-- ===================================================== -->
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/search_card"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginHorizontal="@dimen/fragment_horizontal_margin"
-        android:translationZ="24dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="12dp"
-        app:strokeWidth="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp">
-
-            <!-- SEARCH INPUT -->
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/search_input_layout"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="@string/search"
-                android:layout_marginEnd="8dp"
-                app:boxCornerRadiusTopStart="16dp"
-                app:boxCornerRadiusTopEnd="16dp"
-                app:boxCornerRadiusBottomStart="16dp"
-                app:boxCornerRadiusBottomEnd="16dp"
-                app:boxStrokeWidth="1dp"
-                app:endIconMode="clear_text"
-                app:startIconDrawable="@android:drawable/ic_menu_search"
-                app:startIconTint="?attr/colorPrimary"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/switch_map_mode">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/edit_search"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:textSize="14sp"
-                    android:paddingVertical="12dp" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- MAP MODE SWITCH -->
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switch_map_mode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:scaleX="0.82"
-                android:scaleY="0.82"
-                android:saveEnabled="false"
-                app:layout_constraintTop_toTopOf="@id/search_input_layout"
-                app:layout_constraintBottom_toBottomOf="@id/search_input_layout"
-                app:layout_constraintEnd_toEndOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
@@ -131,10 +55,8 @@
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottom_list_card"
         android:layout_width="0dp"
-        android:layout_height="220dp"
-        android:layout_marginBottom="12dp"
-        android:layout_marginHorizontal="@dimen/fragment_horizontal_margin"
-        app:cardCornerRadius="26dp"
+        android:layout_height="240dp"
+        app:cardCornerRadius="0dp"
         app:cardElevation="10dp"
         app:strokeWidth="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -145,13 +67,71 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/search_card"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btn_saved_places">
+
+                <!-- SEARCH INPUT -->
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/search_input_layout"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/search"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxStrokeWidth="1dp"
+                    app:endIconMode="clear_text"
+                    app:startIconDrawable="@android:drawable/ic_menu_search"
+                    app:startIconTint="?attr/colorPrimary"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/switch_map_mode">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edit_search"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textSize="14sp"
+                        android:paddingVertical="10dp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- MAP MODE SWITCH -->
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switch_map_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:scaleX="0.82"
+                    android:scaleY="0.82"
+                    android:saveEnabled="false"
+                    app:layout_constraintTop_toTopOf="@id/search_input_layout"
+                    app:layout_constraintBottom_toBottomOf="@id/search_input_layout"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_saved_places"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
+                android:layout_marginEnd="12dp"
                 android:contentDescription="Action"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
@@ -161,7 +141,8 @@
                 app:iconSize="24dp"
                 app:iconTint="?attr/colorPrimary"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintTop_toTopOf="@id/search_card"
+                app:layout_constraintBottom_toBottomOf="@id/search_card"
                 app:rippleColor="?attr/colorPrimary" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -173,7 +154,7 @@
                 android:paddingBottom="20dp"
                 android:scrollbars="vertical"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btn_saved_places"
+                app:layout_constraintTop_toBottomOf="@id/search_card"
                 tools:listitem="@layout/item_thruxion" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -187,13 +168,13 @@
         android:id="@+id/userDetailCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginHorizontal="@dimen/fragment_horizontal_margin"
+        android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="12dp"
         android:visibility="gone"
-        app:cardCornerRadius="20dp"
+        app:cardCornerRadius="16dp"
         app:cardElevation="8dp"
         app:strokeWidth="0dp"
-        app:layout_constraintTop_toBottomOf="@id/search_card"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:translationZ="30dp"

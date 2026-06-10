@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -140,8 +141,8 @@ class ThruxionFragment : Fragment()
                 isCompassEnabled = true
                 isLogoEnabled = true
                 isAttributionEnabled = true
-                // Shift the compass (reset position button) down so it's not hidden by the search bar
-                setCompassMargins(0, 280, 40, 0)
+                // Shift the compass (reset position button) down slightly
+                setCompassMargins(0, 150, 40, 0)
                 setLogoMargins(40, 0, 0, 40)
                 setAttributionMargins(140, 0, 0, 40)
             }
@@ -360,8 +361,7 @@ class ThruxionFragment : Fragment()
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
             viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
             binding.searchCard?.post {
-                val topPadding = binding.searchCard!!.height + 80
-                map.setPadding(50, topPadding, 50, 50)
+                map.setPadding(50, 50, 50, 50)
                 map.animateCamera(
                     org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
                         org.maplibre.android.geometry.LatLng(location.latitude, location.longitude),
@@ -1210,16 +1210,14 @@ class ThruxionFragment : Fragment()
     {
         binding.userDetailCard?.post {
             val cardHeight = binding.userDetailCard!!.height
-            val searchHeight = binding.searchCard?.height ?: 0
-            // Set top padding so markers center in the visible area below the cards
-            mapLibreMap?.setPadding(0, cardHeight + searchHeight + 40, 0, 0)
+            // Set top padding so markers center in the visible area below the card
+            mapLibreMap?.setPadding(0, cardHeight + 40, 0, 0)
         }
     }
 
     private fun resetMapPadding()
     {
-        val searchHeight = binding.searchCard?.height ?: 0
-        mapLibreMap?.setPadding(0, searchHeight + 40, 0, 0)
+        mapLibreMap?.setPadding(0, 0, 0, 0)
     }
 
     private fun openFossNavigation(feature: Feature)
@@ -1318,15 +1316,22 @@ class ThruxionFragment : Fragment()
 
             // If keyboard is visible (occupies more than 15% of the screen)
             if (keypadHeight > screenHeight * 0.15) {
-                if (currentBinding.bottomListCard?.visibility != View.GONE) {
-                    currentBinding.bottomListCard?.visibility = View.GONE
-                }
+                // Keep only the top of the list (search bar and icons) visible
+                currentBinding.recyclerView?.visibility = View.GONE
+                currentBinding.fabMyLocation?.visibility = View.GONE
+                currentBinding.bottomListCard?.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
             } else {
-                // Keyboard is hidden
-                if (currentBinding.bottomListCard?.visibility != View.VISIBLE) {
-                    currentBinding.bottomListCard?.visibility = View.VISIBLE
-                }
+                // Keyboard is hidden - restore full list
+                currentBinding.recyclerView?.visibility = View.VISIBLE
+                currentBinding.fabMyLocation?.visibility = View.VISIBLE
+                
+                // Restore fixed height (240dp)
+                val heightInPx = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 240f, resources.displayMetrics
+                ).toInt()
+                currentBinding.bottomListCard?.layoutParams?.height = heightInPx
             }
+            currentBinding.bottomListCard?.requestLayout()
         }
         root.viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
     }
