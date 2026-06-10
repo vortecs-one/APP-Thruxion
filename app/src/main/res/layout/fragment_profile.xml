@@ -10,7 +10,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp">
+        android:paddingHorizontal="@dimen/fragment_horizontal_margin"
+        android:paddingVertical="24dp">
 
         <!-- PROFILE IMAGE -->
         <com.google.android.material.imageview.ShapeableImageView
