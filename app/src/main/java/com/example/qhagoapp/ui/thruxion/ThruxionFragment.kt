@@ -25,6 +25,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.qhagoapp.databinding.FragmentThruxionBinding
 import com.example.qhagoapp.utils.ThemeManager
+import com.example.qhagoapp.ui.saved.SavedPlacesViewModel
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.CheckBox
+import com.example.qhagoapp.data.model.Folder
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -54,6 +62,7 @@ class ThruxionFragment : Fragment()
     private var _binding: FragmentThruxionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TransformViewModel by viewModels()
+    private val savedViewModel: SavedPlacesViewModel by viewModels()
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted && hasLocationPermission())
             enableLocation()
@@ -66,6 +75,10 @@ class ThruxionFragment : Fragment()
     private var isLocationInitialized = false
     private val SEARCH_LAYER_ID = "search-layer"
     private val SEARCH_SOURCE_ID = "search-source"
+    private val SAVED_LAYER_ID = "saved-layer"
+    private val SAVED_SOURCE_ID = "saved-source"
+    private val CONTACT_LAYER_ID = "contact-layer"
+    private val CONTACT_SOURCE_ID = "contact-source"
     private lateinit var transformAdapter: TransformAdapter
     private var defaultUsers: List<MapUser> = emptyList()
     private var isSearchMode = false
@@ -113,13 +126,22 @@ class ThruxionFragment : Fragment()
             }
             map.addOnMapClickListener { latLng ->
                 val screenPoint = map.projection.toScreenLocation(latLng)
-                // Check Search Layer first
-                val searchFeatures = map.queryRenderedFeatures(screenPoint, SEARCH_LAYER_ID)
-                if (searchFeatures.isNotEmpty()) {
-                    val feature = searchFeatures.first()
-                    showLocationDetails(feature)
+                // Check Saved Contacts Layer
+                val contactFeatures = map.queryRenderedFeatures(screenPoint, CONTACT_LAYER_ID)
+                if (contactFeatures.isNotEmpty()) {
+                    val feature = contactFeatures.first()
+                    showUserDetails(feature, isSaved = true)
                     return@addOnMapClickListener true
                 }
+                // Check Saved Places Layer
+                val savedFeatures = map.queryRenderedFeatures(screenPoint, SAVED_LAYER_ID)
+                if (savedFeatures.isNotEmpty()) {
+                    val feature = savedFeatures.first()
+                    showLocationDetails(feature, isSaved = true)
+                    return@addOnMapClickListener true
+                }
+                // Check Search Layer
+                val searchFeatures = map.queryRenderedFeatures(screenPoint, SEARCH_LAYER_ID)
                 // Check Users Layer
                 val userFeatures = map.queryRenderedFeatures(screenPoint, "users-layer")
                 if (userFeatures.isNotEmpty()) {
@@ -152,6 +174,8 @@ class ThruxionFragment : Fragment()
             setupAvatarImages(style)
             setupUserSourceAndLayer(style, isDark)
             setupSearchSourceAndLayer(style, isDark)
+            setupSavedSourceAndLayer(style, isDark)
+            setupContactSourceAndLayer(style, isDark)
             styleReady = true
             checkLocationPermission()
             viewModel.users.value?.let {
@@ -187,7 +211,7 @@ class ThruxionFragment : Fragment()
                         addStringProperty("full_name",it.displayName)
                         addStringProperty("type",it.type ?: "Place")
                     }
-                    showLocationDetails(feature)
+                    showLocationDetails(feature, isSaved = false)
                     handleSelection(it)
                 }
             }
@@ -198,7 +222,7 @@ class ThruxionFragment : Fragment()
                     addStringProperty("name",user.name)
                     addStringProperty("avatar-id","avatar-${user.avatarIndex}")
                 }
-                showUserDetails(feature)
+                showUserDetails(feature, isSaved = false)
             }
         }
         binding.recyclerView?.adapter = transformAdapter
@@ -238,6 +262,9 @@ class ThruxionFragment : Fragment()
                 applyMapStyle(isChecked)
             }
         }
+        binding.btnSavedPlaces?.setOnClickListener {
+            showSavedPlacesDialog()
+        }
         binding.editSearch?.doOnTextChanged { text, _, _, _ ->
             val query = text?.toString()?.trim().orEmpty()
             // If search was cleared with the X button
@@ -274,6 +301,13 @@ class ThruxionFragment : Fragment()
             if (!isSearchMode)
                 transformAdapter.submitList(users)
             refreshMarkers(users)
+        }
+        savedViewModel.allFolders.observe(viewLifecycleOwner) { /* Triggered to keep LiveData active */ }
+        savedViewModel.allSavedPlaces.observe(viewLifecycleOwner) { places ->
+            updateSavedMarkers(places)
+        }
+        savedViewModel.allContacts.observe(viewLifecycleOwner) { contacts ->
+            updateContactMarkers(contacts)
         }
     }
 
@@ -666,6 +700,80 @@ class ThruxionFragment : Fragment()
         }
     }
 
+    private fun setupSavedSourceAndLayer(style: org.maplibre.android.maps.Style, isDark: Boolean)
+    {
+        if (style.getSource(SAVED_SOURCE_ID) == null)
+            style.addSource(GeoJsonSource(SAVED_SOURCE_ID, FeatureCollection.fromFeatures(emptyArray())))
+        
+        if (style.getLayer(SAVED_LAYER_ID) == null) {
+            val layer = SymbolLayer(SAVED_LAYER_ID, SAVED_SOURCE_ID).withProperties(
+                iconImage("search-icon"), // reusing the pin icon
+                iconSize(0.8f),
+                iconAllowOverlap(true),
+                iconIgnorePlacement(true),
+                textField("{title}"),
+                textSize(10f),
+                textAnchor("top"),
+                textOffset(arrayOf(0f, 1.2f)),
+                textColor(if (isDark) "#00FFFF" else "#000000"),
+                textHaloColor("#FFFFFF"),
+                textHaloWidth(1f)
+            )
+            style.addLayerAbove(layer, SEARCH_LAYER_ID)
+        }
+    }
+
+    private fun updateSavedMarkers(places: List<com.example.qhagoapp.data.model.SavedPlace>) {
+        val style = mapLibreMap?.style ?: return
+        val source = style.getSource(SAVED_SOURCE_ID) as? GeoJsonSource ?: return
+        
+        val features = places.map { place ->
+            Feature.fromGeometry(Point.fromLngLat(place.longitude, place.latitude)).apply {
+                addStringProperty("title", place.name)
+                addNumberProperty("id", place.id)
+                addStringProperty("type", place.type ?: "Saved Place")
+            }
+        }
+        source.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+
+    private fun setupContactSourceAndLayer(style: org.maplibre.android.maps.Style, isDark: Boolean)
+    {
+        if (style.getSource(CONTACT_SOURCE_ID) == null)
+            style.addSource(GeoJsonSource(CONTACT_SOURCE_ID, FeatureCollection.fromFeatures(emptyArray())))
+        
+        if (style.getLayer(CONTACT_LAYER_ID) == null) {
+            val layer = SymbolLayer(CONTACT_LAYER_ID, CONTACT_SOURCE_ID).withProperties(
+                iconImage("{avatar-id}"),
+                iconSize(0.5f),
+                iconAllowOverlap(true),
+                iconIgnorePlacement(true),
+                textField("{name}"),
+                textSize(10f),
+                textAnchor("top"),
+                textOffset(arrayOf(0f, 1.2f)),
+                textColor(if (isDark) "#00FFFF" else "#000000"),
+                textHaloColor("#FFFFFF"),
+                textHaloWidth(1f)
+            )
+            style.addLayerAbove(layer, SAVED_LAYER_ID)
+        }
+    }
+
+    private fun updateContactMarkers(contacts: List<com.example.qhagoapp.data.model.Contact>) {
+        val style = mapLibreMap?.style ?: return
+        val source = style.getSource(CONTACT_SOURCE_ID) as? GeoJsonSource ?: return
+        
+        val features = contacts.map { contact ->
+            Feature.fromGeometry(Point.fromLngLat(contact.longitude, contact.latitude)).apply {
+                addStringProperty("name", contact.name)
+                addNumberProperty("id", contact.id)
+                addStringProperty("avatar-id", "avatar-${contact.avatarIndex}")
+            }
+        }
+        source.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+
     private fun calculateDistanceInKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double
     {
         val r = 6371.0 // Earth's radius in kilometers
@@ -726,10 +834,32 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     // UI DETAIL CARDS (Security & UX)
     // --------------------------------------------------
-    private fun showUserDetails(feature: Feature)
+    private fun showUserDetails(feature: Feature, isSaved: Boolean = false)
     {
-        val name = feature.getStringProperty("name") ?: "Unknown"
-        val avatarId = feature.getStringProperty("avatar-id") ?: "avatar-0"
+        var finalIsSaved = isSaved
+        var finalFeature = feature
+
+        // Check if this person is already a saved contact
+        if (!isSaved) {
+            val point = feature.geometry() as? Point
+            if (point != null) {
+                val savedContact = savedViewModel.allContacts.value?.find { 
+                    Math.abs(it.latitude - point.latitude()) < 0.0001 && 
+                    Math.abs(it.longitude - point.longitude()) < 0.0001 
+                }
+                if (savedContact != null) {
+                    finalIsSaved = true
+                    finalFeature = Feature.fromGeometry(point).apply {
+                        addStringProperty("name", savedContact.name)
+                        addNumberProperty("id", savedContact.id)
+                        addStringProperty("avatar-id", "avatar-${savedContact.avatarIndex}")
+                    }
+                }
+            }
+        }
+
+        val name = finalFeature.getStringProperty("name") ?: "Unknown"
+        val avatarId = finalFeature.getStringProperty("avatar-id") ?: "avatar-0"
         // Setup Card UI
         binding.userDetailCard.apply {
             this!!.findViewById<TextView>(R.id.tvUserName).text = name
@@ -741,8 +871,21 @@ class ThruxionFragment : Fragment()
                 clearColorFilter() // Remove tint if previously applied for places
             }
             // Calculate Distance
-            updateDistanceOnCard(feature)
+            updateDistanceOnCard(finalFeature)
             findViewById<Button>(R.id.btnConnect).text = "Send Message"
+            
+            val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
+            if (finalIsSaved) {
+                saveBtn.text = "Saved Contact"
+                saveBtn.setIconResource(R.drawable.ic_save)
+                saveBtn.setOnClickListener { showEditDeleteContactDialog(finalFeature) }
+            } else {
+                saveBtn.text = "Save Contact"
+                saveBtn.setIconResource(R.drawable.ic_save)
+                saveBtn.setOnClickListener { saveCurrentContact(finalFeature) }
+            }
+            saveBtn.visibility = View.VISIBLE
+
             // Interaction logic
             findViewById<View>(R.id.btnCloseCard).setOnClickListener {
                 visibility = View.GONE
@@ -753,10 +896,33 @@ class ThruxionFragment : Fragment()
         }
     }
 
-    private fun showLocationDetails(feature: Feature)
+    private fun showLocationDetails(feature: Feature, isSaved: Boolean = false)
     {
-        val title = feature.getStringProperty("title") ?: "Place"
-        val type = feature.getStringProperty("type") ?: "Location"
+        var finalIsSaved = isSaved
+        var finalFeature = feature
+        
+        // If not explicitly saved (e.g. from search), check if coordinates match any saved place
+        if (!isSaved) {
+            val point = feature.geometry() as? Point
+            if (point != null) {
+                val savedPlace = savedViewModel.allSavedPlaces.value?.find { 
+                    Math.abs(it.latitude - point.latitude()) < 0.0001 && 
+                    Math.abs(it.longitude - point.longitude()) < 0.0001 
+                }
+                if (savedPlace != null) {
+                    finalIsSaved = true
+                    // Create a new feature with the ID from the database
+                    finalFeature = Feature.fromGeometry(point).apply {
+                        addStringProperty("title", savedPlace.name)
+                        addNumberProperty("id", savedPlace.id)
+                        addStringProperty("type", savedPlace.type ?: "Saved Place")
+                    }
+                }
+            }
+        }
+
+        val title = finalFeature.getStringProperty("title") ?: "Place"
+        val type = finalFeature.getStringProperty("type") ?: "Location"
         binding.userDetailCard.apply {
             this!!.findViewById<TextView>(R.id.tvUserName).text = title
             // Location Icon
@@ -764,10 +930,23 @@ class ThruxionFragment : Fragment()
                 setImageResource(R.drawable.ic_searched_place)
                 setColorFilter("#FF4500".toColorInt())
             }
-            updateDistanceOnCard(feature)
+            updateDistanceOnCard(finalFeature)
             val actionBtn = findViewById<Button>(R.id.btnConnect)
             actionBtn.text = "Navigate"
-            actionBtn.setOnClickListener { openFossNavigation(feature) }
+            actionBtn.setOnClickListener { openFossNavigation(finalFeature) }
+
+            val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
+            if (finalIsSaved) {
+                saveBtn.text = "Saved"
+                saveBtn.setIconResource(R.drawable.ic_save)
+                saveBtn.setOnClickListener { showEditDeletePlaceDialog(finalFeature) }
+            } else {
+                saveBtn.text = "Save"
+                saveBtn.setIconResource(R.drawable.ic_save)
+                saveBtn.setOnClickListener { saveCurrentPlace(finalFeature) }
+            }
+            saveBtn.visibility = View.VISIBLE
+
             this.findViewById<View>(R.id.btnCloseCard).setOnClickListener {
                 visibility = View.GONE
                 resetMapPadding()
@@ -775,6 +954,46 @@ class ThruxionFragment : Fragment()
             visibility = View.VISIBLE
             applyMapPaddingForCard()
         }
+    }
+
+    private fun showEditDeletePlaceDialog(feature: Feature) {
+        val id = feature.getNumberProperty("id")?.toLong() ?: return
+        val place = savedViewModel.allSavedPlaces.value?.find { it.id == id } ?: return
+        
+        val context = requireContext()
+        MaterialAlertDialogBuilder(context)
+            .setTitle(place.name)
+            .setMessage("What would you like to do with this saved place?")
+            .setNeutralButton("Delete") { _, _ ->
+                savedViewModel.deletePlace(place)
+                binding.userDetailCard?.visibility = View.GONE
+                resetMapPadding()
+                Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+            }
+            .setPositiveButton("Edit Name") { _, _ ->
+                showEditNameDialog(place)
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun showEditNameDialog(place: com.example.qhagoapp.data.model.SavedPlace) {
+        val input = EditText(requireContext()).apply {
+            setText(place.name)
+            setSelection(place.name.length)
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Edit Name")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = input.text.toString().trim()
+                if (newName.isNotEmpty()) {
+                    savedViewModel.insertPlace(newName, place.address, place.latitude, place.longitude, place.folderId, place.id)
+                    Toast.makeText(requireContext(), "Updated", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     // Helper to ensure the map centers below the floating card
@@ -893,6 +1112,232 @@ class ThruxionFragment : Fragment()
             }
         }
         root.viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
+    }
+
+    // --------------------------------------------------
+    // SAVED PLACES LOGIC
+    // --------------------------------------------------
+
+    private fun saveCurrentPlace(feature: Feature) {
+        val title = feature.getStringProperty("title") ?: "Place"
+        val point = feature.geometry() as? Point ?: return
+
+        val folders = savedViewModel.allFolders.value?.filter { it.type == "PLACE" } ?: emptyList()
+        if (folders.isEmpty()) {
+            showCreateFolderDialog("PLACE") { folderId ->
+                savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId)
+                Toast.makeText(context, "Saved to new folder", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            val folderNames = folders.map { it.name }.toTypedArray()
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Select Folder")
+                .setItems(folderNames) { _, which ->
+                    savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folders[which].id)
+                    Toast.makeText(context, "Saved to ${folders[which].name}", Toast.LENGTH_SHORT).show()
+                }
+                .setPositiveButton("New Folder") { _, _ ->
+                    showCreateFolderDialog("PLACE") { folderId ->
+                        savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId)
+                        Toast.makeText(context, "Saved to new folder", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun saveCurrentContact(feature: Feature) {
+        val name = feature.getStringProperty("name") ?: "Person"
+        val avatarId = feature.getStringProperty("avatar-id") ?: "avatar-0"
+        val avatarIndex = avatarId.split("-").lastOrNull()?.toIntOrNull() ?: 0
+        val point = feature.geometry() as? Point ?: return
+
+        val folders = savedViewModel.allFolders.value?.filter { it.type == "CONTACT" } ?: emptyList()
+        if (folders.isEmpty()) {
+            showCreateFolderDialog("CONTACT") { folderId ->
+                savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId)
+                Toast.makeText(context, "Contact saved", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            val folderNames = folders.map { it.name }.toTypedArray()
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Select Contact Group")
+                .setItems(folderNames) { _, which ->
+                    savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folders[which].id)
+                    Toast.makeText(context, "Saved to ${folders[which].name}", Toast.LENGTH_SHORT).show()
+                }
+                .setPositiveButton("New Group") { _, _ ->
+                    showCreateFolderDialog("CONTACT") { folderId ->
+                        savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId)
+                        Toast.makeText(context, "Saved to new group", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun showEditDeleteContactDialog(feature: Feature) {
+        val id = feature.getNumberProperty("id")?.toLong() ?: return
+        val contact = savedViewModel.allContacts.value?.find { it.id == id } ?: return
+        
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(contact.name)
+            .setMessage("Contact options")
+            .setNeutralButton("Delete") { _, _ ->
+                savedViewModel.deleteContact(contact)
+                binding.userDetailCard?.visibility = View.GONE
+                resetMapPadding()
+            }
+            .setPositiveButton("Edit Name") { _, _ ->
+                showEditContactNameDialog(contact)
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun showEditContactNameDialog(contact: com.example.qhagoapp.data.model.Contact) {
+        val input = EditText(requireContext()).apply { setText(contact.name) }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Edit Contact Name")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = input.text.toString().trim()
+                if (newName.isNotEmpty()) {
+                    savedViewModel.insertContact(newName, contact.avatarIndex, contact.latitude, contact.longitude, contact.folderId, contact.id)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showCreateFolderDialog(type: String = "PLACE", onCreated: ((Long) -> Unit)? = null) {
+        val context = requireContext()
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+
+        val nameHint = if (type == "PLACE") "Folder Name (e.g. My Favorites)" else "Group Name (e.g. Lawyers)"
+        val nameInput = EditText(context).apply { hint = nameHint }
+        val conceptInput = EditText(context).apply { hint = "Concept (e.g. Restaurants/Legal)" }
+        val cityInput = EditText(context).apply { hint = "City" }
+        val sharedCheck = CheckBox(context).apply { text = "Shared with others" }
+
+        layout.addView(nameInput)
+        layout.addView(conceptInput)
+        layout.addView(cityInput)
+        layout.addView(sharedCheck)
+
+        MaterialAlertDialogBuilder(context)
+            .setTitle(if (type == "PLACE") "Create Place Folder" else "Create Contact Group")
+            .setView(layout)
+            .setPositiveButton("Create") { _, _ ->
+                val name = nameInput.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    lifecycleScope.launch {
+                        val id = savedViewModel.insertFolder(
+                            name,
+                            type,
+                            conceptInput.text.toString().trim().ifEmpty { null },
+                            cityInput.text.toString().trim().ifEmpty { null },
+                            sharedCheck.isChecked
+                        )
+                        onCreated?.invoke(id)
+                    }
+                } else {
+                    Toast.makeText(context, "Name cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showSavedPlacesDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("My Saved Items")
+            .setItems(arrayOf("Places & Folders", "Contacts & Groups")) { _, which ->
+                if (which == 0) showFoldersByType("PLACE")
+                else showFoldersByType("CONTACT")
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun showFoldersByType(type: String) {
+        val folders = savedViewModel.allFolders.value?.filter { it.type == type } ?: emptyList()
+        if (folders.isEmpty()) {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(if (type == "PLACE") "Folders" else "Contact Groups")
+                .setMessage("No folders yet.")
+                .setPositiveButton("Create New") { _, _ -> showCreateFolderDialog(type) }
+                .show()
+            return
+        }
+
+        val folderNames = folders.map { it.name }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(if (type == "PLACE") "My Folders" else "My Groups")
+            .setItems(folderNames) { _, which ->
+                if (type == "PLACE") showPlacesInFolder(folders[which])
+                else showContactsInFolder(folders[which])
+            }
+            .setPositiveButton("New Folder") { _, _ -> showCreateFolderDialog(type) }
+            .show()
+    }
+
+    private fun showContactsInFolder(folder: Folder) {
+        val allContacts = savedViewModel.allContacts.value ?: emptyList()
+        val folderContacts = allContacts.filter { it.folderId == folder.id }
+
+        val contactNames = folderContacts.map { it.name }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(folder.name)
+            .setItems(contactNames) { _, which ->
+                val selected = folderContacts[which]
+                mapLibreMap?.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(selected.latitude, selected.longitude), 15.0),
+                    1200
+                )
+                val feature = Feature.fromGeometry(Point.fromLngLat(selected.longitude, selected.latitude)).apply {
+                    addStringProperty("name", selected.name)
+                    addNumberProperty("id", selected.id)
+                    addStringProperty("avatar-id", "avatar-${selected.avatarIndex}")
+                }
+                showUserDetails(feature, isSaved = true)
+            }
+            .setNeutralButton("Delete Group") { _, _ ->
+                savedViewModel.deleteFolder(folder)
+            }
+            .setPositiveButton("Back") { _, _ -> showFoldersByType("CONTACT") }
+            .show()
+    }
+
+    private fun showPlacesInFolder(folder: Folder) {
+        val allPlaces = savedViewModel.allSavedPlaces.value ?: emptyList()
+        val folderPlaces = allPlaces.filter { it.folderId == folder.id }
+
+        val placeNames = folderPlaces.map { it.name }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(folder.name)
+            .setItems(placeNames) { _, which ->
+                val selected = folderPlaces[which]
+                mapLibreMap?.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(selected.latitude, selected.longitude), 15.0),
+                    1200
+                )
+                val feature = Feature.fromGeometry(Point.fromLngLat(selected.longitude, selected.latitude)).apply {
+                    addStringProperty("title", selected.name)
+                    addNumberProperty("id", selected.id)
+                    addStringProperty("type", "Saved Place")
+                }
+                showLocationDetails(feature, isSaved = true)
+            }
+            .setNeutralButton("Delete Folder") { _, _ ->
+                savedViewModel.deleteFolder(folder)
+            }
+            .setPositiveButton("Back") { _, _ -> showFoldersByType("PLACE") }
+            .show()
     }
 }
 

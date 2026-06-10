@@ -1,6 +1,7 @@
 package com.example.qhagoapp.data
 
 import com.example.qhagoapp.data.model.LoggedInUser
+import com.example.qhagoapp.utils.UserSession
 
 /**
  * Class that requests authentication and user information from the remote data source and
@@ -20,10 +21,12 @@ class LoginRepository(val dataSource: LoginDataSource) {
         // If user credentials will be cached in local storage, it is recommended it be encrypted
         // @see https://developer.android.com/training/articles/keystore
         user = null
+        UserSession.user = null
     }
 
     fun logout() {
         user = null
+        UserSession.user = null
         dataSource.logout()
     }
 
@@ -40,6 +43,7 @@ class LoginRepository(val dataSource: LoginDataSource) {
 
     private fun setLoggedInUser(loggedInUser: LoggedInUser) {
         this.user = loggedInUser
+        UserSession.user = loggedInUser
         // If user credentials will be cached in local storage, it is recommended it be encrypted
         // @see https://developer.android.com/training/articles/keystore
     }
