@@ -90,7 +90,8 @@
     <string name="place_saved">Place Saved</string>
     <string name="contact_saved">Contact Saved</string>
     <string name="default_folder_lawyers">Lawyers</string>
-    <string name="default_folder_favorites">Favorites</string>
+    <string name="default_folder_favorite_contacts">Favorite Contacts</string>
+    <string name="default_folder_favorite_places">Favorite Places</string>
     <string name="contacts">Contacts</string>
     <string name="places">Places</string>
     <string name="select_contact_group">Select Contact Group</string>

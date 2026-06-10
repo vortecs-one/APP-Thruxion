@@ -143,10 +143,14 @@ class ThruxionFragment : Fragment()
         binding.map.onCreate(null)
         binding.map.getMapAsync { map ->
             mapLibreMap = map
+            map.moveCamera(CameraUpdateFactory.bearingTo(0.0)) // Ensure north is up
             map.uiSettings.apply {
                 isCompassEnabled = true
                 isLogoEnabled = true
                 isAttributionEnabled = true
+                isRotateGesturesEnabled = true 
+                isTiltGesturesEnabled = true   
+                
                 // Shift the compass (reset position button) down slightly
                 setCompassMargins(0, 150, 40, 0)
                 setLogoMargins(40, 0, 0, 40)
@@ -313,11 +317,17 @@ class ThruxionFragment : Fragment()
                         currentListMode = ListMode.SAVE_TARGET_CHOICE
                         updateListContent()
                     }
-                    is ThruxionItem.ContactItem -> showEditDeleteContactDialogForList(item.contact)
-                    is ThruxionItem.PlaceItem -> showEditDeletePlaceDialogForList(item.place)
+                    is ThruxionItem.ContactItem -> {
+                        savedViewModel.deleteContact(item.contact)
+                        updateListContent()
+                    }
+                    is ThruxionItem.PlaceItem -> {
+                        savedViewModel.deletePlace(item.place)
+                        updateListContent()
+                    }
                     is ThruxionItem.FolderItem -> {
                         if (!item.folder.isDefault) {
-                            showEditDeleteFolderDialog(item.folder)
+                            showEditFolderNameDialog(item.folder)
                         }
                     }
                     else -> {}
@@ -530,30 +540,6 @@ class ThruxionFragment : Fragment()
         return abs(lat1 - lat2) < 0.0001 && abs(lon1 - lon2) < 0.0001
     }
 
-    private fun showEditDeletePlaceDialogForList(place: com.example.qhagoapp.data.model.SavedPlace) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(place.name)
-            .setItems(arrayOf(getString(R.string.edit_name), getString(R.string.delete))) { _, which ->
-                if (which == 0) showEditNameDialog(place)
-                else {
-                    savedViewModel.deletePlace(place)
-                    updateListContent()
-                }
-            }.show()
-    }
-
-    private fun showEditDeleteFolderDialog(folder: Folder) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(folder.name)
-            .setItems(arrayOf(getString(R.string.edit_name), getString(R.string.delete))) { _, which ->
-                if (which == 0) showEditFolderNameDialog(folder)
-                else {
-                    savedViewModel.deleteFolder(folder)
-                    updateListContent()
-                }
-            }.show()
-    }
-
     private fun showEditFolderNameDialog(folder: Folder) {
         val input = EditText(requireContext())
         input.setText(folder.name)
@@ -567,20 +553,19 @@ class ThruxionFragment : Fragment()
                     updateListContent()
                 }
             }
+            .setNeutralButton(R.string.delete) { _, _ ->
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.delete)
+                    .setMessage("Are you sure you want to delete this folder and all its contents?")
+                    .setPositiveButton(R.string.delete) { _, _ ->
+                        savedViewModel.deleteFolder(folder)
+                        updateListContent()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+            }
             .setNegativeButton(R.string.cancel, null)
             .show()
-    }
-
-    private fun showEditDeleteContactDialogForList(contact: com.example.qhagoapp.data.model.Contact) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(contact.name)
-            .setItems(arrayOf(getString(R.string.edit_name), getString(R.string.delete))) { _, which ->
-                if (which == 0) showEditContactNameDialog(contact)
-                else {
-                    savedViewModel.deleteContact(contact)
-                    updateListContent()
-                }
-            }.show()
     }
 
     // --------------------------------------------------
@@ -1344,20 +1329,22 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     // LIFECYCLE (IMPORTANT)
     // --------------------------------------------------
-    override fun onStart() { super.onStart(); binding.map.onStart() }
+    override fun onStart() {
+        super.onStart()
+        binding.map.onStart()
+    }
     override fun onResume() { 
         super.onResume()
         binding.map.onResume()
-        // Lock orientation to portrait for map fragment as requested
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     }
     override fun onPause() { 
         binding.map.onPause()
-        // Restore orientation
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         super.onPause()
     }
-    override fun onStop() { binding.map.onStop(); super.onStop() }
+    override fun onStop() { 
+        binding.map.onStop()
+        super.onStop() 
+    }
 
     override fun onDestroyView()
     {

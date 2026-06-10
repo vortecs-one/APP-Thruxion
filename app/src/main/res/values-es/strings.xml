@@ -86,7 +86,8 @@
     <string name="place_saved">Lugar guardado</string>
     <string name="contact_saved">Contacto guardado</string>
     <string name="default_folder_lawyers">Abogados</string>
-    <string name="default_folder_favorites">Favoritos</string>
+    <string name="default_folder_favorite_contacts">Contactos Favoritos</string>
+    <string name="default_folder_favorite_places">Lugares Favoritos</string>
     <string name="contacts">Contactos</string>
     <string name="places">Lugares</string>
     <string name="select_contact_group">Seleccionar grupo de contactos</string>

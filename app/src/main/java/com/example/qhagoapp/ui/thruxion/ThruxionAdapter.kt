@@ -65,7 +65,10 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 if (resId != 0) {
                     binding.imageViewItemTransform.setImageResource(resId)
                 } else {
-                    binding.imageViewItemTransform.setImageResource(R.drawable.ic_profile)
+                    // Show justice icon for lawyers, otherwise profile/smile
+                    val icon = if (item.user.name.contains("Lawyer", ignoreCase = true) || item.user.name.contains("Abogado", ignoreCase = true)) 
+                               R.drawable.ic_justice else R.drawable.ic_profile
+                    binding.imageViewItemTransform.setImageResource(icon)
                     binding.imageViewItemTransform.setColorFilter(yellowColor)
                 }
                 binding.btnItemSave?.visibility = View.VISIBLE
@@ -87,7 +90,8 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.textViewItemTransform.text = "${item.folder.name} (${item.count})"
                 val folderIcon = when (item.folder.icon) {
                     "star" -> android.R.drawable.btn_star_big_on
-                    else -> R.drawable.ic_justice
+                    "justice" -> R.drawable.ic_justice
+                    else -> if (item.folder.type == "PLACE") R.drawable.ic_searched_place else R.drawable.ic_profile
                 }
                 binding.imageViewItemTransform.setImageResource(folderIcon)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
@@ -107,18 +111,21 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 if (resId != 0) {
                     binding.imageViewItemTransform.setImageResource(resId)
                 } else {
-                    binding.imageViewItemTransform.setImageResource(R.drawable.ic_profile)
+                    // Show justice icon for lawyers, otherwise profile/smile
+                    val icon = if (item.contact.name.contains("Lawyer", ignoreCase = true) || item.contact.name.contains("Abogado", ignoreCase = true)) 
+                               R.drawable.ic_justice else R.drawable.ic_profile
+                    binding.imageViewItemTransform.setImageResource(icon)
                     binding.imageViewItemTransform.setColorFilter(yellowColor)
                 }
                 binding.btnItemSave?.visibility = View.VISIBLE
-                binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
+                binding.btnItemSave?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
             }
             is ThruxionItem.PlaceItem -> {
                 binding.textViewItemTransform.text = item.place.name
                 binding.imageViewItemTransform.setImageResource(R.drawable.ic_searched_place)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
                 binding.btnItemSave?.visibility = View.VISIBLE
-                binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
+                binding.btnItemSave?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
             }
             is ThruxionItem.SaveTargetOption -> {
                 binding.textViewItemTransform.text = "Save as ${item.targetType}"
@@ -129,7 +136,8 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.textViewItemTransform.text = "Save to: ${item.folder.name}"
                 val folderIcon = when (item.folder.icon) {
                     "star" -> android.R.drawable.btn_star_big_on
-                    else -> R.drawable.ic_justice
+                    "justice" -> R.drawable.ic_justice
+                    else -> if (item.folder.type == "PLACE") R.drawable.ic_searched_place else R.drawable.ic_profile
                 }
                 binding.imageViewItemTransform.setImageResource(folderIcon)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
