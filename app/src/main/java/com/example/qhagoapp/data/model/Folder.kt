@@ -13,5 +13,6 @@ data class Folder(
     val color: String? = null,
     val concept: String? = null,
     val city: String? = null,
-    val isShared: Boolean = false
+    val isShared: Boolean = false,
+    val isDefault: Boolean = false
 )

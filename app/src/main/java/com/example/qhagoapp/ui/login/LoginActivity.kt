@@ -24,7 +24,9 @@ import com.example.qhagoapp.network.ApiRegistry.communicationsApi
 import com.example.qhagoapp.network.ApiRegistry.humansApi
 import com.example.qhagoapp.network.model.SystemLoginRequest
 import com.example.qhagoapp.network.model.UserLoginRequest
+import com.example.qhagoapp.data.model.LoggedInUser
 import com.example.qhagoapp.network.security.TokenManager
+import com.example.qhagoapp.utils.UserSession
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity()
@@ -58,7 +60,10 @@ class LoginActivity : AppCompatActivity()
         // Demo button (login bypass)
         val bypassButton = binding.bypassButton
         bypassButton?.setOnClickListener {
+            val demoUser = LoggedInUser("demo_user", "Demo User")
+            UserSession.user = demoUser
             TokenManager.saveUserEmail("demo@qhago.com")
+            TokenManager.saveUserId(12345) // Dummy ID for demo
             TokenManager.setLoggedIn(true)
             startActivity(intent)
             finish()
@@ -149,10 +154,15 @@ class LoginActivity : AppCompatActivity()
                                 TokenManager.saveUserEmail(userData.email)
                                 TokenManager.saveHumanId(userData.human_id)
                                 TokenManager.saveUserId(userData.id)
+                                
+                                // Update UserSession for immediate UI reaction
+                                UserSession.user = LoggedInUser(
+                                    userId = userData.id.toString(),
+                                    displayName = userData.email
+                                )
                             }
                             TokenManager.setLoggedIn(true)
                             startActivity(intent)
-                            // Finish LoginActivity so the user can't press "back" to return here
                             finish()
                         }
                         else

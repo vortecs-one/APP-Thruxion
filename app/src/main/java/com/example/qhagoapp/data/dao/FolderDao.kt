@@ -6,8 +6,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FolderDao {
-    @Query("SELECT * FROM folders WHERE userId = :userId")
+    @Query("SELECT * FROM folders WHERE userId = :userId ORDER BY isDefault DESC, name ASC")
     fun getAllFolders(userId: String): Flow<List<Folder>>
+
+    @Query("SELECT * FROM folders WHERE userId = :userId AND name = :name AND type = :type LIMIT 1")
+    suspend fun getFolderByName(userId: String, name: String, type: String): Folder?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFolder(folder: Folder): Long

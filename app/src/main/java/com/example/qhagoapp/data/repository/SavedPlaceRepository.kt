@@ -14,6 +14,7 @@ class SavedPlaceRepository(
     private val contactDao: ContactDao
 ) {
     fun getAllFolders(userId: String): Flow<List<Folder>> = folderDao.getAllFolders(userId)
+    suspend fun getFolderByName(userId: String, name: String, type: String): Folder? = folderDao.getFolderByName(userId, name, type)
     fun getAllSavedPlaces(userId: String): Flow<List<SavedPlace>> = savedPlaceDao.getAllSavedPlaces(userId)
     fun getAllContacts(userId: String): Flow<List<Contact>> = contactDao.getAllContacts(userId)
 

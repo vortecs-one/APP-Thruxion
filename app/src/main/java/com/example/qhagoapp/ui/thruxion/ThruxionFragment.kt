@@ -4,6 +4,7 @@ import com.example.qhagoapp.R
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ActivityInfo
 import android.graphics.Color
@@ -62,6 +63,12 @@ import java.net.URLEncoder
 import androidx.core.graphics.toColorInt
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.geojson.LineString
+import kotlin.math.abs
+import kotlin.math.asin
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import androidx.core.net.toUri
 
 class ThruxionFragment : Fragment()
 {
@@ -73,7 +80,7 @@ class ThruxionFragment : Fragment()
         if (granted && hasLocationPermission())
             enableLocation()
         else
-            Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.location_permission_denied), Toast.LENGTH_SHORT).show()
     }
     private var mapLibreMap: MapLibreMap? = null
     private var currentSearchResults: List<SearchResult> = emptyList()
@@ -97,8 +104,7 @@ class ThruxionFragment : Fragment()
         SAVED_FOLDERS,
         SAVED_ITEMS,
         SAVE_TARGET_CHOICE,
-        SAVE_FOLDER_CHOICE,
-        ITEM_ACTIONS
+        SAVE_FOLDER_CHOICE
     }
     private var currentListMode = ListMode.EXPLORE
     private var selectedCategory: String? = null // CONTACT or PLACE
@@ -134,8 +140,8 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     private fun setupMap()
     {
-        binding.map?.onCreate(null)
-        binding.map?.getMapAsync { map ->
+        binding.map.onCreate(null)
+        binding.map.getMapAsync { map ->
             mapLibreMap = map
             map.uiSettings.apply {
                 isCompassEnabled = true
@@ -173,11 +179,11 @@ class ThruxionFragment : Fragment()
                     return@addOnMapClickListener true
                 }
                 // If tapping empty map space, hide cards
-                binding.userDetailCard?.visibility = View.GONE
+                binding.userDetailCard.visibility = View.GONE
                 false
             }
             applyMapStyle(ThemeManager.isDarkMode())
-            binding.map?.post {
+            binding.map.post {
                 resetMapPadding()
             }
         }
@@ -309,11 +315,16 @@ class ThruxionFragment : Fragment()
                     }
                     is ThruxionItem.ContactItem -> showEditDeleteContactDialogForList(item.contact)
                     is ThruxionItem.PlaceItem -> showEditDeletePlaceDialogForList(item.place)
+                    is ThruxionItem.FolderItem -> {
+                        if (!item.folder.isDefault) {
+                            showEditDeleteFolderDialog(item.folder)
+                        }
+                    }
                     else -> {}
                 }
             }
         )
-        binding.recyclerView?.adapter = transformAdapter
+        binding.recyclerView.adapter = transformAdapter
     }
 
     private fun handleBackNavigation() {
@@ -351,10 +362,10 @@ class ThruxionFragment : Fragment()
 
         if (targetType == "Contact") {
             savedViewModel.insertContact(name, avatarIndex, lat, lng, folderId, remoteUserId)
-            Toast.makeText(context, "Contact Saved", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.contact_saved), Toast.LENGTH_SHORT).show()
         } else {
             savedViewModel.insertPlace(name, null, lat, lng, folderId, remoteUserId)
-            Toast.makeText(context, "Place Saved", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.place_saved), Toast.LENGTH_SHORT).show()
         }
         currentListMode = ListMode.EXPLORE
         updateListContent()
@@ -365,10 +376,10 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     private fun setupUI()
     {
-        binding.fabMyLocation?.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
+        binding.fabMyLocation.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
             viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
-            binding.searchCard?.post {
+            binding.searchCard.post {
                 map.setPadding(50, 50, 50, 50)
                 map.animateCamera(
                     org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
@@ -379,21 +390,21 @@ class ThruxionFragment : Fragment()
                 )
             }
         }
-        binding.searchInputLayout?.setStartIconOnClickListener {
+        binding.searchInputLayout.setStartIconOnClickListener {
             performSearch()
         }
-        binding.editSearch?.setOnEditorActionListener { _, _, _ ->
+        binding.editSearch.setOnEditorActionListener { _, _, _ ->
             performSearch()
             true
         }
-        binding.switchMapMode?.apply {
+        binding.switchMapMode.apply {
             setOnCheckedChangeListener(null)
             isChecked = ThemeManager.isDarkMode()
             setOnCheckedChangeListener { _, isChecked ->
                 applyMapStyle(isChecked)
             }
         }
-        binding.btnSavedPlaces?.setOnClickListener {
+        binding.btnSavedPlaces.setOnClickListener {
             if (currentListMode == ListMode.EXPLORE) {
                 currentListMode = ListMode.SAVED_ROOT
             } else {
@@ -402,7 +413,7 @@ class ThruxionFragment : Fragment()
             }
             updateListContent()
         }
-        binding.editSearch?.doOnTextChanged { text, _, _, _ ->
+        binding.editSearch.doOnTextChanged { text, _, _, _ ->
             val query = text?.toString()?.trim().orEmpty()
             if (query.isEmpty() && isSearchMode)
             {
@@ -454,7 +465,7 @@ class ThruxionFragment : Fragment()
         val savedContacts = savedViewModel.allContacts.value ?: emptyList()
 
         // Update Save/Back Button Icon
-        binding.btnSavedPlaces?.setIconResource(
+        binding.btnSavedPlaces.setIconResource(
             if (currentListMode == ListMode.EXPLORE) R.drawable.ic_save 
             else R.drawable.ic_back
         )
@@ -476,8 +487,8 @@ class ThruxionFragment : Fragment()
                 }
             }
             ListMode.SAVED_ROOT -> {
-                items.add(ThruxionItem.MainCategory("Contacts", "CONTACT"))
-                items.add(ThruxionItem.MainCategory("Places", "PLACE"))
+                items.add(ThruxionItem.MainCategory(getString(R.string.contacts), "CONTACT"))
+                items.add(ThruxionItem.MainCategory(getString(R.string.places), "PLACE"))
             }
             ListMode.SAVED_FOLDERS -> {
                 val folders = savedViewModel.allFolders.value?.filter { it.type == selectedCategory } ?: emptyList()
@@ -516,13 +527,13 @@ class ThruxionFragment : Fragment()
     }
 
     private fun isSameLocation(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Boolean {
-        return Math.abs(lat1 - lat2) < 0.0001 && Math.abs(lon1 - lon2) < 0.0001
+        return abs(lat1 - lat2) < 0.0001 && abs(lon1 - lon2) < 0.0001
     }
 
     private fun showEditDeletePlaceDialogForList(place: com.example.qhagoapp.data.model.SavedPlace) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(place.name)
-            .setItems(arrayOf("Edit Name", "Delete")) { _, which ->
+            .setItems(arrayOf(getString(R.string.edit_name), getString(R.string.delete))) { _, which ->
                 if (which == 0) showEditNameDialog(place)
                 else {
                     savedViewModel.deletePlace(place)
@@ -531,10 +542,39 @@ class ThruxionFragment : Fragment()
             }.show()
     }
 
+    private fun showEditDeleteFolderDialog(folder: Folder) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(folder.name)
+            .setItems(arrayOf(getString(R.string.edit_name), getString(R.string.delete))) { _, which ->
+                if (which == 0) showEditFolderNameDialog(folder)
+                else {
+                    savedViewModel.deleteFolder(folder)
+                    updateListContent()
+                }
+            }.show()
+    }
+
+    private fun showEditFolderNameDialog(folder: Folder) {
+        val input = EditText(requireContext())
+        input.setText(folder.name)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.edit_name)
+            .setView(input)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val newName = input.text.toString()
+                if (newName.isNotBlank()) {
+                    savedViewModel.updateFolder(folder.copy(name = newName))
+                    updateListContent()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
     private fun showEditDeleteContactDialogForList(contact: com.example.qhagoapp.data.model.Contact) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(contact.name)
-            .setItems(arrayOf("Edit Name", "Delete")) { _, which ->
+            .setItems(arrayOf(getString(R.string.edit_name), getString(R.string.delete))) { _, which ->
                 if (which == 0) showEditContactNameDialog(contact)
                 else {
                     savedViewModel.deleteContact(contact)
@@ -594,15 +634,15 @@ class ThruxionFragment : Fragment()
     {
         if (!styleReady)
         {
-            Toast.makeText(context,"Map initializing...",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.map_initializing), Toast.LENGTH_SHORT).show()
             return
         }
-        val query = binding.editSearch?.text?.toString()?.trim().orEmpty()
+        val query = binding.editSearch.text?.toString()?.trim().orEmpty()
         if (query.isBlank())
         {
             isSearchMode = false
             currentListMode = ListMode.EXPLORE
-            binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
+            binding.btnSavedPlaces.setIconResource(R.drawable.ic_save)
             updateListContent()
             refreshMarkers(defaultUsers)
             clearSearchMarkers()
@@ -653,7 +693,7 @@ class ThruxionFragment : Fragment()
                         {
                             Toast.makeText(
                                 context,
-                                "Search unavailable ($responseCode)",
+                                getString(R.string.search_unavailable, responseCode),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -700,14 +740,14 @@ class ThruxionFragment : Fragment()
                         {
                             Toast.makeText(
                                 context,
-                                "No locations found",
+                                getString(R.string.no_locations_found),
                                 Toast.LENGTH_SHORT
                             ).show()
                             return@withContext
                         }
                         isSearchMode = true
                         currentListMode = ListMode.EXPLORE
-                        binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
+                        binding.btnSavedPlaces.setIconResource(R.drawable.ic_save)
                         currentSearchResults = results
                         updateListContent()
                         displaySearchResults(results)
@@ -718,7 +758,7 @@ class ThruxionFragment : Fragment()
                     Log.e("SEARCH_ERROR",e.stackTraceToString())
                     withContext(Dispatchers.Main)
                     {
-                        Toast.makeText(context,"Connection error",Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, getString(R.string.connection_error), Toast.LENGTH_SHORT).show()
                     }
                 }
                 finally
@@ -805,7 +845,7 @@ class ThruxionFragment : Fragment()
         {
             val userLatLng = LatLng(location.latitude,location.longitude)
             viewModel.updateUsersAroundLocation(location.latitude,location.longitude)
-            binding.map?.postDelayed({ map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLatLng,14.5),1800)}, 400)
+            binding.map.postDelayed({ map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLatLng,14.5),1800)}, 400)
         }
         else
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(-33.4489, -70.6693), 11.0),1200)
@@ -1019,6 +1059,7 @@ class ThruxionFragment : Fragment()
         return r * c
     }
 
+    @SuppressLint("UseKtx")
     private fun drawSearchRadius(center: LatLng)
     {
         val style = mapLibreMap?.style ?: return
@@ -1030,23 +1071,27 @@ class ThruxionFragment : Fragment()
             val angle = Math.toRadians((i * 360.0 / steps))
             val lat = Math.toRadians(center.latitude)
             val lng = Math.toRadians(center.longitude)
-            val newLat = Math.asin(Math.sin(lat) * Math.cos(radiusKm / 6371) +
-                    Math.cos(lat) * Math.sin(radiusKm / 6371) * Math.cos(angle))
-            val newLng = lng + Math.atan2(Math.sin(angle) * Math.sin(radiusKm / 6371) * Math.cos(lat),
-                Math.cos(radiusKm / 6371) - Math.sin(lat) * Math.sin(newLat))
+            val newLat = asin(
+                sin(lat) * cos(radiusKm / 6371) +
+                        cos(lat) * sin(radiusKm / 6371) * cos(angle)
+            )
+            val newLng = lng + atan2(
+                sin(angle) * sin(radiusKm / 6371) * cos(lat),
+                cos(radiusKm / 6371) - sin(lat) * sin(newLat)
+            )
             points.add(Point.fromLngLat(Math.toDegrees(newLng), Math.toDegrees(newLat)))
         }
         points.add(points[0]) // Close the circle
         val circleFeature = Feature.fromGeometry(LineString.fromLngLats(points))
         val source = style.getSource("radius-source") as? GeoJsonSource
-        if (source != null)
+        if (source != null) 
             source.setGeoJson(circleFeature)
         else
         {
             style.addSource(GeoJsonSource("radius-source", circleFeature))
             style.addLayerBelow(
                 FillLayer("radius-layer", "radius-source").withProperties(
-                fillColor(Color.parseColor("#3300FFFF")), // Translucent Cyan
+                fillColor("#3300FFFF".toColorInt()), // Translucent Cyan
                 fillOpacity(0.4f)
             ), "users-layer")
         }
@@ -1107,15 +1152,15 @@ class ThruxionFragment : Fragment()
             }
             // Calculate Distance
             updateDistanceOnCard(finalFeature)
-            findViewById<Button>(R.id.btnConnect).text = "Send Message"
+            findViewById<Button>(R.id.btnConnect).text = context.getString(R.string.send_message)
             
             val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
             if (finalIsSaved) {
-                saveBtn.text = "Saved Contact"
+                saveBtn.text = context.getString(R.string.saved_contact)
                 saveBtn.setIconResource(R.drawable.ic_save)
                 saveBtn.setOnClickListener { showEditDeleteContactDialog(finalFeature) }
             } else {
-                saveBtn.text = "Save Contact"
+                saveBtn.text = context.getString(R.string.save_contact)
                 saveBtn.setIconResource(R.drawable.ic_save)
                 saveBtn.setOnClickListener { saveCurrentContact(finalFeature) }
             }
@@ -1161,7 +1206,7 @@ class ThruxionFragment : Fragment()
         val title = finalFeature.getStringProperty("title") ?: "Place"
         val type = finalFeature.getStringProperty("type") ?: "Location"
         binding.userDetailCard.apply {
-            this!!.findViewById<TextView>(R.id.tvUserName).text = title
+            this.findViewById<TextView>(R.id.tvUserName).text = title
             // Location Icon
             findViewById<ImageView>(R.id.ivUserAvatar).apply {
                 setImageResource(R.drawable.ic_searched_place)
@@ -1169,16 +1214,16 @@ class ThruxionFragment : Fragment()
             }
             updateDistanceOnCard(finalFeature)
             val actionBtn = findViewById<Button>(R.id.btnConnect)
-            actionBtn.text = "Navigate"
+            actionBtn.text = getString(R.string.navigate)
             actionBtn.setOnClickListener { openFossNavigation(finalFeature) }
 
             val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
             if (finalIsSaved) {
-                saveBtn.text = "Saved"
+                saveBtn.text = getString(R.string.save) // Reusing "Save" as "Saved" for now, or add specific "Saved"
                 saveBtn.setIconResource(R.drawable.ic_save)
                 saveBtn.setOnClickListener { showEditDeletePlaceDialog(finalFeature) }
             } else {
-                saveBtn.text = "Save"
+                saveBtn.text = getString(R.string.save)
                 saveBtn.setIconResource(R.drawable.ic_save)
                 saveBtn.setOnClickListener { saveCurrentPlace(finalFeature) }
             }
@@ -1201,16 +1246,16 @@ class ThruxionFragment : Fragment()
         MaterialAlertDialogBuilder(context)
             .setTitle(place.name)
             .setMessage("What would you like to do with this saved place?")
-            .setNeutralButton("Delete") { _, _ ->
+            .setNeutralButton(getString(R.string.delete)) { _, _ ->
                 savedViewModel.deletePlace(place)
                 binding.userDetailCard?.visibility = View.GONE
                 resetMapPadding()
-                Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.delete), Toast.LENGTH_SHORT).show()
             }
-            .setPositiveButton("Edit Name") { _, _ ->
+            .setPositiveButton(getString(R.string.edit_name)) { _, _ ->
                 showEditNameDialog(place)
             }
-            .setNegativeButton("Close", null)
+            .setNegativeButton(getString(R.string.close), null)
             .show()
     }
 
@@ -1220,24 +1265,24 @@ class ThruxionFragment : Fragment()
             setSelection(place.name.length)
         }
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Edit Name")
+            .setTitle(getString(R.string.edit_name))
             .setView(input)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     savedViewModel.insertPlace(newName, place.address, place.latitude, place.longitude, place.folderId, place.remoteUserId, place.id)
-                    Toast.makeText(requireContext(), "Updated", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.updated), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     // Helper to ensure the map centers below the floating card
     private fun applyMapPaddingForCard()
     {
-        binding.userDetailCard?.post {
-            val cardHeight = binding.userDetailCard!!.height
+        binding.userDetailCard.post {
+            val cardHeight = binding.userDetailCard.height
             // Set top padding so markers center in the visible area below the card
             mapLibreMap?.setPadding(0, cardHeight + 40, 0, 0)
         }
@@ -1252,7 +1297,7 @@ class ThruxionFragment : Fragment()
     {
         val point = feature.geometry() as? Point ?: return
         val uri = "geo:${point.latitude()},${point.longitude()}?q=${point.latitude()},${point.longitude()}"
-        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uri))
+        val intent = Intent(Intent.ACTION_VIEW, uri.toUri())
         try {
             startActivity(intent)
         }
@@ -1299,20 +1344,20 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     // LIFECYCLE (IMPORTANT)
     // --------------------------------------------------
-    override fun onStart() { super.onStart(); binding.map?.onStart() }
+    override fun onStart() { super.onStart(); binding.map.onStart() }
     override fun onResume() { 
         super.onResume()
-        binding.map?.onResume()
+        binding.map.onResume()
         // Lock orientation to portrait for map fragment as requested
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     }
     override fun onPause() { 
-        binding.map?.onPause()
+        binding.map.onPause()
         // Restore orientation
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         super.onPause()
     }
-    override fun onStop() { binding.map?.onStop(); super.onStop() }
+    override fun onStop() { binding.map.onStop(); super.onStop() }
 
     override fun onDestroyView()
     {
@@ -1320,7 +1365,7 @@ class ThruxionFragment : Fragment()
             _binding?.root?.viewTreeObserver?.removeOnGlobalLayoutListener(it)
         }
         keyboardLayoutListener = null
-        binding.map?.onDestroy()
+        binding.map.onDestroy()
         _binding = null
         super.onDestroyView()
     }
@@ -1328,7 +1373,7 @@ class ThruxionFragment : Fragment()
     override fun onLowMemory()
     {
         super.onLowMemory()
-        binding.map?.onLowMemory()
+        binding.map.onLowMemory()
     }
 
     private fun setupKeyboardListener() {
@@ -1345,21 +1390,21 @@ class ThruxionFragment : Fragment()
             // If keyboard is visible (occupies more than 15% of the screen)
             if (keypadHeight > screenHeight * 0.15) {
                 // Keep only the top of the list (search bar and icons) visible
-                currentBinding.recyclerView?.visibility = View.GONE
-                currentBinding.fabMyLocation?.visibility = View.GONE
-                currentBinding.bottomListCard?.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                currentBinding.recyclerView.visibility = View.GONE
+                currentBinding.fabMyLocation.visibility = View.GONE
+                currentBinding.bottomListCard.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
             } else {
                 // Keyboard is hidden - restore full list
-                currentBinding.recyclerView?.visibility = View.VISIBLE
-                currentBinding.fabMyLocation?.visibility = View.VISIBLE
+                currentBinding.recyclerView.visibility = View.VISIBLE
+                currentBinding.fabMyLocation.visibility = View.VISIBLE
                 
                 // Restore fixed height (240dp)
                 val heightInPx = TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_DIP, 240f, resources.displayMetrics
                 ).toInt()
-                currentBinding.bottomListCard?.layoutParams?.height = heightInPx
+                currentBinding.bottomListCard.layoutParams?.height = heightInPx
             }
-            currentBinding.bottomListCard?.requestLayout()
+            currentBinding.bottomListCard.requestLayout()
         }
         root.viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
     }
@@ -1377,20 +1422,20 @@ class ThruxionFragment : Fragment()
         if (folders.isEmpty()) {
             showCreateFolderDialog("PLACE") { folderId ->
                 savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId, remoteUserId)
-                Toast.makeText(context, "Saved to new folder", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.saved_to_new_folder), Toast.LENGTH_SHORT).show()
             }
         } else {
             val folderNames = folders.map { it.name }.toTypedArray()
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Select Folder")
+                .setTitle(getString(R.string.select_folder))
                 .setItems(folderNames) { _, which ->
                     savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folders[which].id, remoteUserId)
-                    Toast.makeText(context, "Saved to ${folders[which].name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, getString(R.string.saved_to_folder, folders[which].name), Toast.LENGTH_SHORT).show()
                 }
-                .setPositiveButton("New Folder") { _, _ ->
+                .setPositiveButton(getString(R.string.new_folder)) { _, _ ->
                     showCreateFolderDialog("PLACE") { folderId ->
                         savedViewModel.insertPlace(title, null, point.latitude(), point.longitude(), folderId, remoteUserId)
-                        Toast.makeText(context, "Saved to new folder", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, getString(R.string.saved_to_new_folder), Toast.LENGTH_SHORT).show()
                     }
                 }
                 .show()
@@ -1408,20 +1453,20 @@ class ThruxionFragment : Fragment()
         if (folders.isEmpty()) {
             showCreateFolderDialog("CONTACT") { folderId ->
                 savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId, remoteUserId)
-                Toast.makeText(context, "Contact saved", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.contact_saved), Toast.LENGTH_SHORT).show()
             }
         } else {
             val folderNames = folders.map { it.name }.toTypedArray()
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Select Contact Group")
+                .setTitle(getString(R.string.select_contact_group))
                 .setItems(folderNames) { _, which ->
                     savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folders[which].id, remoteUserId)
-                    Toast.makeText(context, "Saved to ${folders[which].name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, getString(R.string.saved_to_folder, folders[which].name), Toast.LENGTH_SHORT).show()
                 }
-                .setPositiveButton("New Group") { _, _ ->
+                .setPositiveButton(getString(R.string.new_group)) { _, _ ->
                     showCreateFolderDialog("CONTACT") { folderId ->
                         savedViewModel.insertContact(name, avatarIndex, point.latitude(), point.longitude(), folderId, remoteUserId)
-                        Toast.makeText(context, "Saved to new group", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, getString(R.string.saved_to_folder, getString(R.string.new_group)), Toast.LENGTH_SHORT).show()
                     }
                 }
                 .show()
@@ -1434,32 +1479,32 @@ class ThruxionFragment : Fragment()
         
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(contact.name)
-            .setMessage("Contact options")
-            .setNeutralButton("Delete") { _, _ ->
+            .setMessage(getString(R.string.contact_options))
+            .setNeutralButton(getString(R.string.delete)) { _, _ ->
                 savedViewModel.deleteContact(contact)
-                binding.userDetailCard?.visibility = View.GONE
+                binding.userDetailCard.visibility = View.GONE
                 resetMapPadding()
             }
-            .setPositiveButton("Edit Name") { _, _ ->
+            .setPositiveButton(getString(R.string.edit_name)) { _, _ ->
                 showEditContactNameDialog(contact)
             }
-            .setNegativeButton("Close", null)
+            .setNegativeButton(getString(R.string.close), null)
             .show()
     }
 
     private fun showEditContactNameDialog(contact: com.example.qhagoapp.data.model.Contact) {
         val input = EditText(requireContext()).apply { setText(contact.name) }
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Edit Contact Name")
+            .setTitle(getString(R.string.edit_contact_name))
             .setView(input)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     savedViewModel.insertContact(newName, contact.avatarIndex, contact.latitude, contact.longitude, contact.folderId, contact.remoteUserId, contact.id)
                     updateListContent()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
@@ -1471,14 +1516,14 @@ class ThruxionFragment : Fragment()
             setPadding(padding, padding, padding, padding)
         }
 
-        val nameHint = if (type == "PLACE") "Name or Concept (e.g. Vacation/Food)" else "Group Name (e.g. Lawyers/Friends)"
+        val nameHint = if (type == "PLACE") getString(R.string.folder_name_hint) else getString(R.string.group_name_hint)
         val nameInput = EditText(context).apply { hint = nameHint }
-        val cityInput = EditText(context).apply { hint = "City (Optional)" }
+        val cityInput = EditText(context).apply { hint = getString(R.string.city_optional) }
         
         // Country Autocomplete
         val countries = Locale.getISOCountries().map { Locale("", it).displayCountry }.sorted()
         val countryInput = MaterialAutoCompleteTextView(context).apply {
-            hint = "Country"
+            hint = getString(R.string.country)
             setAdapter(ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, countries))
             threshold = 1
         }
@@ -1486,7 +1531,7 @@ class ThruxionFragment : Fragment()
             addView(countryInput)
         }
 
-        val sharedCheck = CheckBox(context).apply { text = "Shared with others" }
+        val sharedCheck = CheckBox(context).apply { text = getString(R.string.shared_with_others) }
 
         layout.addView(nameInput)
         layout.addView(cityInput)
@@ -1494,9 +1539,9 @@ class ThruxionFragment : Fragment()
         layout.addView(sharedCheck)
 
         MaterialAlertDialogBuilder(context)
-            .setTitle(if (type == "PLACE") "New Folder" else "New Contact Group")
+            .setTitle(if (type == "PLACE") getString(R.string.new_folder) else getString(R.string.new_contact_group))
             .setView(layout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(getString(R.string.create)) { _, _ ->
                 val name = nameInput.text.toString().trim()
                 if (name.isNotEmpty()) {
                     lifecycleScope.launch {
@@ -1512,10 +1557,10 @@ class ThruxionFragment : Fragment()
                         onCreated?.invoke(id)
                     }
                 } else {
-                    Toast.makeText(context, "Name cannot be empty", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, getString(R.string.name_cannot_be_empty), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 }

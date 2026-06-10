@@ -85,8 +85,20 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
             }
             is ThruxionItem.FolderItem -> {
                 binding.textViewItemTransform.text = "${item.folder.name} (${item.count})"
-                binding.imageViewItemTransform.setImageResource(R.drawable.ic_justice)
+                val folderIcon = when (item.folder.icon) {
+                    "star" -> android.R.drawable.btn_star_big_on
+                    else -> R.drawable.ic_justice
+                }
+                binding.imageViewItemTransform.setImageResource(folderIcon)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
+                
+                // Show edit icon ONLY for custom (non-default) folders
+                if (!item.folder.isDefault) {
+                    binding.btnItemSave?.visibility = View.VISIBLE
+                    binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
+                } else {
+                    binding.btnItemSave?.visibility = View.GONE
+                }
             }
             is ThruxionItem.ContactItem -> {
                 binding.textViewItemTransform.text = item.contact.name
@@ -115,7 +127,11 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
             }
             is ThruxionItem.SaveFolderOption -> {
                 binding.textViewItemTransform.text = "Save to: ${item.folder.name}"
-                binding.imageViewItemTransform.setImageResource(R.drawable.ic_justice)
+                val folderIcon = when (item.folder.icon) {
+                    "star" -> android.R.drawable.btn_star_big_on
+                    else -> R.drawable.ic_justice
+                }
+                binding.imageViewItemTransform.setImageResource(folderIcon)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
             }
             is ThruxionItem.NewFolderOption -> {
