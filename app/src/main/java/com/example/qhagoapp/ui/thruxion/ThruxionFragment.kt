@@ -341,7 +341,16 @@ class ThruxionFragment : Fragment()
                     }
                     is ThruxionItem.FolderItem -> {
                         if (!item.folder.isDefault) {
-                            showEditFolderNameDialog(item.folder)
+                            // Left icon is now X (Delete)
+                            MaterialAlertDialogBuilder(requireContext())
+                                .setTitle(R.string.delete)
+                                .setMessage(R.string.delete_folder_confirmation)
+                                .setPositiveButton(R.string.delete) { _, _ ->
+                                    savedViewModel.deleteFolder(item.folder)
+                                    updateListContent()
+                                }
+                                .setNegativeButton(R.string.cancel, null)
+                                .show()
                         }
                     }
                     else -> {}
@@ -349,15 +358,8 @@ class ThruxionFragment : Fragment()
             },
             onDeleteClicked = { item ->
                 if (item is ThruxionItem.FolderItem && !item.folder.isDefault) {
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(R.string.delete)
-                        .setMessage(R.string.delete_folder_confirmation)
-                        .setPositiveButton(R.string.delete) { _, _ ->
-                            savedViewModel.deleteFolder(item.folder)
-                            updateListContent()
-                        }
-                        .setNegativeButton(R.string.cancel, null)
-                        .show()
+                    // Right icon is now Pencil (Edit)
+                    showEditFolderNameDialog(item.folder)
                 }
             }
         )

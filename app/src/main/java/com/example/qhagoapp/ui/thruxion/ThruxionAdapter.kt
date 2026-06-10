@@ -55,6 +55,7 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
     ) {
         val context = binding.root.context
         val yellowColor = ContextCompat.getColor(context, R.color.purple_500)
+        val fluorGreen = ContextCompat.getColor(context, R.color.fluor_green)
         
         binding.btnItemSave?.visibility = View.GONE
         binding.btnItemSecondary?.visibility = View.GONE
@@ -75,14 +76,26 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                     binding.imageViewItemTransform.setColorFilter(yellowColor)
                 }
                 binding.btnItemSave?.visibility = View.VISIBLE
-                binding.btnItemSave?.setIconResource(if (item.isSaved) R.drawable.ic_edit else R.drawable.ic_add)
+                if (item.isSaved) {
+                    binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
+                    binding.btnItemSave?.setIconTintResource(R.color.purple_500)
+                } else {
+                    binding.btnItemSave?.setIconResource(R.drawable.ic_add)
+                    binding.btnItemSave?.setIconTintResource(R.color.fluor_green)
+                }
             }
             is ThruxionItem.SearchResultItem -> {
                 binding.textViewItemTransform.text = item.result.shortName
                 binding.imageViewItemTransform.setImageResource(R.drawable.ic_searched_place)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
                 binding.btnItemSave?.visibility = View.VISIBLE
-                binding.btnItemSave?.setIconResource(if (item.isSaved) R.drawable.ic_edit else R.drawable.ic_add)
+                if (item.isSaved) {
+                    binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
+                    binding.btnItemSave?.setIconTintResource(R.color.purple_500)
+                } else {
+                    binding.btnItemSave?.setIconResource(R.drawable.ic_add)
+                    binding.btnItemSave?.setIconTintResource(R.color.fluor_green)
+                }
             }
             is ThruxionItem.MainCategory -> {
                 binding.textViewItemTransform.text = item.title
@@ -110,10 +123,12 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 // Show edit icon ONLY for custom (non-default) folders
                 if (!item.folder.isDefault) {
                     binding.btnItemSave?.visibility = View.VISIBLE
-                    binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
+                    binding.btnItemSave?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
+                    binding.btnItemSave?.setIconTintResource(R.color.brilliant_red)
                     
                     binding.btnItemSecondary?.visibility = View.VISIBLE
-                    binding.btnItemSecondary?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
+                    binding.btnItemSecondary?.setIconResource(R.drawable.ic_edit)
+                    binding.btnItemSecondary?.setIconTintResource(R.color.purple_500)
                 }
             }
             is ThruxionItem.ContactItem -> {
@@ -131,6 +146,7 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 }
                 binding.btnItemSave?.visibility = View.VISIBLE
                 binding.btnItemSave?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
+                binding.btnItemSave?.setIconTintResource(R.color.brilliant_red)
             }
             is ThruxionItem.PlaceItem -> {
                 binding.textViewItemTransform.text = item.place.name
@@ -138,6 +154,7 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
                 binding.btnItemSave?.visibility = View.VISIBLE
                 binding.btnItemSave?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
+                binding.btnItemSave?.setIconTintResource(R.color.brilliant_red)
             }
             is ThruxionItem.SaveTargetOption -> {
                 binding.textViewItemTransform.text = "Save as ${item.targetType}"
@@ -163,7 +180,7 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
             is ThruxionItem.NewFolderOption -> {
                 binding.textViewItemTransform.text = "+ Create New Group/Folder"
                 binding.imageViewItemTransform.setImageResource(R.drawable.ic_add)
-                binding.imageViewItemTransform.setColorFilter(yellowColor)
+                binding.imageViewItemTransform.setColorFilter(fluorGreen)
             }
             is ThruxionItem.BackAction -> {
                 binding.textViewItemTransform.text = "Go Back"

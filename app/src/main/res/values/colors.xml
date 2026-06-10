@@ -9,4 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <color name="login_blue">#00B0FF</color>
     <color name="login_green">#00950B</color>
+    <color name="fluor_green">#00FF00</color>
+    <color name="brilliant_red">#FF0000</color>
 </resources>
