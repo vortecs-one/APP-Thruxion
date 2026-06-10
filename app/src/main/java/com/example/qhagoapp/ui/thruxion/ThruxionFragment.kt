@@ -90,6 +90,22 @@ class ThruxionFragment : Fragment()
     private var styleReady = false
     private var keyboardLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
+    private enum class ListMode {
+        EXPLORE,
+        SAVED_ROOT,
+        SAVED_FOLDERS,
+        SAVED_ITEMS,
+        SAVE_TARGET_CHOICE,
+        SAVE_FOLDER_CHOICE,
+        ITEM_ACTIONS
+    }
+    private var currentListMode = ListMode.EXPLORE
+    private var selectedCategory: String? = null // CONTACT or PLACE
+    private var selectedFolder: Folder? = null
+    private var pendingSaveItem: Any? = null
+    private var pendingSaveTargetType: String? = null
+    private var pendingActionItem: Any? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?)
     {
@@ -199,60 +215,143 @@ class ThruxionFragment : Fragment()
     {
         binding.recyclerView?.layoutManager = LinearLayoutManager(requireContext())
         transformAdapter = TransformAdapter(
-            onItemClicked = { user ->
-                mapLibreMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(
-                        LatLng(user.lat, user.lng),
-                        16.0
-                    ),
-                    1500
-                )
-                if (isSearchMode)
-                {
-                    val result = currentSearchResults.find { it.lat == user.lat && it.lon == user.lng }
-                    result?.let {
-                        val feature = Feature.fromGeometry(Point.fromLngLat(it.lon,it.lat)
-                        ).apply {
-                            addStringProperty("title",it.shortName)
-                            addStringProperty("full_name",it.displayName)
-                            addStringProperty("type",it.type ?: "Place")
+            onItemClicked = { item ->
+                when (item) {
+                    is ThruxionItem.NearbyUser -> {
+                        mapLibreMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(item.user.lat, item.user.lng), 16.0), 1500)
+                        val feature = Feature.fromGeometry(Point.fromLngLat(item.user.lng, item.user.lat)).apply {
+                            addStringProperty("name", item.user.name)
+                            addStringProperty("avatar-id", "avatar-${item.user.avatarIndex}")
                         }
-                        showLocationDetails(feature, isSaved = false)
-                        handleSelection(it)
+                        showUserDetails(feature, isSaved = item.isSaved)
                     }
-                }
-                else
-                {
-                    val feature = Feature.fromGeometry(Point.fromLngLat(user.lng,user.lat)
-                    ).apply {
-                        addStringProperty("name",user.name)
-                        addStringProperty("avatar-id","avatar-${user.avatarIndex}")
+                    is ThruxionItem.SearchResultItem -> {
+                        mapLibreMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(item.result.lat, item.result.lon), 16.0), 1500)
+                        val feature = Feature.fromGeometry(Point.fromLngLat(item.result.lon, item.result.lat)).apply {
+                            addStringProperty("title", item.result.shortName)
+                            addStringProperty("type", item.result.type ?: "Place")
+                        }
+                        showLocationDetails(feature, isSaved = item.isSaved)
+                        handleSelection(item.result)
                     }
-                    showUserDetails(feature, isSaved = false)
+                    is ThruxionItem.MainCategory -> {
+                        selectedCategory = item.type
+                        currentListMode = ListMode.SAVED_FOLDERS
+                        updateListContent()
+                    }
+                    is ThruxionItem.FolderItem -> {
+                        selectedFolder = item.folder
+                        currentListMode = ListMode.SAVED_ITEMS
+                        updateListContent()
+                    }
+                    is ThruxionItem.ContactItem -> {
+                        mapLibreMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(item.contact.latitude, item.contact.longitude), 16.0), 1500)
+                        val feature = Feature.fromGeometry(Point.fromLngLat(item.contact.longitude, item.contact.latitude)).apply {
+                            addStringProperty("name", item.contact.name)
+                            addNumberProperty("id", item.contact.id)
+                            addStringProperty("avatar-id", "avatar-${item.contact.avatarIndex}")
+                        }
+                        showUserDetails(feature, isSaved = true)
+                    }
+                    is ThruxionItem.PlaceItem -> {
+                        mapLibreMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(item.place.latitude, item.place.longitude), 16.0), 1500)
+                        val feature = Feature.fromGeometry(Point.fromLngLat(item.place.longitude, item.place.latitude)).apply {
+                            addStringProperty("title", item.place.name)
+                            addNumberProperty("id", item.place.id)
+                            addStringProperty("type", item.place.type ?: "Saved Place")
+                        }
+                        showLocationDetails(feature, isSaved = true)
+                    }
+                    is ThruxionItem.SaveTargetOption -> {
+                        pendingSaveTargetType = item.targetType
+                        currentListMode = ListMode.SAVE_FOLDER_CHOICE
+                        updateListContent()
+                    }
+                    is ThruxionItem.SaveFolderOption -> {
+                        performFinalSave(item.originalItem, item.targetType, item.folder.id)
+                    }
+                    is ThruxionItem.NewFolderOption -> {
+                        showCreateFolderDialog(if (pendingSaveTargetType == "Contact") "CONTACT" else "PLACE") { folderId ->
+                            pendingSaveItem?.let { performFinalSave(it, pendingSaveTargetType!!, folderId) }
+                        }
+                    }
+                    is ThruxionItem.BackAction -> {
+                        handleBackNavigation()
+                    }
                 }
             },
-            onSaveClicked = { user ->
-                val feature = if (isSearchMode) {
-                    val result = currentSearchResults.find { it.lat == user.lat && it.lon == user.lng }
-                    Feature.fromGeometry(Point.fromLngLat(user.lng, user.lat)).apply {
-                        addStringProperty("title", user.name)
-                        addStringProperty("type", result?.type ?: "Place")
+            onSaveClicked = { item ->
+                when (item) {
+                    is ThruxionItem.NearbyUser -> {
+                        if (item.isSaved) {
+                            pendingActionItem = item.user
+                            // In a real app we might want to find which contact/place it is
+                            // For now, let's just trigger the choice flow
+                            pendingSaveItem = item.user
+                            currentListMode = ListMode.SAVE_TARGET_CHOICE
+                            updateListContent()
+                        } else {
+                            pendingSaveItem = item.user
+                            currentListMode = ListMode.SAVE_TARGET_CHOICE
+                            updateListContent()
+                        }
                     }
-                } else {
-                    Feature.fromGeometry(Point.fromLngLat(user.lng, user.lat)).apply {
-                        addStringProperty("name", user.name)
-                        addStringProperty("avatar-id", "avatar-${user.avatarIndex}")
+                    is ThruxionItem.SearchResultItem -> {
+                        pendingSaveItem = item.result
+                        currentListMode = ListMode.SAVE_TARGET_CHOICE
+                        updateListContent()
                     }
-                }
-
-                if (isSearchMode) {
-                    saveCurrentPlace(feature)
-                } else {
-                    saveCurrentContact(feature)
+                    is ThruxionItem.ContactItem -> showEditDeleteContactDialogForList(item.contact)
+                    is ThruxionItem.PlaceItem -> showEditDeletePlaceDialogForList(item.place)
+                    else -> {}
                 }
             }
         )
         binding.recyclerView?.adapter = transformAdapter
+    }
+
+    private fun handleBackNavigation() {
+        currentListMode = when (currentListMode) {
+            ListMode.SAVED_ROOT -> ListMode.EXPLORE
+            ListMode.SAVED_FOLDERS -> ListMode.SAVED_ROOT
+            ListMode.SAVED_ITEMS -> ListMode.SAVED_FOLDERS
+            ListMode.SAVE_TARGET_CHOICE -> ListMode.EXPLORE
+            ListMode.SAVE_FOLDER_CHOICE -> ListMode.SAVE_TARGET_CHOICE
+            else -> ListMode.EXPLORE
+        }
+        if (currentListMode == ListMode.EXPLORE) {
+            binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
+        }
+        updateListContent()
+    }
+
+    private fun performFinalSave(originalItem: Any, targetType: String, folderId: Long) {
+        val lat: Double
+        val lng: Double
+        val name: String
+        val avatarIndex: Int
+
+        if (originalItem is MapUser) {
+            lat = originalItem.lat
+            lng = originalItem.lng
+            name = originalItem.name
+            avatarIndex = originalItem.avatarIndex
+        } else if (originalItem is SearchResult) {
+            lat = originalItem.lat
+            lng = originalItem.lon
+            name = originalItem.shortName
+            avatarIndex = 0
+        } else return
+
+        if (targetType == "Contact") {
+            savedViewModel.insertContact(name, avatarIndex, lat, lng, folderId)
+            Toast.makeText(context, "Contact Saved", Toast.LENGTH_SHORT).show()
+        } else {
+            savedViewModel.insertPlace(name, null, lat, lng, folderId)
+            Toast.makeText(context, "Place Saved", Toast.LENGTH_SHORT).show()
+        }
+        currentListMode = ListMode.EXPLORE
+        updateListContent()
     }
 
     // --------------------------------------------------
@@ -290,20 +389,24 @@ class ThruxionFragment : Fragment()
             }
         }
         binding.btnSavedPlaces?.setOnClickListener {
-            showSavedPlacesDialog()
+            if (currentListMode == ListMode.EXPLORE) {
+                currentListMode = ListMode.SAVED_ROOT
+                binding.btnSavedPlaces?.setIconResource(android.R.drawable.ic_menu_search)
+            } else {
+                currentListMode = ListMode.EXPLORE
+                binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
+            }
+            updateListContent()
         }
         binding.editSearch?.doOnTextChanged { text, _, _, _ ->
             val query = text?.toString()?.trim().orEmpty()
-            // If search was cleared with the X button
             if (query.isEmpty() && isSearchMode)
             {
                 isSearchMode = false
-                // Restore nearby users list
-                transformAdapter.submitList(defaultUsers)
-                // Restore nearby user markers
+                currentListMode = ListMode.EXPLORE
                 refreshMarkers(defaultUsers)
-                // Remove search markers
                 clearSearchMarkers()
+                updateListContent()
             }
         }
     }
@@ -322,20 +425,113 @@ class ThruxionFragment : Fragment()
     private fun observeData()
     {
         viewModel.users.observe(viewLifecycleOwner) { users ->
-            // Save default nearby users
             defaultUsers = users
-            // Only update list if NOT searching
-            if (!isSearchMode)
-                transformAdapter.submitList(users)
             refreshMarkers(users)
+            if (currentListMode == ListMode.EXPLORE) updateListContent()
         }
-        savedViewModel.allFolders.observe(viewLifecycleOwner) { /* Triggered to keep LiveData active */ }
+        savedViewModel.allFolders.observe(viewLifecycleOwner) { if (currentListMode != ListMode.EXPLORE) updateListContent() }
         savedViewModel.allSavedPlaces.observe(viewLifecycleOwner) { places ->
             updateSavedMarkers(places)
+            updateListContent()
         }
         savedViewModel.allContacts.observe(viewLifecycleOwner) { contacts ->
             updateContactMarkers(contacts)
+            updateListContent()
         }
+    }
+
+    private fun updateListContent() {
+        val items = mutableListOf<ThruxionItem>()
+        val savedPlaces = savedViewModel.allSavedPlaces.value ?: emptyList()
+        val savedContacts = savedViewModel.allContacts.value ?: emptyList()
+
+        when (currentListMode) {
+            ListMode.EXPLORE -> {
+                if (isSearchMode) {
+                    currentSearchResults.forEach { res ->
+                        val isSaved = savedPlaces.any { isSameLocation(it.latitude, it.longitude, res.lat, res.lon) } ||
+                                      savedContacts.any { isSameLocation(it.latitude, it.longitude, res.lat, res.lon) }
+                        items.add(ThruxionItem.SearchResultItem(res, isSaved))
+                    }
+                } else {
+                    defaultUsers.forEach { user ->
+                        val isSaved = savedContacts.any { isSameLocation(it.latitude, it.longitude, user.lat, user.lng) } ||
+                                      savedPlaces.any { isSameLocation(it.latitude, it.longitude, user.lat, user.lng) }
+                        items.add(ThruxionItem.NearbyUser(user, isSaved))
+                    }
+                }
+            }
+            ListMode.SAVED_ROOT -> {
+                items.add(ThruxionItem.BackAction)
+                items.add(ThruxionItem.MainCategory("Contacts", "CONTACT"))
+                items.add(ThruxionItem.MainCategory("Places", "PLACE"))
+            }
+            ListMode.SAVED_FOLDERS -> {
+                items.add(ThruxionItem.BackAction)
+                val folders = savedViewModel.allFolders.value?.filter { it.type == selectedCategory } ?: emptyList()
+                folders.forEach { folder ->
+                    val count = if (folder.type == "PLACE") savedPlaces.count { it.folderId == folder.id }
+                                else savedContacts.count { it.folderId == folder.id }
+                    items.add(ThruxionItem.FolderItem(folder, count))
+                }
+            }
+            ListMode.SAVED_ITEMS -> {
+                items.add(ThruxionItem.BackAction)
+                selectedFolder?.let { folder ->
+                    if (folder.type == "PLACE") {
+                        savedPlaces.filter { it.folderId == folder.id }.forEach { items.add(ThruxionItem.PlaceItem(it)) }
+                    } else {
+                        savedContacts.filter { it.folderId == folder.id }.forEach { items.add(ThruxionItem.ContactItem(it)) }
+                    }
+                }
+            }
+            ListMode.SAVE_TARGET_CHOICE -> {
+                items.add(ThruxionItem.BackAction)
+                pendingSaveItem?.let {
+                    items.add(ThruxionItem.SaveTargetOption(it, "Contact"))
+                    items.add(ThruxionItem.SaveTargetOption(it, "Place"))
+                }
+            }
+            ListMode.SAVE_FOLDER_CHOICE -> {
+                items.add(ThruxionItem.BackAction)
+                val type = if (pendingSaveTargetType == "Contact") "CONTACT" else "PLACE"
+                val folders = savedViewModel.allFolders.value?.filter { it.type == type } ?: emptyList()
+                folders.forEach { folder ->
+                    items.add(ThruxionItem.SaveFolderOption(pendingSaveItem!!, pendingSaveTargetType!!, folder))
+                }
+                items.add(ThruxionItem.NewFolderOption)
+            }
+            else -> {}
+        }
+        transformAdapter.submitList(items)
+    }
+
+    private fun isSameLocation(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Boolean {
+        return Math.abs(lat1 - lat2) < 0.0001 && Math.abs(lon1 - lon2) < 0.0001
+    }
+
+    private fun showEditDeletePlaceDialogForList(place: com.example.qhagoapp.data.model.SavedPlace) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(place.name)
+            .setItems(arrayOf("Edit Name", "Delete")) { _, which ->
+                if (which == 0) showEditNameDialog(place)
+                else {
+                    savedViewModel.deletePlace(place)
+                    updateListContent()
+                }
+            }.show()
+    }
+
+    private fun showEditDeleteContactDialogForList(contact: com.example.qhagoapp.data.model.Contact) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(contact.name)
+            .setItems(arrayOf("Edit Name", "Delete")) { _, which ->
+                if (which == 0) showEditContactNameDialog(contact)
+                else {
+                    savedViewModel.deleteContact(contact)
+                    updateListContent()
+                }
+            }.show()
     }
 
     // --------------------------------------------------
@@ -396,7 +592,9 @@ class ThruxionFragment : Fragment()
         if (query.isBlank())
         {
             isSearchMode = false
-            transformAdapter.submitList(defaultUsers)
+            currentListMode = ListMode.EXPLORE
+            binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
+            updateListContent()
             refreshMarkers(defaultUsers)
             clearSearchMarkers()
             return
@@ -499,10 +697,10 @@ class ThruxionFragment : Fragment()
                             return@withContext
                         }
                         isSearchMode = true
+                        currentListMode = ListMode.EXPLORE
+                        binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
                         currentSearchResults = results
-                        val mappedUsers =
-                            convertSearchResultsToUsers(results)
-                        transformAdapter.submitList(mappedUsers)
+                        updateListContent()
                         displaySearchResults(results)
                     }
                 }
@@ -610,19 +808,6 @@ class ThruxionFragment : Fragment()
             requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun convertSearchResultsToUsers(results: List<SearchResult>): List<MapUser>
-    {
-        return results.mapIndexed { index, result ->
-            MapUser(
-                id = result.id.hashCode().toString(),
-                name = result.shortName,
-                lat = result.lat,
-                lng = result.lon,
-                avatarIndex = index % 16
-            )
-        }
     }
 
     private fun setupSearchIcon(style: org.maplibre.android.maps.Style, isDark: Boolean)
@@ -1239,6 +1424,7 @@ class ThruxionFragment : Fragment()
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     savedViewModel.insertContact(newName, contact.avatarIndex, contact.latitude, contact.longitude, contact.folderId, contact.id)
+                    updateListContent()
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -1300,103 +1486,4 @@ class ThruxionFragment : Fragment()
             .setNegativeButton("Cancel", null)
             .show()
     }
-
-    private fun showSavedPlacesDialog() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("My Saved Items")
-            .setItems(arrayOf("Places & Folders", "Contacts & Groups")) { _, which ->
-                if (which == 0) showFoldersByType("PLACE")
-                else showFoldersByType("CONTACT")
-            }
-            .setNegativeButton("Close", null)
-            .show()
-    }
-
-    private fun showFoldersByType(type: String) {
-        val folders = savedViewModel.allFolders.value?.filter { it.type == type } ?: emptyList()
-        if (folders.isEmpty()) {
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(if (type == "PLACE") "Folders" else "Contact Groups")
-                .setMessage("No folders yet.")
-                .setPositiveButton("Create New") { _, _ -> showCreateFolderDialog(type) }
-                .show()
-            return
-        }
-
-        val folderNames = folders.map { it.name }.toTypedArray()
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(if (type == "PLACE") "My Folders" else "My Groups")
-            .setItems(folderNames) { _, which ->
-                if (type == "PLACE") showPlacesInFolder(folders[which])
-                else showContactsInFolder(folders[which])
-            }
-            .setPositiveButton("New Folder") { _, _ -> showCreateFolderDialog(type) }
-            .show()
-    }
-
-    private fun showContactsInFolder(folder: Folder) {
-        val allContacts = savedViewModel.allContacts.value ?: emptyList()
-        val folderContacts = allContacts.filter { it.folderId == folder.id }
-
-        val contactNames = folderContacts.map { it.name }.toTypedArray()
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(folder.name)
-            .setItems(contactNames) { _, which ->
-                val selected = folderContacts[which]
-                mapLibreMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(LatLng(selected.latitude, selected.longitude), 15.0),
-                    1200
-                )
-                val feature = Feature.fromGeometry(Point.fromLngLat(selected.longitude, selected.latitude)).apply {
-                    addStringProperty("name", selected.name)
-                    addNumberProperty("id", selected.id)
-                    addStringProperty("avatar-id", "avatar-${selected.avatarIndex}")
-                }
-                showUserDetails(feature, isSaved = true)
-            }
-            .setNeutralButton("Delete Group") { _, _ ->
-                savedViewModel.deleteFolder(folder)
-            }
-            .setPositiveButton("Back") { _, _ -> showFoldersByType("CONTACT") }
-            .show()
-    }
-
-    private fun showPlacesInFolder(folder: Folder) {
-        val allPlaces = savedViewModel.allSavedPlaces.value ?: emptyList()
-        val folderPlaces = allPlaces.filter { it.folderId == folder.id }
-
-        val placeNames = folderPlaces.map { it.name }.toTypedArray()
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(folder.name)
-            .setItems(placeNames) { _, which ->
-                val selected = folderPlaces[which]
-                mapLibreMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(LatLng(selected.latitude, selected.longitude), 15.0),
-                    1200
-                )
-                val feature = Feature.fromGeometry(Point.fromLngLat(selected.longitude, selected.latitude)).apply {
-                    addStringProperty("title", selected.name)
-                    addNumberProperty("id", selected.id)
-                    addStringProperty("type", "Saved Place")
-                }
-                showLocationDetails(feature, isSaved = true)
-            }
-            .setNeutralButton("Delete Folder") { _, _ ->
-                savedViewModel.deleteFolder(folder)
-            }
-            .setPositiveButton("Back") { _, _ -> showFoldersByType("PLACE") }
-            .show()
-    }
 }
-
-data class SearchResult(
-    val id: String,
-    val displayName: String,
-    val shortName: String,
-    val lat: Double,
-    val lon: Double,
-    val type: String?,
-    val importance: Double?,
-    val country: String?,
-    val city: String?
-)

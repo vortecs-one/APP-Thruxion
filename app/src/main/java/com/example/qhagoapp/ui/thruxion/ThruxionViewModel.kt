@@ -18,6 +18,18 @@ data class MapUser(
     val avatarIndex: Int
 )
 
+data class SearchResult(
+    val id: String,
+    val displayName: String,
+    val shortName: String,
+    val lat: Double,
+    val lon: Double,
+    val type: String?,
+    val importance: Double?,
+    val country: String?,
+    val city: String?
+)
+
 class TransformViewModel : ViewModel()
 {
     private val _healthStatus = MutableLiveData<String>()
