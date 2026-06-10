@@ -26,7 +26,6 @@
             android:title="@string/menu_settings" />
 
     </group>
-    <!-- ADD THIS LOGOUT ITEM -->
     <group android:id="@+id/group_logout" android:checkableBehavior="none">
         <item
             android:id="@+id/nav_logout"

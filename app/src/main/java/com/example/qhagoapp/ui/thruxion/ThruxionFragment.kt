@@ -319,9 +319,6 @@ class ThruxionFragment : Fragment()
             ListMode.SAVE_FOLDER_CHOICE -> ListMode.SAVE_TARGET_CHOICE
             else -> ListMode.EXPLORE
         }
-        if (currentListMode == ListMode.EXPLORE) {
-            binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
-        }
         updateListContent()
     }
 
@@ -391,10 +388,9 @@ class ThruxionFragment : Fragment()
         binding.btnSavedPlaces?.setOnClickListener {
             if (currentListMode == ListMode.EXPLORE) {
                 currentListMode = ListMode.SAVED_ROOT
-                binding.btnSavedPlaces?.setIconResource(android.R.drawable.ic_menu_search)
             } else {
-                currentListMode = ListMode.EXPLORE
-                binding.btnSavedPlaces?.setIconResource(R.drawable.ic_save)
+                handleBackNavigation()
+                return@setOnClickListener
             }
             updateListContent()
         }
@@ -445,6 +441,12 @@ class ThruxionFragment : Fragment()
         val savedPlaces = savedViewModel.allSavedPlaces.value ?: emptyList()
         val savedContacts = savedViewModel.allContacts.value ?: emptyList()
 
+        // Update Save/Back Button Icon
+        binding.btnSavedPlaces?.setIconResource(
+            if (currentListMode == ListMode.EXPLORE) R.drawable.ic_save 
+            else R.drawable.ic_back
+        )
+
         when (currentListMode) {
             ListMode.EXPLORE -> {
                 if (isSearchMode) {
@@ -462,12 +464,10 @@ class ThruxionFragment : Fragment()
                 }
             }
             ListMode.SAVED_ROOT -> {
-                items.add(ThruxionItem.BackAction)
                 items.add(ThruxionItem.MainCategory("Contacts", "CONTACT"))
                 items.add(ThruxionItem.MainCategory("Places", "PLACE"))
             }
             ListMode.SAVED_FOLDERS -> {
-                items.add(ThruxionItem.BackAction)
                 val folders = savedViewModel.allFolders.value?.filter { it.type == selectedCategory } ?: emptyList()
                 folders.forEach { folder ->
                     val count = if (folder.type == "PLACE") savedPlaces.count { it.folderId == folder.id }
@@ -476,7 +476,6 @@ class ThruxionFragment : Fragment()
                 }
             }
             ListMode.SAVED_ITEMS -> {
-                items.add(ThruxionItem.BackAction)
                 selectedFolder?.let { folder ->
                     if (folder.type == "PLACE") {
                         savedPlaces.filter { it.folderId == folder.id }.forEach { items.add(ThruxionItem.PlaceItem(it)) }
@@ -486,14 +485,12 @@ class ThruxionFragment : Fragment()
                 }
             }
             ListMode.SAVE_TARGET_CHOICE -> {
-                items.add(ThruxionItem.BackAction)
                 pendingSaveItem?.let {
                     items.add(ThruxionItem.SaveTargetOption(it, "Contact"))
                     items.add(ThruxionItem.SaveTargetOption(it, "Place"))
                 }
             }
             ListMode.SAVE_FOLDER_CHOICE -> {
-                items.add(ThruxionItem.BackAction)
                 val type = if (pendingSaveTargetType == "Contact") "CONTACT" else "PLACE"
                 val folders = savedViewModel.allFolders.value?.filter { it.type == type } ?: emptyList()
                 folders.forEach { folder ->
