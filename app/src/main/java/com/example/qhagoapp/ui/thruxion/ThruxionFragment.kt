@@ -5,6 +5,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
@@ -32,7 +33,11 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.CheckBox
 import com.example.qhagoapp.data.model.Folder
-import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -193,38 +198,60 @@ class ThruxionFragment : Fragment()
     private fun setupRecyclerView()
     {
         binding.recyclerView?.layoutManager = LinearLayoutManager(requireContext())
-        transformAdapter = TransformAdapter { user ->
-            mapLibreMap?.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(user.lat, user.lng),
-                    16.0
-                ),
-                1500
-            )
-            if (isSearchMode)
-            {
-                val result = currentSearchResults.find { it.lat == user.lat && it.lon == user.lng }
-                result?.let {
-                    val feature = Feature.fromGeometry(Point.fromLngLat(it.lon,it.lat)
-                    ).apply {
-                        addStringProperty("title",it.shortName)
-                        addStringProperty("full_name",it.displayName)
-                        addStringProperty("type",it.type ?: "Place")
+        transformAdapter = TransformAdapter(
+            onItemClicked = { user ->
+                mapLibreMap?.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(user.lat, user.lng),
+                        16.0
+                    ),
+                    1500
+                )
+                if (isSearchMode)
+                {
+                    val result = currentSearchResults.find { it.lat == user.lat && it.lon == user.lng }
+                    result?.let {
+                        val feature = Feature.fromGeometry(Point.fromLngLat(it.lon,it.lat)
+                        ).apply {
+                            addStringProperty("title",it.shortName)
+                            addStringProperty("full_name",it.displayName)
+                            addStringProperty("type",it.type ?: "Place")
+                        }
+                        showLocationDetails(feature, isSaved = false)
+                        handleSelection(it)
                     }
-                    showLocationDetails(feature, isSaved = false)
-                    handleSelection(it)
+                }
+                else
+                {
+                    val feature = Feature.fromGeometry(Point.fromLngLat(user.lng,user.lat)
+                    ).apply {
+                        addStringProperty("name",user.name)
+                        addStringProperty("avatar-id","avatar-${user.avatarIndex}")
+                    }
+                    showUserDetails(feature, isSaved = false)
+                }
+            },
+            onSaveClicked = { user ->
+                val feature = if (isSearchMode) {
+                    val result = currentSearchResults.find { it.lat == user.lat && it.lon == user.lng }
+                    Feature.fromGeometry(Point.fromLngLat(user.lng, user.lat)).apply {
+                        addStringProperty("title", user.name)
+                        addStringProperty("type", result?.type ?: "Place")
+                    }
+                } else {
+                    Feature.fromGeometry(Point.fromLngLat(user.lng, user.lat)).apply {
+                        addStringProperty("name", user.name)
+                        addStringProperty("avatar-id", "avatar-${user.avatarIndex}")
+                    }
+                }
+
+                if (isSearchMode) {
+                    saveCurrentPlace(feature)
+                } else {
+                    saveCurrentContact(feature)
                 }
             }
-            else
-            {
-                val feature = Feature.fromGeometry(Point.fromLngLat(user.lng,user.lat)
-                ).apply {
-                    addStringProperty("name",user.name)
-                    addStringProperty("avatar-id","avatar-${user.avatarIndex}")
-                }
-                showUserDetails(feature, isSaved = false)
-            }
-        }
+        )
         binding.recyclerView?.adapter = transformAdapter
     }
 
@@ -248,7 +275,7 @@ class ThruxionFragment : Fragment()
                 )
             }
         }
-        binding.btnSearch?.setOnClickListener {
+        binding.searchInputLayout?.setStartIconOnClickListener {
             performSearch()
         }
         binding.editSearch?.setOnEditorActionListener { _, _, _ ->
@@ -1001,18 +1028,16 @@ class ThruxionFragment : Fragment()
     {
         binding.userDetailCard?.post {
             val cardHeight = binding.userDetailCard!!.height
-            val searchHeight = binding.searchCard?.height
+            val searchHeight = binding.searchCard?.height ?: 0
             // Set top padding so markers center in the visible area below the cards
-            mapLibreMap?.setPadding(0, cardHeight + searchHeight!! + 40, 0, 0)
+            mapLibreMap?.setPadding(0, cardHeight + searchHeight + 40, 0, 0)
         }
     }
 
     private fun resetMapPadding()
     {
-        // Use camelCase: searchCard instead of search_card
-        val searchHeight = binding.searchCard?.height
-        if (searchHeight != null)
-            mapLibreMap?.setPadding(0, searchHeight + 40, 0, 0)
+        val searchHeight = binding.searchCard?.height ?: 0
+        mapLibreMap?.setPadding(0, searchHeight + 40, 0, 0)
     }
 
     private fun openFossNavigation(feature: Feature)
@@ -1067,8 +1092,18 @@ class ThruxionFragment : Fragment()
     // LIFECYCLE (IMPORTANT)
     // --------------------------------------------------
     override fun onStart() { super.onStart(); binding.map?.onStart() }
-    override fun onResume() { super.onResume(); binding.map?.onResume() }
-    override fun onPause() { binding.map?.onPause(); super.onPause() }
+    override fun onResume() { 
+        super.onResume()
+        binding.map?.onResume()
+        // Lock orientation to portrait for map fragment as requested
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+    override fun onPause() { 
+        binding.map?.onPause()
+        // Restore orientation
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        super.onPause()
+    }
     override fun onStop() { binding.map?.onStop(); super.onStop() }
 
     override fun onDestroyView()
@@ -1218,29 +1253,42 @@ class ThruxionFragment : Fragment()
             setPadding(padding, padding, padding, padding)
         }
 
-        val nameHint = if (type == "PLACE") "Folder Name (e.g. My Favorites)" else "Group Name (e.g. Lawyers)"
+        val nameHint = if (type == "PLACE") "Name or Concept (e.g. Vacation/Food)" else "Group Name (e.g. Lawyers/Friends)"
         val nameInput = EditText(context).apply { hint = nameHint }
-        val conceptInput = EditText(context).apply { hint = "Concept (e.g. Restaurants/Legal)" }
-        val cityInput = EditText(context).apply { hint = "City" }
+        val cityInput = EditText(context).apply { hint = "City (Optional)" }
+        
+        // Country Autocomplete
+        val countries = Locale.getISOCountries().map { Locale("", it).displayCountry }.sorted()
+        val countryInput = MaterialAutoCompleteTextView(context).apply {
+            hint = "Country"
+            setAdapter(ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, countries))
+            threshold = 1
+        }
+        val countryLayout = TextInputLayout(context, null, com.google.android.material.R.attr.textInputStyle).apply {
+            addView(countryInput)
+        }
+
         val sharedCheck = CheckBox(context).apply { text = "Shared with others" }
 
         layout.addView(nameInput)
-        layout.addView(conceptInput)
         layout.addView(cityInput)
+        layout.addView(countryLayout)
         layout.addView(sharedCheck)
 
         MaterialAlertDialogBuilder(context)
-            .setTitle(if (type == "PLACE") "Create Place Folder" else "Create Contact Group")
+            .setTitle(if (type == "PLACE") "New Folder" else "New Contact Group")
             .setView(layout)
             .setPositiveButton("Create") { _, _ ->
                 val name = nameInput.text.toString().trim()
                 if (name.isNotEmpty()) {
                     lifecycleScope.launch {
+                        val city = cityInput.text.toString().trim().ifEmpty { null }
+                        val country = countryInput.text.toString().trim().ifEmpty { null }
                         val id = savedViewModel.insertFolder(
                             name,
                             type,
-                            conceptInput.text.toString().trim().ifEmpty { null },
-                            cityInput.text.toString().trim().ifEmpty { null },
+                            country, // Reusing concept field for Country
+                            city,
                             sharedCheck.isChecked
                         )
                         onCreated?.invoke(id)

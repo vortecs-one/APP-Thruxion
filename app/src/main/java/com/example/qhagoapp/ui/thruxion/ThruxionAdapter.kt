@@ -6,7 +6,10 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.qhagoapp.databinding.ItemThruxionBinding
 
-class TransformAdapter(private val onItemClicked: (MapUser) -> Unit) : ListAdapter<MapUser, TransformViewHolder>(DiffCallback())
+class TransformAdapter(
+    private val onItemClicked: (MapUser) -> Unit,
+    private val onSaveClicked: (MapUser) -> Unit
+) : ListAdapter<MapUser, TransformViewHolder>(DiffCallback())
 {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransformViewHolder
     {
@@ -22,7 +25,9 @@ class TransformAdapter(private val onItemClicked: (MapUser) -> Unit) : ListAdapt
         val resId = holder.imageView.resources.getIdentifier(resName, "drawable", holder.imageView.context.packageName)
         if (resId != 0)
             holder.imageView.setImageResource(resId)
+        
         holder.itemView.setOnClickListener { onItemClicked(user) }
+        holder.saveButton?.setOnClickListener { onSaveClicked(user) }
     }
 }
 
@@ -30,6 +35,7 @@ class TransformViewHolder(binding: ItemThruxionBinding) : RecyclerView.ViewHolde
 {
     val imageView = binding.imageViewItemTransform
     val textView = binding.textViewItemTransform
+    val saveButton = binding.btnItemSave
 }
 
 class DiffCallback : DiffUtil.ItemCallback<MapUser>()

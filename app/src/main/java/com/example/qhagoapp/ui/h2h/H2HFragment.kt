@@ -88,7 +88,6 @@ class H2HFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        webView.destroy()
         super.onDestroyView()
     }
 }

@@ -102,7 +102,6 @@ class FlechaFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        webView.destroy()
         super.onDestroyView()
     }
 }

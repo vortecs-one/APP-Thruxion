@@ -1,9 +1,11 @@
 package com.example.qhagoapp
 
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
@@ -86,6 +88,26 @@ class MainActivity : AppCompatActivity() {
 
         // 6. Setup Bottom Navigation
         binding.appBarMain.contentMain.bottomNavView?.setupWithNavController(navController)
+
+        // 7. Setup Keyboard Visibility Listener
+        setupKeyboardListener()
+    }
+
+    private fun setupKeyboardListener() {
+        val root = binding.root
+        root.viewTreeObserver.addOnGlobalLayoutListener {
+            val rect = Rect()
+            root.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = root.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+
+            // If keyboard is visible (occupies more than 15% of the screen)
+            if (keypadHeight > screenHeight * 0.15) {
+                binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
+            } else {
+                binding.appBarMain.contentMain.bottomNavView?.visibility = View.VISIBLE
+            }
+        }
     }
 
     private fun logout() {
