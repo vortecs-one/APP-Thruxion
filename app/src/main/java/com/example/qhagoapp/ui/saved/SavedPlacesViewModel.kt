@@ -49,38 +49,44 @@ class SavedPlacesViewModel(application: Application) : AndroidViewModel(applicat
     private suspend fun ensureDefaultFoldersCreated(userId: String) {
         val context = getApplication<Application>()
         
-        // Cleanup old "Favorites" folders (Legacy from previous version)
-        val oldFavEn = "Favorites"
-        val oldFavEs = "Favoritos"
-        val legacyFolders = listOf(oldFavEn, oldFavEs)
-        
-        legacyFolders.forEach { legacyName ->
-            repository.getFolderByName(userId, legacyName, "CONTACT")?.let { repository.deleteFolder(it) }
-            repository.getFolderByName(userId, legacyName, "PLACE")?.let { repository.deleteFolder(it) }
+        // Tags to identify folders uniquely across languages
+        val TAG_FAV_CONTACTS = "FAV_CONTACTS"
+        val TAG_FAV_PLACES = "FAV_PLACES"
+        val TAG_LAWYERS = "LAWYERS"
+
+        // Cleanup legacy folders without tags (if any) using their names
+        val legacyNames = listOf("Favorites", "Favoritos", "Favorite Contacts", "Favorite Places", "Contactos Favoritos", "Lugares Favoritos", "Lawyers", "Abogados")
+        legacyNames.forEach { name ->
+            repository.getFolderByName(userId, name, "CONTACT")?.let { 
+                if (it.systemTag == null) repository.deleteFolder(it) 
+            }
+            repository.getFolderByName(userId, name, "PLACE")?.let { 
+                if (it.systemTag == null) repository.deleteFolder(it) 
+            }
         }
 
-        // Favorite Contacts Folder
-        val favContactName = context.getString(com.example.qhagoapp.R.string.default_folder_favorite_contacts)
-        val favContactExisting = repository.getFolderByName(userId, favContactName, "CONTACT")
-        if (favContactExisting == null) {
-            repository.insertFolder(Folder(userId = userId, name = favContactName, type = "CONTACT", icon = "star", isDefault = true))
+        // 1. Favorite Contacts Folder
+        repository.getFolderByTag(userId, TAG_FAV_CONTACTS).let { existing ->
+            if (existing == null) {
+                val name = context.getString(com.example.qhagoapp.R.string.default_folder_favorite_contacts)
+                repository.insertFolder(Folder(userId = userId, name = name, type = "CONTACT", icon = "star", isDefault = true, systemTag = TAG_FAV_CONTACTS))
+            }
         }
 
-        // Favorite Places Folder
-        val favPlaceName = context.getString(com.example.qhagoapp.R.string.default_folder_favorite_places)
-        val favPlaceExisting = repository.getFolderByName(userId, favPlaceName, "PLACE")
-        if (favPlaceExisting == null) {
-            repository.insertFolder(Folder(userId = userId, name = favPlaceName, type = "PLACE", icon = "star", isDefault = true))
+        // 2. Favorite Places Folder
+        repository.getFolderByTag(userId, TAG_FAV_PLACES).let { existing ->
+            if (existing == null) {
+                val name = context.getString(com.example.qhagoapp.R.string.default_folder_favorite_places)
+                repository.insertFolder(Folder(userId = userId, name = name, type = "PLACE", icon = "star", isDefault = true, systemTag = TAG_FAV_PLACES))
+            }
         }
 
-        // Lawyers Folder
-        val lawyerName = context.getString(com.example.qhagoapp.R.string.default_folder_lawyers)
-        val lawyerExisting = repository.getFolderByName(userId, lawyerName, "CONTACT")
-        if (lawyerExisting == null) {
-            repository.insertFolder(Folder(userId = userId, name = lawyerName, type = "CONTACT", icon = "justice", isDefault = true))
-        } else if (lawyerExisting.icon != "justice" || !lawyerExisting.isDefault) {
-            // Fix existing Lawyers folder if it's missing the icon or default flag
-            repository.updateFolder(lawyerExisting.copy(icon = "justice", isDefault = true))
+        // 3. Lawyers Folder
+        repository.getFolderByTag(userId, TAG_LAWYERS).let { existing ->
+            if (existing == null) {
+                val name = context.getString(com.example.qhagoapp.R.string.default_folder_lawyers)
+                repository.insertFolder(Folder(userId = userId, name = name, type = "CONTACT", icon = "justice", isDefault = true, systemTag = TAG_LAWYERS))
+            }
         }
     }
 

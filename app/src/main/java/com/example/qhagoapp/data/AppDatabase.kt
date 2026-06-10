@@ -11,7 +11,7 @@ import com.example.qhagoapp.data.model.Contact
 import com.example.qhagoapp.data.model.Folder
 import com.example.qhagoapp.data.model.SavedPlace
 
-@Database(entities = [Folder::class, SavedPlace::class, Contact::class], version = 5, exportSchema = false)
+@Database(entities = [Folder::class, SavedPlace::class, Contact::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun savedPlaceDao(): SavedPlaceDao

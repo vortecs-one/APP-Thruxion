@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
@@ -151,10 +150,13 @@ class ThruxionFragment : Fragment()
                 isRotateGesturesEnabled = true 
                 isTiltGesturesEnabled = true   
                 
-                // Shift the compass (reset position button) down slightly
+                //MAP COMPASS
                 setCompassMargins(0, 150, 40, 0)
+                //MAP LIBRE ICON AND INGO
+                setLogoGravity(Gravity.BOTTOM or Gravity.START)
                 setLogoMargins(40, 0, 0, 40)
-                setAttributionMargins(140, 0, 0, 40)
+                setAttributionGravity(Gravity.BOTTOM or Gravity.END)
+                setAttributionMargins(0, 0, 750, 40) // 120 right margin to clear the FAB
             }
             map.addOnMapClickListener { latLng ->
                 val screenPoint = map.projection.toScreenLocation(latLng)
@@ -301,8 +303,6 @@ class ThruxionFragment : Fragment()
                     is ThruxionItem.NearbyUser -> {
                         if (item.isSaved) {
                             pendingActionItem = item.user
-                            // In a real app we might want to find which contact/place it is
-                            // For now, let's just trigger the choice flow
                             pendingSaveItem = item.user
                             currentListMode = ListMode.SAVE_TARGET_CHOICE
                             updateListContent()
@@ -318,12 +318,26 @@ class ThruxionFragment : Fragment()
                         updateListContent()
                     }
                     is ThruxionItem.ContactItem -> {
-                        savedViewModel.deleteContact(item.contact)
-                        updateListContent()
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.delete)
+                            .setMessage(R.string.delete_contact_confirmation)
+                            .setPositiveButton(R.string.delete) { _, _ ->
+                                savedViewModel.deleteContact(item.contact)
+                                updateListContent()
+                            }
+                            .setNegativeButton(R.string.cancel, null)
+                            .show()
                     }
                     is ThruxionItem.PlaceItem -> {
-                        savedViewModel.deletePlace(item.place)
-                        updateListContent()
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.delete)
+                            .setMessage(R.string.delete_place_confirmation)
+                            .setPositiveButton(R.string.delete) { _, _ ->
+                                savedViewModel.deletePlace(item.place)
+                                updateListContent()
+                            }
+                            .setNegativeButton(R.string.cancel, null)
+                            .show()
                     }
                     is ThruxionItem.FolderItem -> {
                         if (!item.folder.isDefault) {
@@ -331,6 +345,19 @@ class ThruxionFragment : Fragment()
                         }
                     }
                     else -> {}
+                }
+            },
+            onDeleteClicked = { item ->
+                if (item is ThruxionItem.FolderItem && !item.folder.isDefault) {
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.delete)
+                        .setMessage(R.string.delete_folder_confirmation)
+                        .setPositiveButton(R.string.delete) { _, _ ->
+                            savedViewModel.deleteFolder(item.folder)
+                            updateListContent()
+                        }
+                        .setNegativeButton(R.string.cancel, null)
+                        .show()
                 }
             }
         )
@@ -552,17 +579,6 @@ class ThruxionFragment : Fragment()
                     savedViewModel.updateFolder(folder.copy(name = newName))
                     updateListContent()
                 }
-            }
-            .setNeutralButton(R.string.delete) { _, _ ->
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(R.string.delete)
-                    .setMessage("Are you sure you want to delete this folder and all its contents?")
-                    .setPositiveButton(R.string.delete) { _, _ ->
-                        savedViewModel.deleteFolder(folder)
-                        updateListContent()
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-                    .show()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()

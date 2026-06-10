@@ -14,5 +14,6 @@ data class Folder(
     val concept: String? = null,
     val city: String? = null,
     val isShared: Boolean = false,
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
+    val systemTag: String? = null // e.g. "FAVORITES_CONTACTS", "FAVORITES_PLACES", "LAWYERS"
 )

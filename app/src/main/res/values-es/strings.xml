@@ -102,4 +102,7 @@
     <string name="country">País</string>
     <string name="shared_with_others">Compartido con otros</string>
     <string name="search_unavailable">Búsqueda no disponible (%d)</string>
+    <string name="delete_contact_confirmation">¿Estás seguro de que deseas eliminar este contacto?</string>
+    <string name="delete_place_confirmation">¿Estás seguro de que deseas eliminar este lugar?</string>
+    <string name="delete_folder_confirmation">¿Estás seguro de que deseas eliminar esta carpeta y todo su contenido?</string>
 </resources>

@@ -28,7 +28,8 @@ sealed class ThruxionItem {
 
 class TransformAdapter(
     private val onItemClicked: (ThruxionItem) -> Unit,
-    private val onSaveClicked: (ThruxionItem) -> Unit
+    private val onSaveClicked: (ThruxionItem) -> Unit,
+    private val onDeleteClicked: (ThruxionItem) -> Unit = {}
 ) : ListAdapter<ThruxionItem, TransformViewHolder>(ThruxionDiffCallback())
 {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransformViewHolder
@@ -40,7 +41,7 @@ class TransformAdapter(
     override fun onBindViewHolder(holder: TransformViewHolder, position: Int)
     {
         val item = getItem(position)
-        holder.bind(item, onItemClicked, onSaveClicked)
+        holder.bind(item, onItemClicked, onSaveClicked, onDeleteClicked)
     }
 }
 
@@ -49,12 +50,14 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
     fun bind(
         item: ThruxionItem,
         onItemClicked: (ThruxionItem) -> Unit,
-        onSaveClicked: (ThruxionItem) -> Unit
+        onSaveClicked: (ThruxionItem) -> Unit,
+        onDeleteClicked: (ThruxionItem) -> Unit
     ) {
         val context = binding.root.context
         val yellowColor = ContextCompat.getColor(context, R.color.purple_500)
         
         binding.btnItemSave?.visibility = View.GONE
+        binding.btnItemSecondary?.visibility = View.GONE
         binding.imageViewItemTransform.clearColorFilter()
 
         when (item) {
@@ -87,7 +90,15 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
             }
             is ThruxionItem.FolderItem -> {
-                binding.textViewItemTransform.text = "${item.folder.name} (${item.count})"
+                // Determine localized name for default folders
+                val folderName = when (item.folder.systemTag) {
+                    "FAV_CONTACTS" -> context.getString(R.string.default_folder_favorite_contacts)
+                    "FAV_PLACES" -> context.getString(R.string.default_folder_favorite_places)
+                    "LAWYERS" -> context.getString(R.string.default_folder_lawyers)
+                    else -> item.folder.name
+                }
+                
+                binding.textViewItemTransform.text = "$folderName (${item.count})"
                 val folderIcon = when (item.folder.icon) {
                     "star" -> android.R.drawable.btn_star_big_on
                     "justice" -> R.drawable.ic_justice
@@ -100,8 +111,9 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 if (!item.folder.isDefault) {
                     binding.btnItemSave?.visibility = View.VISIBLE
                     binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
-                } else {
-                    binding.btnItemSave?.visibility = View.GONE
+                    
+                    binding.btnItemSecondary?.visibility = View.VISIBLE
+                    binding.btnItemSecondary?.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
                 }
             }
             is ThruxionItem.ContactItem -> {
@@ -133,7 +145,13 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
             }
             is ThruxionItem.SaveFolderOption -> {
-                binding.textViewItemTransform.text = "Save to: ${item.folder.name}"
+                val folderName = when (item.folder.systemTag) {
+                    "FAV_CONTACTS" -> context.getString(R.string.default_folder_favorite_contacts)
+                    "FAV_PLACES" -> context.getString(R.string.default_folder_favorite_places)
+                    "LAWYERS" -> context.getString(R.string.default_folder_lawyers)
+                    else -> item.folder.name
+                }
+                binding.textViewItemTransform.text = "Save to: $folderName"
                 val folderIcon = when (item.folder.icon) {
                     "star" -> android.R.drawable.btn_star_big_on
                     "justice" -> R.drawable.ic_justice
@@ -156,6 +174,7 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
 
         binding.root.setOnClickListener { onItemClicked(item) }
         binding.btnItemSave?.setOnClickListener { onSaveClicked(item) }
+        binding.btnItemSecondary?.setOnClickListener { onDeleteClicked(item) }
     }
 }
 
