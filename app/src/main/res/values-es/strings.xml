@@ -46,7 +46,7 @@
     <string name="prompt_name">Nombre completo</string>
     <string name="prompt_names">Nombres</string>
     <string name="prompt_lastnames">Apellidos</string>
-    <string name="prompt_legal_id">ID Legal (Pasaporte, DNI, RUT)</string>
+    <string name="prompt_legal_id">ID Legal</string>
     <string name="prompt_gender">Género</string>
     <string name="prompt_phone">Número de teléfono</string>
     <string name="prompt_birthdate">Fecha de nacimiento</string>

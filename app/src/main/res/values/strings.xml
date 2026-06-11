@@ -50,7 +50,7 @@
     <string name="prompt_name">Full Name</string>
     <string name="prompt_names">Names</string>
     <string name="prompt_lastnames">Lastnames</string>
-    <string name="prompt_legal_id">Legal ID (Passport, DNI, RUT)</string>
+    <string name="prompt_legal_id">Legal ID</string>
     <string name="prompt_gender">Gender</string>
     <string name="prompt_phone">Phone Number</string>
     <string name="prompt_birthdate">Birthdate</string>
