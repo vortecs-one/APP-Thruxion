@@ -40,10 +40,23 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupUI() {
+        // Document Type Dropdown
+        val docTypes = arrayOf("Passport", "Driver's License", "State ID", "R.U.T")
+        val docAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, docTypes)
+        binding.actDocumentType.setAdapter(docAdapter)
+        binding.actDocumentType.setOnItemClickListener { _, _, _, _ ->
+            binding.actDocumentType.dismissDropDown()
+            binding.actDocumentType.clearFocus()
+        }
+
         // Gender Dropdown
         val genderOptions = arrayOf("Male", "Female", "Non-binary", "Other")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, genderOptions)
         binding.actGender.setAdapter(adapter)
+        binding.actGender.setOnItemClickListener { _, _, _, _ ->
+            binding.actGender.dismissDropDown()
+            binding.actGender.clearFocus()
+        }
 
         binding.etBirthdate.setOnClickListener {
             showDatePicker()
@@ -100,7 +113,15 @@ class ProfileFragment : Fragment() {
             binding.etLegalId.setText(human.legal_id)
             binding.etEmail.setText(human.users?.firstOrNull()?.email)
             binding.etBirthdate.setText(human.birthdate?.split("T")?.firstOrNull())
-            binding.actGender.setText(human.gender, false)
+            
+            // Map gender code to display name for the dropdown
+            val displayGender = when(human.gender?.uppercase()) {
+                "XY" -> "Male"
+                "XX" -> "Female"
+                "NON-BINARY" -> "Non-binary"
+                else -> human.gender
+            }
+            binding.actGender.setText(displayGender, false)
         }
 
         viewModel.updateResult.observe(viewLifecycleOwner) { result ->
@@ -162,7 +183,8 @@ class ProfileFragment : Fragment() {
         datePicker.addOnPositiveButtonClickListener { selection ->
             val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
             calendar.timeInMillis = selection
-            val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            format.timeZone = TimeZone.getTimeZone("UTC")
             binding.etBirthdate.setText(format.format(calendar.time))
         }
 

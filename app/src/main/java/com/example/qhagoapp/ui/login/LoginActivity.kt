@@ -1,7 +1,6 @@
 package com.example.qhagoapp.ui.login
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -80,10 +79,9 @@ class LoginActivity : AppCompatActivity()
             val loginState = it ?: return@Observer
             // disable login button unless both username / password is valid
             login.isEnabled = loginState.isDataValid
-            if (loginState.usernameError != null)
-                username.error = getString(loginState.usernameError)
-            if (loginState.passwordError != null)
-                password.error = getString(loginState.passwordError)
+            
+            binding.tilUsername.error = loginState.usernameError?.let { errorRes -> getString(errorRes) }
+            binding.tilPassword.error = loginState.passwordError?.let { errorRes -> getString(errorRes) }
         })
         loginViewModel.loginResult.observe(this@LoginActivity, Observer {
             val loginResult = it ?: return@Observer
@@ -94,9 +92,9 @@ class LoginActivity : AppCompatActivity()
             }
             if (loginResult.success != null) {
                 updateUiWithUser(loginResult.success)
+                setResult(RESULT_OK)
+                finish()
             }
-            setResult(Activity.RESULT_OK)
-            finish()
         })
         username.afterTextChanged {
             loginViewModel.loginDataChanged(

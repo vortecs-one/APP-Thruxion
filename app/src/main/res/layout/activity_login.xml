@@ -20,79 +20,101 @@
         android:layout_height="150dp"
         android:layout_marginTop="50dp"
         android:contentDescription="@string/thruxion_icon"
-        app:layout_constraintBottom_toTopOf="@+id/username"
+        app:layout_constraintBottom_toTopOf="@+id/til_username"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.35"
         app:srcCompat="@mipmap/ic_launcher" />
 
-    <EditText
-        android:id="@+id/username"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_username"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="350dp"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="324dp"
-        android:autofillHints=""
         android:hint="@string/prompt_email"
-        android:inputType="textEmailAddress"
-        android:selectAllOnFocus="true"
+        app:boxStrokeColor="@color/white"
+        app:hintTextColor="@color/white"
+        android:textColorHint="@color/white"
+        app:startIconDrawable="@drawable/ic_profile"
+        app:startIconTint="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.482"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <EditText
-        android:id="@+id/password"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints="emailAddress"
+            android:inputType="textEmailAddress"
+            android:textColor="@color/white"
+            android:selectAllOnFocus="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_password"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="350dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="32dp"
-        android:autofillHints=""
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:hint="@string/prompt_password"
-        android:imeActionLabel="@string/action_sign_in_short"
-        android:imeOptions="actionDone"
-        android:inputType="textPassword"
-        android:selectAllOnFocus="true"
+        app:boxStrokeColor="@color/white"
+        app:hintTextColor="@color/white"
+        android:textColorHint="@color/white"
+        app:endIconMode="password_toggle"
+        app:endIconTint="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.482"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/username" />
+        app:layout_constraintTop_toBottomOf="@+id/til_username">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints="password"
+            android:imeActionLabel="@string/action_sign_in_short"
+            android:imeOptions="actionDone"
+            android:inputType="textPassword"
+            android:textColor="@color/white"
+            android:selectAllOnFocus="true" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/login"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_width="350dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="24dp"
         android:enabled="false"
         android:text="@string/action_sign_in_short"
-        app:layout_constraintEnd_toStartOf="@+id/register"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/password" />
+        app:layout_constraintTop_toBottomOf="@+id/til_password" />
 
     <Button
         android:id="@+id/register"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_width="350dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="12dp"
         android:text="@string/action_register"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/login"
-        app:layout_constraintTop_toBottomOf="@+id/password" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/login" />
 
     <Button
         android:id="@+id/bypassButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_width="350dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="12dp"
         android:layout_marginBottom="64dp"
         android:text="@string/demo"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/login"
+        app:layout_constraintTop_toBottomOf="@+id/register"
         app:layout_constraintVertical_bias="0.0"
         app:rippleColor="#FFBE00" />
 
@@ -106,8 +128,8 @@
         android:layout_marginBottom="64dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/password"
-        app:layout_constraintStart_toStartOf="@+id/password"
+        app:layout_constraintEnd_toEndOf="@+id/til_password"
+        app:layout_constraintStart_toStartOf="@+id/til_password"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.3" />
 

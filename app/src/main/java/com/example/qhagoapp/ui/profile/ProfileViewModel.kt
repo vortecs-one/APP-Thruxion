@@ -50,7 +50,14 @@ class ProfileViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val request = UpdateHumanRequest(uniqueId, legalId, name, lastname, birthdate, gender)
+                // Ensure gender is sent as the code expected by API (XY/XX)
+                val genderCode = when(gender.uppercase()) {
+                    "MALE" -> "XY"
+                    "FEMALE" -> "XX"
+                    else -> gender // Already XY, XX or something else
+                }
+
+                val request = UpdateHumanRequest(uniqueId, legalId, name, lastname, birthdate, genderCode)
                 val response = humansApi.updateHuman(humanId, request)
                 if (response.isSuccessful) {
                     val updateResponse = response.body()

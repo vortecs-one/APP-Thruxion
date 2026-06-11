@@ -75,25 +75,49 @@
                 android:inputType="textPersonName" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- LEGAL ID FIELD -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_legal_id"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        <!-- DOCUMENT TYPE AND LEGAL ID FIELD -->
+        <LinearLayout
+            android:id="@+id/ll_document"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:hint="@string/prompt_legal_id"
-            app:endIconMode="custom"
-            app:endIconDrawable="@drawable/ic_camera_black_24dp"
-            app:endIconContentDescription="Scan ID"
+            android:orientation="horizontal"
             app:layout_constraintTop_toBottomOf="@id/til_lastnames">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_legal_id"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_document_type"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_weight="1"
+                android:hint="Type">
+
+                <AutoCompleteTextView
+                    android:id="@+id/act_document_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_legal_id"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:layout_marginStart="8dp"
+                android:hint="@string/prompt_legal_id"
+                app:endIconMode="custom"
+                app:endIconDrawable="@drawable/ic_camera_black_24dp"
+                app:endIconContentDescription="Scan ID">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_legal_id"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
 
         <!-- EMAIL FIELD (READ ONLY or for reference) -->
         <com.google.android.material.textfield.TextInputLayout
@@ -104,7 +128,7 @@
             android:layout_marginTop="16dp"
             android:hint="@string/prompt_email"
             app:startIconDrawable="@android:drawable/ic_dialog_email"
-            app:layout_constraintTop_toBottomOf="@id/til_legal_id">
+            app:layout_constraintTop_toBottomOf="@id/ll_document">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_email"

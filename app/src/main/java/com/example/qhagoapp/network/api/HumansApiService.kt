@@ -8,6 +8,9 @@ import com.example.qhagoapp.network.model.HumanResponse
 import com.example.qhagoapp.network.model.ChangePasswordRequest
 import com.example.qhagoapp.network.model.UpdateHumanRequest
 import com.example.qhagoapp.network.model.HumanUpdateResponse
+import com.example.qhagoapp.network.model.CreateHumanRequest
+import com.example.qhagoapp.network.model.RegisterUserRequest
+import com.example.qhagoapp.network.model.HumanCreateResponse
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -29,6 +32,12 @@ interface HumansApiService
         @Body request: UserLoginRequest
     ): Response<UserLoginResponse>
 
+    // REGISTER USER
+    @POST("user/register")
+    suspend fun registerUser(
+        @Body request: RegisterUserRequest
+    ): Response<UserLoginResponse>
+
     // CHANGE PASSWORD
     @POST("user/{id}/change-password")
     suspend fun changePassword(
@@ -41,6 +50,12 @@ interface HumansApiService
     suspend fun getHumanById(
         @Path("id") id: Int
     ): Response<HumanResponse>
+
+    // CREATE HUMAN
+    @POST("human/")
+    suspend fun createHuman(
+        @Body request: CreateHumanRequest
+    ): Response<HumanCreateResponse>
 
     // UPDATE HUMAN
     @PUT("human/{id}")
