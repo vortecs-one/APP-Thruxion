@@ -16,6 +16,7 @@ import androidx.core.view.GravityCompat
 import android.widget.TextView
 import com.example.qhagoapp.databinding.ActivityMainBinding
 import com.example.qhagoapp.network.security.TokenManager
+import com.example.qhagoapp.ui.chat.ChatDialogFragment
 import com.example.qhagoapp.ui.login.LoginActivity
 import com.example.qhagoapp.utils.ThemeManager
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -34,10 +35,8 @@ class MainActivity : AppCompatActivity() {
         // 1. Setup Toolbar
         setSupportActionBar(binding.appBarMain.toolbar)
 
-        binding.appBarMain.fab?.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
+        binding.appBarMain.fab?.setOnClickListener {
+            ChatDialogFragment().show(supportFragmentManager, "ChatDialog")
         }
 
         // 2. Setup NavController
