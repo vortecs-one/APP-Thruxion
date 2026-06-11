@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -40,15 +39,37 @@ import com.example.qhagoapp.data.repository.ChatRepositoryImpl
 
 class ChatDialogFragment : DialogFragment() {
 
+    companion object {
+        private const val ARG_PARTNER_ID = "partner_id"
+        private const val ARG_PARTNER_NAME = "partner_name"
+
+        fun newInstance(partnerId: String? = null, partnerName: String? = null): ChatDialogFragment {
+            val args = Bundle().apply {
+                putString(ARG_PARTNER_ID, partnerId)
+                putString(ARG_PARTNER_NAME, partnerName)
+            }
+            return ChatDialogFragment().apply { arguments = args }
+        }
+    }
+
     private val viewModel: ChatViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
-        val repository = ChatRepositoryImpl(database.chatMessageDao())
+        val repository = ChatRepositoryImpl(database.chatMessageDao(), database.contactDao())
         ChatViewModelFactory(repository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Translucent_NoTitleBar)
+        
+        val partnerId = arguments?.getString(ARG_PARTNER_ID)
+        val partnerName = arguments?.getString(ARG_PARTNER_NAME)
+        
+        if (partnerId != null) {
+            viewModel.navigateToDetail(partnerId, partnerName)
+        } else {
+            viewModel.navigateToList()
+        }
     }
 
     override fun onCreateView(
@@ -93,11 +114,10 @@ class ChatDialogFragment : DialogFragment() {
                             tonalElevation = 12.dp,
                             shadowElevation = 8.dp
                         ) {
-                            ChatScreen(
+                            ChatMain(
                                 viewModel = viewModel,
                                 onClose = { 
                                     isVisible = false
-                                    // Give time for exit animation before dismissing fragment
                                     view?.postDelayed({ dismiss() }, 300)
                                 }
                             )

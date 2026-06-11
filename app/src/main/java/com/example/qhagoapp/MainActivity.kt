@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab?.setOnClickListener {
-            ChatDialogFragment().show(supportFragmentManager, "ChatDialog")
+            ChatDialogFragment.newInstance().show(supportFragmentManager, "ChatDialog")
         }
 
         // 2. Setup NavController

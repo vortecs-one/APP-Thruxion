@@ -27,6 +27,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.qhagoapp.databinding.FragmentThruxionBinding
 import com.example.qhagoapp.utils.ThemeManager
+import com.example.qhagoapp.ui.chat.ChatDialogFragment
+import com.example.qhagoapp.ui.chat.ChatViewModel
+import com.example.qhagoapp.ui.chat.ChatViewModelFactory
 import com.example.qhagoapp.ui.saved.SavedPlacesViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -1155,7 +1158,15 @@ class ThruxionFragment : Fragment()
             }
             // Calculate Distance
             updateDistanceOnCard(finalFeature)
-            findViewById<Button>(R.id.btnConnect).text = context.getString(R.string.send_message)
+            findViewById<Button>(R.id.btnConnect).apply {
+                text = context.getString(R.string.send_message)
+                setOnClickListener {
+                    val remoteId = finalFeature.getStringProperty("remote-user-id")
+                    // If remoteId is null, use the name as ID (for mock users)
+                    val partnerId = remoteId ?: name
+                    ChatDialogFragment.newInstance(partnerId, name).show(parentFragmentManager, "ChatDialog")
+                }
+            }
             
             val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
             if (finalIsSaved) {

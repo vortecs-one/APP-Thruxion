@@ -48,8 +48,7 @@ class TransformViewModel : ViewModel()
     {
         val baseLat = 48.8583
         val baseLng = 2.2944
-        val names = mutableListOf("S.O.S", "QHago?", "MyWitness")
-        names.addAll((1..7).map { "Lawyer # $it" })
+        val names = (1..10).map { "Lawyer # $it" }
         val users = names.mapIndexed { index, name ->
             val latOffset = (Random.nextDouble() - 0.5) * 0.04
             val lngOffset = (Random.nextDouble() - 0.5) * 0.04
@@ -64,7 +63,7 @@ class TransformViewModel : ViewModel()
     }
 
     fun updateUsersAroundLocation(baseLat: Double, baseLng: Double) {
-        val names = listOf("S.O.S", "QHago?", "MyWitness") + (1..10).map { "Lawyer #$it" }
+        val names = (1..10).map { "Lawyer #$it" }
 
         val updated = names.mapIndexed { index, name ->
             // 0.02 offset is roughly 2km radius
