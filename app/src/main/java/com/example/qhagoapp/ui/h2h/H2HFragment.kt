@@ -65,7 +65,6 @@ class H2HFragment : Fragment() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             useWideViewPort = true
             loadWithOverviewMode = true
@@ -82,7 +81,7 @@ class H2HFragment : Fragment() {
                 webView.goBack()
             } else {
                 isEnabled = false
-                requireActivity().onBackPressed()
+                requireActivity().onBackPressedDispatcher.onBackPressed()
             }
         }
     }

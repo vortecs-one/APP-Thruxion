@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package com.example.qhagoapp.network.security
 
 import android.content.Context

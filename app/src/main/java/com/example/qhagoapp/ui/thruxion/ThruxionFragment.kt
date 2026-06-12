@@ -422,6 +422,7 @@ class ThruxionFragment : Fragment()
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
             viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
             binding.searchCard.post {
+                @Suppress("DEPRECATION")
                 map.setPadding(50, 50, 50, 50)
                 map.animateCamera(
                     org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
@@ -563,7 +564,6 @@ class ThruxionFragment : Fragment()
                 }
                 items.add(ThruxionItem.NewFolderOption)
             }
-            else -> {}
         }
         transformAdapter.submitList(items)
     }
@@ -1298,12 +1298,14 @@ class ThruxionFragment : Fragment()
         binding.userDetailCard.post {
             val cardHeight = binding.userDetailCard.height
             // Set top padding so markers center in the visible area below the card
+            @Suppress("DEPRECATION")
             mapLibreMap?.setPadding(0, cardHeight + 40, 0, 0)
         }
     }
 
     private fun resetMapPadding()
     {
+        @Suppress("DEPRECATION")
         mapLibreMap?.setPadding(0, 0, 0, 0)
     }
 
@@ -1537,7 +1539,9 @@ class ThruxionFragment : Fragment()
         val cityInput = EditText(context).apply { hint = getString(R.string.city_optional) }
         
         // Country Autocomplete
-        val countries = Locale.getISOCountries().map { Locale("", it).displayCountry }.sorted()
+        val countries = Locale.getISOCountries().map { 
+            Locale.Builder().setRegion(it).build().displayCountry 
+        }.sorted()
         val countryInput = MaterialAutoCompleteTextView(context).apply {
             hint = getString(R.string.country)
             setAdapter(ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, countries))

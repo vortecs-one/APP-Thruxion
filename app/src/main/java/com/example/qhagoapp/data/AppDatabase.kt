@@ -13,7 +13,7 @@ import com.example.qhagoapp.data.model.Contact
 import com.example.qhagoapp.data.model.Folder
 import com.example.qhagoapp.data.model.SavedPlace
 
-@Database(entities = [Folder::class, SavedPlace::class, Contact::class, ChatMessage::class], version = 9, exportSchema = false)
+@Database(entities = [Folder::class, SavedPlace::class, Contact::class, ChatMessage::class], version = 10, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun savedPlaceDao(): SavedPlaceDao
@@ -31,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "qhago_database"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
                 INSTANCE = instance
                 instance

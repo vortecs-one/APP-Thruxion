@@ -5,8 +5,8 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class HumanCreateResponse(
-    @Json(name = "success") val success: Boolean?,
-    @Json(name = "message") val message: String?,
-    @Json(name = "human") val human: HumanResponse?,
-    @Json(name = "id") val id: Int?
+    @field:Json(name = "success") val success: Boolean?,
+    @field:Json(name = "message") val message: String?,
+    @field:Json(name = "human") val human: HumanResponse?,
+    @field:Json(name = "id") val id: Int?
 )

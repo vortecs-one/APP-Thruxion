@@ -13,7 +13,8 @@ import androidx.room.PrimaryKey
             childColumns = ["folderId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [androidx.room.Index("folderId")]
 )
 data class SavedPlace(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

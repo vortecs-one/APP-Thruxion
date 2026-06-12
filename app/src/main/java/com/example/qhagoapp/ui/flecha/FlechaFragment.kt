@@ -67,7 +67,6 @@ class FlechaFragment : Fragment() {
             // Core performance settings
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             
             // Caching
             cacheMode = WebSettings.LOAD_DEFAULT
@@ -96,7 +95,7 @@ class FlechaFragment : Fragment() {
                 webView.goBack()
             } else {
                 isEnabled = false
-                requireActivity().onBackPressed()
+                requireActivity().onBackPressedDispatcher.onBackPressed()
             }
         }
     }

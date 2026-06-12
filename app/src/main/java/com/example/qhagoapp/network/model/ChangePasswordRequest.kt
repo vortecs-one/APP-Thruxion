@@ -5,8 +5,8 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class ChangePasswordRequest(
-    @Json(name = "current_password")
+    @field:Json(name = "current_password")
     val currentPassword: String,
-    @Json(name = "new_password")
+    @field:Json(name = "new_password")
     val newPassword: String
 )

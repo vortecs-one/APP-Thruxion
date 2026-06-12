@@ -5,5 +5,5 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class SystemLoginResponse(
-    @Json(name = "token") val token: String
+    @field:Json(name = "token") val token: String
 )
