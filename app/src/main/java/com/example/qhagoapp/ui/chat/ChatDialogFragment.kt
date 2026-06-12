@@ -54,7 +54,7 @@ class ChatDialogFragment : DialogFragment() {
 
     private val viewModel: ChatViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
-        val repository = ChatRepositoryImpl(database.chatMessageDao(), database.contactDao())
+        val repository = ChatRepositoryImpl(database.chatMessageDao())
         ChatViewModelFactory(repository)
     }
 

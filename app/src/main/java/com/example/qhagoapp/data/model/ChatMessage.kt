@@ -10,8 +10,9 @@ data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
     val content: String,
     val senderId: String, 
-    val receiverId: String, // Explicitly non-null (use "assistant" for AI)
-    val ownerId: String,   // The ID of the local user who owns this chat history
+    val receiverId: String, 
+    val ownerId: String,   
+    val partnerName: String, // Added to persist the display name in the chat list
     val timestamp: Long = System.currentTimeMillis(),
     val isFromUser: Boolean
 )

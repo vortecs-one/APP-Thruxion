@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.qhagoapp.data.model.ChatMessage
-import com.example.qhagoapp.data.model.Contact
 import com.example.qhagoapp.data.repository.ChatRepository
 import com.example.qhagoapp.network.security.TokenManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,13 +48,6 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
             initialValue = emptyList()
         )
 
-    val contacts: StateFlow<List<Contact>> = repository.getAllContacts(currentUserId)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
     fun navigateToDetail(id: String?, name: String?) {
         _partnerId.value = id ?: "assistant"
         _partnerName.value = name ?: (if (id == "assistant") "Qhago Assistant" else "Unknown User")
@@ -69,19 +61,13 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
     fun sendMessage(content: String) {
         if (content.isBlank()) return
         viewModelScope.launch {
-            repository.sendMessage(content, currentUserId, _partnerId.value)
+            repository.sendMessage(content, currentUserId, _partnerId.value, _partnerName.value)
         }
     }
 
     fun clearChat() {
         viewModelScope.launch {
             repository.clearChat(currentUserId, _partnerId.value)
-        }
-    }
-
-    fun deleteChat(partnerId: String) {
-        viewModelScope.launch {
-            repository.deleteChat(currentUserId, partnerId)
         }
     }
 }

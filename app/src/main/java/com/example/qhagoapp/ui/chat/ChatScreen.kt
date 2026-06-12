@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.util.Log
 import com.example.qhagoapp.data.model.ChatMessage
 import java.text.SimpleDateFormat
 import java.util.*
@@ -57,32 +56,12 @@ fun ChatMain(viewModel: ChatViewModel, onClose: () -> Unit) {
 @Composable
 fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
     val activeChats by viewModel.activeChats.collectAsState()
-    val contacts by viewModel.contacts.collectAsState()
-    var chatToDelete by remember { mutableStateOf<String?>(null) }
-
-    if (chatToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { chatToDelete = null },
-            title = { Text("Delete Chat") },
-            text = { Text("Are you sure you want to delete this conversation?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    chatToDelete?.let { viewModel.deleteChat(it) }
-                    chatToDelete = null
-                }) { Text("Delete", color = Color.Red) }
-            },
-            dismissButton = {
-                TextButton(onClick = { chatToDelete = null }) { Text("Cancel") }
-            }
-        )
-    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // WhatsApp Header for List
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color(0xFF075E54),
@@ -106,7 +85,6 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
         }
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            // Pinned Chats Section
             items(DEFAULT_PINNED_CHATS) { pinned ->
                 PinnedChatItemRow(pinned) {
                     viewModel.navigateToDetail(pinned.id, pinned.name)
@@ -114,7 +92,6 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
             }
 
-            // Separator for Active Chats if any
             if (activeChats.isNotEmpty()) {
                 item {
                     Text(
@@ -126,7 +103,6 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
                 }
             }
 
-            // Filter out pinned chats from active chats to avoid duplicates
             val filteredActive = activeChats.filter { chat ->
                 val partnerId = if (chat.isFromUser) chat.receiverId else chat.senderId
                 DEFAULT_PINNED_CHATS.none { it.id == partnerId }
@@ -135,42 +111,11 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
             items(filteredActive, key = { it.id }) { chat ->
                 val partnerId = if (chat.isFromUser) chat.receiverId else chat.senderId
                 
-                // Try to find contact name by remoteUserId OR name if it contains Lawyer
-                val contact = contacts.find { 
-                    it.remoteUserId == partnerId || 
-                    (partnerId.contains("Lawyer", ignoreCase = true) && it.name == partnerId)
-                }
-                
-                val contactName = contact?.name ?: if (partnerId.length > 20) "User ${partnerId.take(8)}" else partnerId
-
-                val swipeState = rememberSwipeToDismissBoxState(
-                    confirmValueChange = { value ->
-                        if (value == SwipeToDismissBoxValue.EndToStart) {
-                            chatToDelete = partnerId
-                            false
-                        } else false
-                    }
+                ChatItemRow(
+                    lastMessage = chat,
+                    displayName = chat.partnerName,
+                    onClick = { viewModel.navigateToDetail(partnerId, chat.partnerName) }
                 )
-
-                SwipeToDismissBox(
-                    state = swipeState,
-                    enableDismissFromStartToEnd = false,
-                    backgroundContent = {
-                        val color = if (swipeState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Color.Red else Color.Transparent
-                        Box(
-                            modifier = Modifier.fillMaxSize().background(color).padding(horizontal = 20.dp),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
-                        }
-                    }
-                ) {
-                    ChatItemRow(
-                        lastMessage = chat,
-                        displayName = contactName,
-                        onClick = { viewModel.navigateToDetail(partnerId, contactName) }
-                    )
-                }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
             }
         }
@@ -271,7 +216,6 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
             .fillMaxSize()
             .background(Color(0xFFE5DDD5))
     ) {
-        // WhatsApp Detail Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color(0xFF075E54),

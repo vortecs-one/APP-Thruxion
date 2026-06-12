@@ -1,15 +1,12 @@
 package com.example.qhagoapp.data.repository
 
 import com.example.qhagoapp.data.dao.ChatMessageDao
-import com.example.qhagoapp.data.dao.ContactDao
 import com.example.qhagoapp.data.model.ChatMessage
-import com.example.qhagoapp.data.model.Contact
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 
 class ChatRepositoryImpl(
-    private val chatMessageDao: ChatMessageDao,
-    private val contactDao: ContactDao
+    private val chatMessageDao: ChatMessageDao
 ) : ChatRepository {
 
     override fun getMessages(currentUserId: String, partnerId: String): Flow<List<ChatMessage>> = 
@@ -18,15 +15,13 @@ class ChatRepositoryImpl(
     override fun getActiveChats(currentUserId: String): Flow<List<ChatMessage>> = 
         chatMessageDao.getActiveChats(currentUserId)
 
-    override fun getAllContacts(currentUserId: String): Flow<List<Contact>> = 
-        contactDao.getAllContacts(currentUserId)
-
-    override suspend fun sendMessage(content: String, currentUserId: String, partnerId: String) {
+    override suspend fun sendMessage(content: String, currentUserId: String, partnerId: String, partnerName: String) {
         val userMessage = ChatMessage(
             content = content, 
             senderId = currentUserId, 
             receiverId = partnerId,
             ownerId = currentUserId,
+            partnerName = partnerName,
             isFromUser = true
         )
         chatMessageDao.insertMessage(userMessage)
@@ -44,16 +39,13 @@ class ChatRepositoryImpl(
             senderId = partnerId,
             receiverId = currentUserId,
             ownerId = currentUserId,
+            partnerName = partnerName,
             isFromUser = false
         )
         chatMessageDao.insertMessage(responseMessage)
     }
 
     override suspend fun clearChat(currentUserId: String, partnerId: String) {
-        chatMessageDao.clearChat(currentUserId, partnerId)
-    }
-
-    override suspend fun deleteChat(currentUserId: String, partnerId: String) {
         chatMessageDao.clearChat(currentUserId, partnerId)
     }
 }
