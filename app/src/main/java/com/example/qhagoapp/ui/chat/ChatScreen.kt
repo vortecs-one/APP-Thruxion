@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,10 +37,10 @@ data class PinnedChat(
 )
 
 val DEFAULT_PINNED_CHATS = listOf(
-    PinnedChat("assistant", "AI", "ThruxionAI", Color(0xFF128C7E)),
+    PinnedChat("assistant", "AI", "ThruxionAI", Color(0xFF007F95)),
     PinnedChat("sos", "S.O.S", "S.O.S", Color(0xFFD32F2F)),
-    PinnedChat("qhago", "Qhago?", "Qhago?", Color(0xFF1976D2)),
-    PinnedChat("mywitness", "MyWitness", "MyWitness", Color(0xFF7B1FA2))
+    PinnedChat("qhago", "Q?", "Qhago?", Color(0xFF1976D2)),
+    PinnedChat("mywitness", "Mw", "MyWitness", Color(0xFF7B1FA2))
 )
 
 @Composable
@@ -64,7 +65,7 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF075E54),
+            color = Color(0xFF007F95),
             tonalElevation = 4.dp
         ) {
             Row(
@@ -85,11 +86,23 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
         }
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(DEFAULT_PINNED_CHATS) { pinned ->
-                PinnedChatItemRow(pinned) {
-                    viewModel.navigateToDetail(pinned.id, pinned.name)
+            item {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    items(DEFAULT_PINNED_CHATS) { pinned ->
+                        PinnedChatItemCircle(pinned) {
+                            viewModel.navigateToDetail(pinned.id, pinned.name)
+                        }
+                        if (pinned != DEFAULT_PINNED_CHATS.last()) {
+                            Spacer(modifier = Modifier.width(20.dp))
+                        }
+                    }
                 }
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
             }
 
             if (activeChats.isNotEmpty()) {
@@ -123,34 +136,36 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
 }
 
 @Composable
-fun PinnedChatItemRow(pinned: PinnedChat, onClick: () -> Unit) {
-    Row(
+fun PinnedChatItemCircle(pinned: PinnedChat, onClick: () -> Unit) {
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .width(64.dp)
+            .clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(56.dp)
                 .clip(CircleShape)
                 .background(pinned.color),
             contentAlignment = Alignment.Center
         ) {
-            Text(pinned.name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = pinned.name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Text(
-                text = pinned.description,
-                fontSize = 13.sp,
-                color = Color.Gray,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                text = pinned.name,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = if (pinned.name.length > 2) 14.sp else 18.sp
             )
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = if (pinned.id == "qhago") "Qhago?" else if (pinned.id == "mywitness") "MyWitness" else pinned.name,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.DarkGray,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -214,11 +229,11 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE5DDD5))
+            .background(Color(0xFFF0F2F5))
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF075E54),
+            color = Color(0xFF007F95),
             tonalElevation = 4.dp
         ) {
             Row(
@@ -244,7 +259,7 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = chatName, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text(text = "Online", color = Color(0xFFB1F3EB), style = MaterialTheme.typography.bodySmall)
+                    Text(text = "Online", color = Color(0xFFE3F2FD), style = MaterialTheme.typography.bodySmall)
                 }
                 IconButton(onClick = onClose) {
                     Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
@@ -288,7 +303,7 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
                     }
                 },
                 modifier = Modifier.size(48.dp),
-                containerColor = Color(0xFF128C7E),
+                containerColor = Color(0xFF007F95),
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
@@ -302,7 +317,7 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
 fun WhatsAppMessageBubble(message: ChatMessage) {
     val isUser = message.isFromUser
     val alignment = if (isUser) Alignment.End else Alignment.Start
-    val bubbleColor = if (isUser) Color(0xFFE2FFC7) else Color.White
+    val bubbleColor = if (isUser) Color(0xFFE0F2F1) else Color.White
     val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     Column(
