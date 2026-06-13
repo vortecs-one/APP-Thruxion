@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.qhagoapp"
+    namespace = "com.thruxion.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.qhagoapp"
+        applicationId = "com.thruxion.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

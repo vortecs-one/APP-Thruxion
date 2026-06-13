@@ -1,0 +1,14 @@
+package com.thruxion.app.network.model
+
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+
+@JsonClass(generateAdapter = true)
+data class UpdateHumanRequest(
+    @field:Json(name = "unique_id") val uniqueId: String,
+    @field:Json(name = "legal_id") val legalId: String,
+    @field:Json(name = "name") val name: String,
+    @field:Json(name = "lastname") val lastname: String,
+    @field:Json(name = "birthdate") val birthdate: String,
+    @field:Json(name = "gender") val gender: String
+)

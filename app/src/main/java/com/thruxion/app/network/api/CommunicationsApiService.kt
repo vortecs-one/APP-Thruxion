@@ -1,0 +1,23 @@
+package com.thruxion.app.network.api
+
+import com.thruxion.app.network.model.SystemLoginRequest
+import com.thruxion.app.network.model.SystemLoginResponse
+import retrofit2.Response
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Body
+
+
+interface CommunicationsApiService
+{
+    // API Health
+    @GET("health")
+    suspend fun getCommunicationHealth(): Response<Any>
+
+    @POST("auth/system-login")
+    suspend fun systemLogin(
+        @Body request: SystemLoginRequest
+    ): Response<SystemLoginResponse>
+
+
+}

@@ -7,31 +7,31 @@
 
     <fragment
         android:id="@+id/nav_transform"
-        android:name="com.example.qhagoapp.ui.thruxion.ThruxionFragment"
+        android:name="com.thruxion.app.ui.thruxion.ThruxionFragment"
         android:label="@string/menu_transform"
         tools:layout="@layout/fragment_thruxion" />
 
     <fragment
         android:id="@+id/nav_reflow"
-        android:name="com.example.qhagoapp.ui.h2h.H2HFragment"
+        android:name="com.thruxion.app.ui.h2h.H2HFragment"
         android:label="@string/menu_reflow"
         tools:layout="@layout/fragment_h2h" />
 
     <fragment
         android:id="@+id/nav_slideshow"
-        android:name="com.example.qhagoapp.ui.profile.ProfileFragment"
+        android:name="com.thruxion.app.ui.profile.ProfileFragment"
         android:label="@string/menu_slideshow"
         tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/nav_settings"
-        android:name="com.example.qhagoapp.ui.settings.SettingsFragment"
+        android:name="com.thruxion.app.ui.settings.SettingsFragment"
         android:label="@string/menu_settings"
         tools:layout="@layout/fragment_settings" />
 
     <fragment
         android:id="@+id/nav_webview"
-        android:name="com.example.qhagoapp.ui.flecha.FlechaFragment"
+        android:name="com.thruxion.app.ui.flecha.FlechaFragment"
         android:label="@string/menu_webview"
         tools:layout="@layout/fragment_flecha" />
 </navigation>
