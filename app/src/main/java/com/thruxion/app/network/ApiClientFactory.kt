@@ -2,6 +2,7 @@ package com.thruxion.app.network
 
 import com.thruxion.app.network.security.ApiType
 import com.thruxion.app.network.security.AuthInterceptor
+import com.thruxion.app.BuildConfig
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -18,11 +19,15 @@ object ApiClientFactory
     fun create(baseUrl: String, apiType: ApiType): Retrofit
     {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
 
         val client = OkHttpClient.Builder()
-            .addInterceptor(logging)
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(logging)
+                }
+            }
             .addInterceptor(AuthInterceptor(apiType))
             .build()
 
