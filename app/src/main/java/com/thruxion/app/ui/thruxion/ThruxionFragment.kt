@@ -304,20 +304,15 @@ class ThruxionFragment : Fragment()
             onSaveClicked = { item ->
                 when (item) {
                     is ThruxionItem.NearbyUser -> {
-                        if (item.isSaved) {
-                            pendingActionItem = item.user
-                            pendingSaveItem = item.user
-                            currentListMode = ListMode.SAVE_TARGET_CHOICE
-                            updateListContent()
-                        } else {
-                            pendingSaveItem = item.user
-                            currentListMode = ListMode.SAVE_TARGET_CHOICE
-                            updateListContent()
-                        }
+                        pendingSaveItem = item.user
+                        pendingSaveTargetType = "Contact" // Default to Contact
+                        currentListMode = ListMode.SAVE_FOLDER_CHOICE
+                        updateListContent()
                     }
                     is ThruxionItem.SearchResultItem -> {
                         pendingSaveItem = item.result
-                        currentListMode = ListMode.SAVE_TARGET_CHOICE
+                        pendingSaveTargetType = "Contact" // Default to Contact
+                        currentListMode = ListMode.SAVE_FOLDER_CHOICE
                         updateListContent()
                     }
                     is ThruxionItem.ContactItem -> {
