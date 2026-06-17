@@ -26,6 +26,7 @@ class RegisterViewModel : ViewModel() {
 
     fun register(
         legalId: String,
+        documentType: String,
         name: String,
         lastname: String,
         birthdate: String,
@@ -60,8 +61,9 @@ class RegisterViewModel : ViewModel() {
                 // 1. Create Human
                 val uniqueId = UUID.randomUUID().toString()
                 val createHumanRequest = CreateHumanRequest(
-                    uniqueId = uniqueId,
-                    legalId = legalId,
+                    unique_id = uniqueId,
+                    legal_id = legalId,
+                    document_type = documentType,
                     name = name,
                     lastname = lastname,
                     birthdate = birthdate,
@@ -78,7 +80,7 @@ class RegisterViewModel : ViewModel() {
                     if (humanId != null) {
                         // 2. Register User
                         val registerRequest = RegisterUserRequest(
-                            humanId = humanId,
+                            human_id = humanId,
                             email = email,
                             password = password
                         )
@@ -87,23 +89,18 @@ class RegisterViewModel : ViewModel() {
                         if (userRes.isSuccessful) {
                             val regResponse = userRes.body()
                             
-                            // Check if the registration response actually has user data
-                            if (regResponse?.user != null) {
-                                _registerResult.value = Result.Success(regResponse)
-                            } else if (regResponse?.success == true || 
-                                      regResponse?.message?.contains("success", ignoreCase = true) == true || 
-                                      regResponse?.message?.contains("created", ignoreCase = true) == true ||
-                                      regResponse?.message?.contains("human", ignoreCase = true) == true) {
-                                // If registration succeeded (even if msg is "human created") but no user data, perform auto-login
+                            // Successful registration returns user_id and message
+                            if (regResponse?.user_id != null || regResponse?.message?.contains("created", ignoreCase = true) == true) {
+                                // Perform auto-login to get the full UserLoginResponse needed for the session
                                 val loginRes = humansApi.userLogin(UserLoginRequest(email, password))
                                 if (loginRes.isSuccessful) {
                                     loginRes.body()?.let {
                                         _registerResult.value = Result.Success(it)
                                     } ?: run {
-                                        _registerResult.value = Result.Error(Exception("Registration ok, but login failed"))
+                                        _registerResult.value = Result.Error(Exception("Registration successful, but login failed"))
                                     }
                                 } else {
-                                    _registerResult.value = Result.Error(Exception("Registration ok, but login failed"))
+                                    _registerResult.value = Result.Error(Exception("Registration successful, but auto-login failed"))
                                 }
                             } else {
                                 val msg = regResponse?.message ?: "User registration failed"

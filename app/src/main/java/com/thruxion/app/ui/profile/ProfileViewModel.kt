@@ -31,7 +31,9 @@ class ProfileViewModel : ViewModel() {
             try {
                 val response = humansApi.getHumanById(humanId)
                 if (response.isSuccessful) {
-                    _humanData.value = response.body()
+                    response.body()?.data?.let {
+                        _humanData.value = it
+                    }
                 }
             } catch (e: Exception) {
                 // Error handling
@@ -39,7 +41,7 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun updateHuman(legalId: String, name: String, lastname: String, birthdate: String, gender: String) {
+    fun updateHuman(legalId: String, documentType: String, name: String, lastname: String, birthdate: String, gender: String) {
         val humanId = TokenManager.getHumanId()
         val uniqueId = _humanData.value?.unique_id ?: ""
         
@@ -57,7 +59,15 @@ class ProfileViewModel : ViewModel() {
                     else -> gender // Already XY, XX or something else
                 }
 
-                val request = UpdateHumanRequest(uniqueId, legalId, name, lastname, birthdate, genderCode)
+                val request = UpdateHumanRequest(
+                    unique_id = uniqueId,
+                    legal_id = legalId,
+                    document_type = documentType,
+                    name = name,
+                    lastname = lastname,
+                    birthdate = birthdate,
+                    gender = genderCode
+                )
                 val response = humansApi.updateHuman(humanId, request)
                 if (response.isSuccessful) {
                     val updateResponse = response.body()

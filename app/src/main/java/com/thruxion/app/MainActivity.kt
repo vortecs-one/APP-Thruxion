@@ -14,6 +14,8 @@ import androidx.navigation.ui.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import android.widget.TextView
+import android.webkit.CookieManager
+import android.webkit.WebStorage
 import com.thruxion.app.databinding.ActivityMainBinding
 import com.thruxion.app.network.security.TokenManager
 import com.thruxion.app.ui.chat.ChatDialogFragment
@@ -111,6 +113,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun logout() {
         TokenManager.clearTokens()
+
+        // SECURITY: Securely clear WebView sessions to prevent data leakage between users
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.removeAllCookies {
+            cookieManager.flush()
+        }
+        WebStorage.getInstance().deleteAllData()
+
         val intent = Intent(this, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)

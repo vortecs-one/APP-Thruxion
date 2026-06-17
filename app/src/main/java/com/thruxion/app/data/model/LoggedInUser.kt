@@ -5,5 +5,6 @@ package com.thruxion.app.data.model
  */
 data class LoggedInUser(
     val userId: String,
-    val displayName: String
+    val displayName: String,
+    val platform: String? = null
 )

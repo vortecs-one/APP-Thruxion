@@ -20,11 +20,12 @@ class Thruxion : Application()
         if (TokenManager.hasValidSession()) {
             val userId = TokenManager.getUserId()
             val email = TokenManager.getUserEmail() ?: "Unknown"
+            val platform = TokenManager.getPlatform()
             if (userId != -1) {
-                UserSession.user = LoggedInUser(userId.toString(), email)
+                UserSession.user = LoggedInUser(userId.toString(), email, platform)
             } else if (email == "demo@qhago.com") {
                 // Handle demo session restoration
-                UserSession.user = LoggedInUser("demo_user", "Demo User")
+                UserSession.user = LoggedInUser("demo_user", "Demo User", "demo")
             }
         }
     }

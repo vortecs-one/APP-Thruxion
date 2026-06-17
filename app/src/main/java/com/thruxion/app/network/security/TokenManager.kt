@@ -13,6 +13,7 @@ object TokenManager {
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_HUMAN_ID = "human_id"
     private const val KEY_USER_ID = "user_id"
+    private const val KEY_PLATFORM = "platform"
     private const val KEY_IS_LOGGED_IN = "is_logged_in"
 
     private var sharedPreferences: SharedPreferences? = null
@@ -51,6 +52,10 @@ object TokenManager {
         sharedPreferences?.edit()?.putInt(KEY_USER_ID, id)?.apply()
     }
 
+    fun savePlatform(platform: String?) {
+        sharedPreferences?.edit()?.putString(KEY_PLATFORM, platform)?.apply()
+    }
+
     fun setLoggedIn(loggedIn: Boolean) {
         sharedPreferences?.edit()?.putBoolean(KEY_IS_LOGGED_IN, loggedIn)?.apply()
     }
@@ -73,6 +78,10 @@ object TokenManager {
 
     fun getUserId(): Int {
         return sharedPreferences?.getInt(KEY_USER_ID, -1) ?: -1
+    }
+
+    fun getPlatform(): String? {
+        return sharedPreferences?.getString(KEY_PLATFORM, null)
     }
 
     fun clearTokens() {

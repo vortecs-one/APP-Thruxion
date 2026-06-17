@@ -70,6 +70,7 @@ class ProfileFragment : Fragment() {
             val names = binding.etNames.text.toString().trim()
             val lastnames = binding.etLastnames.text.toString().trim()
             val legalId = binding.etLegalId.text.toString().trim()
+            val documentType = binding.actDocumentType.text.toString().trim()
             val birthdate = binding.etBirthdate.text.toString().trim()
             val gender = binding.actGender.text.toString().trim()
 
@@ -98,7 +99,7 @@ class ProfileFragment : Fragment() {
             if (!isValid) return@setOnClickListener
 
             binding.pbProfileLoading.visibility = View.VISIBLE
-            viewModel.updateHuman(legalId, names, lastnames, birthdate, gender)
+            viewModel.updateHuman(legalId, documentType, names, lastnames, birthdate, gender)
         }
 
         binding.btnChangePassword.setOnClickListener {

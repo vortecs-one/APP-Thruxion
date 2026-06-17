@@ -26,5 +26,6 @@ data class HumanResponse(
 data class UserSummary(
     @field:Json(name = "id") val id: Int?,
     @field:Json(name = "email") val email: String?,
-    @field:Json(name = "created_at") val created_at: String?
+    @field:Json(name = "created_at") val created_at: String?,
+    @field:Json(name = "platform") val platform: String? = null
 )

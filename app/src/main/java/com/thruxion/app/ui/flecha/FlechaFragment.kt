@@ -9,12 +9,14 @@ import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
+import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ProgressBar
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import com.thruxion.app.R
+import com.thruxion.app.network.security.TokenManager
 
 class FlechaFragment : Fragment() {
     private lateinit var webView: WebView
@@ -29,6 +31,17 @@ class FlechaFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_flecha, container, false)
         webView = view.findViewById(R.id.webView)
         progressBar = view.findViewById(R.id.progressBar)
+
+        val currentUserEmail = TokenManager.getUserEmail()
+        
+        // SECURITY: If the current app user is not the authorized Odoo user, 
+        // ensure no session data from previous users persists.
+        if (currentUserEmail != AUTHORIZED_EMAIL) {
+            val cookieManager = CookieManager.getInstance()
+            cookieManager.removeAllCookies(null)
+            cookieManager.flush()
+            WebStorage.getInstance().deleteAllData()
+        }
 
         setupWebView()
 
@@ -55,8 +68,8 @@ class FlechaFragment : Fragment() {
                 // Force sync cookies to disk
                 cookieManager.flush()
                 
-                val currentUserEmail = com.thruxion.app.network.security.TokenManager.getUserEmail()
-                if (currentUserEmail == "vortecs.ink@gmail.com") {
+                val currentUserEmail = TokenManager.getUserEmail()
+                if (currentUserEmail == AUTHORIZED_EMAIL) {
                     if (url != null && (url.contains("/web/login") || url.endsWith("/login"))) {
                         injectAutoLoginScript()
                     }
@@ -97,43 +110,128 @@ class FlechaFragment : Fragment() {
     }
 
     /**
-     * Refined injection script for Odoo with auto-press.
+     * Highly robust injection script for Odoo.
+     * Aggressively clears cookie banners and accessibility links to ensure the login button is clickable.
      */
     private fun injectAutoLoginScript() {
-        val testEmail = "admin"
-        val testPassword = "admin" 
+        val odooEmail = "admin"
+        val odooPassword = "admin123"
 
         val script = """
             (function() {
-                if (window.autoLoginTriggered) return;
+                if (window.autoLoginExecuting) return;
+                window.autoLoginExecuting = true;
+
+                function log(msg) { console.log("[AutoLogin] " + msg); }
+
+                function forceClearObstacles() {
+                    // 1. Target common Odoo cookie banners and buttons
+                    const cookieSelectors = [
+                        '.o_accept_cookies', '.o_cookie_notice', '#onetrust-accept-btn-handler', 
+                        '.cc-btn.cc-dismiss', '.js-cookie-consent-agree', 'button[aria-label*="Accept"]',
+                        '#cc-allow-all-lib', '.s_popup_close'
+                    ];
+                    cookieSelectors.forEach(s => {
+                        const el = document.querySelector(s);
+                        if (el && el.offsetParent !== null) {
+                            log("Clearing obstacle: " + s);
+                            if (el.tagName === 'BUTTON' || el.classList.contains('btn')) {
+                                el.click();
+                            } else {
+                                el.style.setProperty('display', 'none', 'important');
+                            }
+                        }
+                    });
+                    
+                    // 2. Remove "Skip to Content" and other accessibility overlays that block clicks
+                    const blockers = document.querySelectorAll('a[href*="main"], .o_skip_to_content, [class*="skip-link"], .o_accessibility_links');
+                    blockers.forEach(el => {
+                        el.style.setProperty('display', 'none', 'important');
+                        el.style.setProperty('visibility', 'hidden', 'important');
+                        el.style.setProperty('pointer-events', 'none', 'important');
+                    });
+                }
                 
-                function fillField(selector, value) {
-                    var el = document.querySelector(selector);
-                    if (el) {
-                        el.value = value;
-                        el.dispatchEvent(new Event('input', { bubbles: true }));
-                        el.dispatchEvent(new Event('change', { bubbles: true }));
-                        el.dispatchEvent(new Event('blur', { bubbles: true }));
-                        return true;
+                function performLogin() {
+                    forceClearObstacles();
+
+                    const loginField = document.querySelector("input[name='login']");
+                    const passwordField = document.querySelector("input[name='password']");
+                    const submitButton = document.querySelector(".btn-primary, button[type='submit']");
+                    
+                    if (loginField && passwordField && submitButton) {
+                        // If fields are not visible, they might be covered by a popup
+                        if (loginField.offsetParent === null) {
+                             log("Fields found but not visible (possibly blocked by popup).");
+                             return false;
+                        }
+                        
+                        if (window.autoLoginDone) return true;
+
+                        log("Login form clear and ready. Proceeding...");
+
+                        function setFieldValue(field, value) {
+                            field.focus();
+                            field.value = value;
+                            ['input', 'change', 'blur'].forEach(ev => {
+                                field.dispatchEvent(new Event(ev, { bubbles: true }));
+                                field.dispatchEvent(new InputEvent(ev, { bubbles: true, inputType: 'insertText', data: value }));
+                            });
+                        }
+
+                        // Fill Fields
+                        setFieldValue(loginField, '$odooEmail');
+                        setFieldValue(passwordField, '$odooPassword');
+                        log("Fields filled.");
+
+                        // Wait for Framework Sync
+                        setTimeout(function() {
+                            log("Triggering login sequence...");
+                            
+                            submitButton.focus();
+
+                            // Priority 1: Enter Key
+                            const enterEv = new KeyboardEvent('keydown', {
+                                bubbles: true, cancelable: true, keyCode: 13, key: 'Enter', code: 'Enter'
+                            });
+                            passwordField.dispatchEvent(enterEv);
+
+                            // Priority 2: Full Click Sequence
+                            ['mousedown', 'mouseup', 'click'].forEach(ev => {
+                                submitButton.dispatchEvent(new MouseEvent(ev, {
+                                    view: window, bubbles: true, cancelable: true, buttons: 1
+                                }));
+                            });
+                            submitButton.click();
+
+                            // Fallback: Form Submit
+                            setTimeout(() => {
+                                if (submitButton && submitButton.form) {
+                                    log("Final fallback: Form submit.");
+                                    submitButton.form.submit();
+                                }
+                                window.autoLoginDone = true;
+                            }, 1000);
+
+                        }, 1500);
+
+                        return true; 
                     }
                     return false;
                 }
 
-                var filledLogin = fillField("input[name='login']", '$testEmail');
-                var filledPass = fillField("input[name='password']", '$testPassword');
-                
-                if (filledLogin && filledPass) {
-                    window.autoLoginTriggered = true;
-                    setTimeout(function() {
-                        var btn = document.querySelector("button[type='submit'], .btn-primary, .oe_login_button");
-                        if (btn) {
-                            btn.click();
-                        } else {
-                            var form = document.querySelector("form");
-                            if (form) form.submit();
-                        }
-                    }, 800);
-                }
+                // Initial scan and periodic cleanup
+                let attempts = 0;
+                const interval = setInterval(function() {
+                    attempts++;
+                    // Keep clearing obstacles even if we haven't found the form yet
+                    forceClearObstacles();
+
+                    if (performLogin() || attempts > 60) {
+                        clearInterval(interval);
+                    }
+                }, 1000);
+
             })()
         """.trimIndent()
         
@@ -152,7 +250,7 @@ class FlechaFragment : Fragment() {
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+    companion object {
+        private const val AUTHORIZED_EMAIL = "vortecs.ink@gmail.com"
     }
 }

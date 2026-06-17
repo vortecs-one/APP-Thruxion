@@ -152,11 +152,13 @@ class LoginActivity : AppCompatActivity()
                                 TokenManager.saveUserEmail(userData.email)
                                 TokenManager.saveHumanId(userData.human_id)
                                 TokenManager.saveUserId(userData.id)
+                                TokenManager.savePlatform(userData.platform)
                                 
                                 // Update UserSession for immediate UI reaction
                                 UserSession.user = LoggedInUser(
                                     userId = userData.id.toString(),
-                                    displayName = userData.email
+                                    displayName = userData.email,
+                                    platform = userData.platform
                                 )
                             }
                             TokenManager.setLoggedIn(true)

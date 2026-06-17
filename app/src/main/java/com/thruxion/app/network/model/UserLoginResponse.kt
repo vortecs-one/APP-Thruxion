@@ -15,5 +15,6 @@ data class UserData(
     @field:Json(name = "id") val id: Int,
     @field:Json(name = "human_id") val human_id: Int,
     @field:Json(name = "email") val email: String,
-    @field:Json(name = "role") val role: String
+    @field:Json(name = "role") val role: String,
+    @field:Json(name = "platform") val platform: String? = null
 )

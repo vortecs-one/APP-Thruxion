@@ -80,10 +80,12 @@ class RegisterActivity : AppCompatActivity() {
                         TokenManager.saveUserEmail(userData.email)
                         TokenManager.saveHumanId(userData.human_id)
                         TokenManager.saveUserId(userData.id)
+                        TokenManager.savePlatform(userData.platform)
                         
                         UserSession.user = LoggedInUser(
                             userId = userData.id.toString(),
-                            displayName = userData.email
+                            displayName = userData.email,
+                            platform = userData.platform
                         )
                         TokenManager.setLoggedIn(true)
                         
@@ -107,6 +109,7 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun performRegistration() {
         val legalId = binding.etLegalId.text.toString().trim()
+        val documentType = binding.atvDocumentType.text.toString().trim()
         val names = binding.etNames.text.toString().trim()
         val lastnames = binding.etLastnames.text.toString().trim()
         val birthdate = binding.etBirthdate.text.toString().trim()
@@ -114,7 +117,7 @@ class RegisterActivity : AppCompatActivity() {
         val email = binding.etRegisterEmail.text.toString().trim()
         val password = binding.etRegisterPassword.text.toString().trim()
 
-        if (legalId.isEmpty() || names.isEmpty() || lastnames.isEmpty() || 
+        if (legalId.isEmpty() || documentType.isEmpty() || names.isEmpty() || lastnames.isEmpty() || 
             birthdate.isEmpty() || gender.isEmpty() || email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             return
@@ -122,6 +125,7 @@ class RegisterActivity : AppCompatActivity() {
 
         viewModel.register(
             legalId = legalId,
+            documentType = documentType,
             name = names,
             lastname = lastnames,
             birthdate = birthdate,

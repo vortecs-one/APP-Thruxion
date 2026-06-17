@@ -10,7 +10,9 @@ import com.thruxion.app.network.model.UpdateHumanRequest
 import com.thruxion.app.network.model.HumanUpdateResponse
 import com.thruxion.app.network.model.CreateHumanRequest
 import com.thruxion.app.network.model.RegisterUserRequest
+import com.thruxion.app.network.model.UserRegisterResponse
 import com.thruxion.app.network.model.HumanCreateResponse
+import com.thruxion.app.network.model.HumanDetailResponse
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -36,7 +38,7 @@ interface HumansApiService
     @POST("user/register")
     suspend fun registerUser(
         @Body request: RegisterUserRequest
-    ): Response<UserLoginResponse>
+    ): Response<UserRegisterResponse>
 
     // CHANGE PASSWORD
     @POST("user/{id}/change-password")
@@ -49,7 +51,7 @@ interface HumansApiService
     @GET("human/{id}")
     suspend fun getHumanById(
         @Path("id") id: Int
-    ): Response<HumanResponse>
+    ): Response<HumanDetailResponse>
 
     // CREATE HUMAN
     @POST("human/")
