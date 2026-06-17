@@ -111,7 +111,7 @@ class FlechaFragment : Fragment() {
 
     /**
      * Highly aggressive injection script for Odoo.
-     * Forcefully removes cookie banners and automates login.
+     * Forcefully removes cookie banners, shows a "Logging in" overlay, and automates login.
      */
     private fun injectAutoLoginScript() {
         val odooEmail = "admin"
@@ -124,8 +124,22 @@ class FlechaFragment : Fragment() {
 
                 function log(msg) { console.log("[AutoLogin] " + msg); }
 
+                function showOverlay() {
+                    if (document.getElementById('auto-login-overlay')) return;
+                    const overlay = document.createElement('div');
+                    overlay.id = 'auto-login-overlay';
+                    overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.95);z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;pointer-events:all;";
+                    overlay.innerHTML = `
+                        <div style="width:60px;height:60px;border:6px solid #f3f3f3;border-top:6px solid #714B67;border-radius:50%;animation:spin 1s linear infinite;"></div>
+                        <div style="margin-top:20px;color:#714B67;font-weight:bold;font-size:18px;">Autenticando...</div>
+                        <style>
+                            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                        </style>
+                    `;
+                    document.body.appendChild(overlay);
+                }
+
                 function cleanPage() {
-                    // 1. Remove common Odoo/Web cookie banners and blockers
                     const blockers = [
                         '.o_cookie_notice', '.o_accept_cookies', '#onetrust-banner-sdk',
                         '.cc-window', '.cc-banner', '.s_popup', '.modal-backdrop',
@@ -134,13 +148,9 @@ class FlechaFragment : Fragment() {
                     blockers.forEach(selector => {
                         document.querySelectorAll(selector).forEach(el => {
                             el.style.setProperty('display', 'none', 'important');
-                            el.remove(); // Force remove from DOM
+                            el.remove();
                         });
                     });
-                    
-                    // 2. Try to click any "Accept" buttons just in case
-                    const acceptButtons = document.querySelectorAll('.o_accept_cookies, .js_close_cookie_notice, #onetrust-accept-btn-handler');
-                    acceptButtons.forEach(btn => btn.click());
                 }
 
                 function setFieldValue(field, value) {
@@ -153,15 +163,14 @@ class FlechaFragment : Fragment() {
                 }
                 
                 function performLogin() {
-                    cleanPage();
-
                     const loginField = document.querySelector("input[name='login']");
                     const passwordField = document.querySelector("input[name='password']");
                     const submitButton = document.querySelector("button[type='submit'], .btn-primary, .oe_login_button");
                     
                     if (loginField && passwordField && submitButton) {
-                        log("Login form detected. Filling credentials...");
-                        
+                        showOverlay(); // Prevent user interaction immediately
+                        cleanPage();
+
                         setFieldValue(loginField, '$odooEmail');
                         setFieldValue(passwordField, '$odooPassword');
 
@@ -169,13 +178,10 @@ class FlechaFragment : Fragment() {
                             if (window.autoLoginDone) return;
                             window.autoLoginDone = true;
 
-                            log("Attempting auto-click...");
-                            
                             setTimeout(() => {
                                 submitButton.removeAttribute('disabled');
                                 submitButton.classList.remove('disabled');
                                 
-                                // Simulation of click
                                 ['mousedown', 'mouseup', 'click'].forEach(ev => {
                                     submitButton.dispatchEvent(new MouseEvent(ev, {
                                         view: window, bubbles: true, cancelable: true, buttons: 1
@@ -183,20 +189,17 @@ class FlechaFragment : Fragment() {
                                 });
                                 submitButton.click();
 
-                                // Fallback: If still on page after 1s, try form submit
                                 setTimeout(() => {
                                     if (document.querySelector("input[name='login']")) {
-                                        log("Still on login page. Forcing form submit.");
                                         if (submitButton.form) submitButton.form.submit();
                                         else if (loginField.form) loginField.form.submit();
                                     }
                                 }, 1000);
-                            }, 500);
+                            }, 400);
                         }
                     }
                 }
 
-                // Poll frequently to catch the form and the cookie banner
                 const interval = setInterval(() => {
                     performLogin();
                     if (!window.location.href.includes('/login') && window.autoLoginDone) {
@@ -204,7 +207,6 @@ class FlechaFragment : Fragment() {
                     }
                 }, 500);
                 
-                // Also run immediately
                 performLogin();
             })()
         """.trimIndent()
