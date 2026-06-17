@@ -110,8 +110,8 @@ class FlechaFragment : Fragment() {
     }
 
     /**
-     * Highly robust injection script for Odoo.
-     * Aggressively clears cookie banners and accessibility links to ensure the login button is clickable.
+     * Highly aggressive injection script for Odoo.
+     * Forcefully removes cookie banners and automates login.
      */
     private fun injectAutoLoginScript() {
         val odooEmail = "admin"
@@ -124,114 +124,88 @@ class FlechaFragment : Fragment() {
 
                 function log(msg) { console.log("[AutoLogin] " + msg); }
 
-                function forceClearObstacles() {
-                    // 1. Target common Odoo cookie banners and buttons
-                    const cookieSelectors = [
-                        '.o_accept_cookies', '.o_cookie_notice', '#onetrust-accept-btn-handler', 
-                        '.cc-btn.cc-dismiss', '.js-cookie-consent-agree', 'button[aria-label*="Accept"]',
-                        '#cc-allow-all-lib', '.s_popup_close'
+                function cleanPage() {
+                    // 1. Remove common Odoo/Web cookie banners and blockers
+                    const blockers = [
+                        '.o_cookie_notice', '.o_accept_cookies', '#onetrust-banner-sdk',
+                        '.cc-window', '.cc-banner', '.s_popup', '.modal-backdrop',
+                        '.o_loading', '.o_blockUI', '.o_notification_manager'
                     ];
-                    cookieSelectors.forEach(s => {
-                        const el = document.querySelector(s);
-                        if (el && el.offsetParent !== null) {
-                            log("Clearing obstacle: " + s);
-                            if (el.tagName === 'BUTTON' || el.classList.contains('btn')) {
-                                el.click();
-                            } else {
-                                el.style.setProperty('display', 'none', 'important');
-                            }
-                        }
+                    blockers.forEach(selector => {
+                        document.querySelectorAll(selector).forEach(el => {
+                            el.style.setProperty('display', 'none', 'important');
+                            el.remove(); // Force remove from DOM
+                        });
                     });
                     
-                    // 2. Remove "Skip to Content" and other accessibility overlays that block clicks
-                    const blockers = document.querySelectorAll('a[href*="main"], .o_skip_to_content, [class*="skip-link"], .o_accessibility_links');
-                    blockers.forEach(el => {
-                        el.style.setProperty('display', 'none', 'important');
-                        el.style.setProperty('visibility', 'hidden', 'important');
-                        el.style.setProperty('pointer-events', 'none', 'important');
+                    // 2. Try to click any "Accept" buttons just in case
+                    const acceptButtons = document.querySelectorAll('.o_accept_cookies, .js_close_cookie_notice, #onetrust-accept-btn-handler');
+                    acceptButtons.forEach(btn => btn.click());
+                }
+
+                function setFieldValue(field, value) {
+                    if (field.value === value) return;
+                    field.focus();
+                    field.value = value;
+                    ['input', 'change', 'blur'].forEach(ev => {
+                        field.dispatchEvent(new Event(ev, { bubbles: true }));
                     });
                 }
                 
                 function performLogin() {
-                    forceClearObstacles();
+                    cleanPage();
 
                     const loginField = document.querySelector("input[name='login']");
                     const passwordField = document.querySelector("input[name='password']");
-                    const submitButton = document.querySelector(".btn-primary, button[type='submit']");
+                    const submitButton = document.querySelector("button[type='submit'], .btn-primary, .oe_login_button");
                     
                     if (loginField && passwordField && submitButton) {
-                        // If fields are not visible, they might be covered by a popup
-                        if (loginField.offsetParent === null) {
-                             log("Fields found but not visible (possibly blocked by popup).");
-                             return false;
-                        }
+                        log("Login form detected. Filling credentials...");
                         
-                        if (window.autoLoginDone) return true;
-
-                        log("Login form clear and ready. Proceeding...");
-
-                        function setFieldValue(field, value) {
-                            field.focus();
-                            field.value = value;
-                            ['input', 'change', 'blur'].forEach(ev => {
-                                field.dispatchEvent(new Event(ev, { bubbles: true }));
-                                field.dispatchEvent(new InputEvent(ev, { bubbles: true, inputType: 'insertText', data: value }));
-                            });
-                        }
-
-                        // Fill Fields
                         setFieldValue(loginField, '$odooEmail');
                         setFieldValue(passwordField, '$odooPassword');
-                        log("Fields filled.");
 
-                        // Wait for Framework Sync
-                        setTimeout(function() {
-                            log("Triggering login sequence...");
+                        if (loginField.value && passwordField.value) {
+                            if (window.autoLoginDone) return;
+                            window.autoLoginDone = true;
+
+                            log("Attempting auto-click...");
                             
-                            submitButton.focus();
-
-                            // Priority 1: Enter Key
-                            const enterEv = new KeyboardEvent('keydown', {
-                                bubbles: true, cancelable: true, keyCode: 13, key: 'Enter', code: 'Enter'
-                            });
-                            passwordField.dispatchEvent(enterEv);
-
-                            // Priority 2: Full Click Sequence
-                            ['mousedown', 'mouseup', 'click'].forEach(ev => {
-                                submitButton.dispatchEvent(new MouseEvent(ev, {
-                                    view: window, bubbles: true, cancelable: true, buttons: 1
-                                }));
-                            });
-                            submitButton.click();
-
-                            // Fallback: Form Submit
                             setTimeout(() => {
-                                if (submitButton && submitButton.form) {
-                                    log("Final fallback: Form submit.");
-                                    submitButton.form.submit();
-                                }
-                                window.autoLoginDone = true;
-                            }, 1000);
+                                submitButton.removeAttribute('disabled');
+                                submitButton.classList.remove('disabled');
+                                
+                                // Simulation of click
+                                ['mousedown', 'mouseup', 'click'].forEach(ev => {
+                                    submitButton.dispatchEvent(new MouseEvent(ev, {
+                                        view: window, bubbles: true, cancelable: true, buttons: 1
+                                    }));
+                                });
+                                submitButton.click();
 
-                        }, 1500);
-
-                        return true; 
+                                // Fallback: If still on page after 1s, try form submit
+                                setTimeout(() => {
+                                    if (document.querySelector("input[name='login']")) {
+                                        log("Still on login page. Forcing form submit.");
+                                        if (submitButton.form) submitButton.form.submit();
+                                        else if (loginField.form) loginField.form.submit();
+                                    }
+                                }, 1000);
+                            }, 500);
+                        }
                     }
-                    return false;
                 }
 
-                // Initial scan and periodic cleanup
-                let attempts = 0;
-                const interval = setInterval(function() {
-                    attempts++;
-                    // Keep clearing obstacles even if we haven't found the form yet
-                    forceClearObstacles();
-
-                    if (performLogin() || attempts > 60) {
+                // Poll frequently to catch the form and the cookie banner
+                const interval = setInterval(() => {
+                    performLogin();
+                    if (!window.location.href.includes('/login') && window.autoLoginDone) {
                         clearInterval(interval);
                     }
-                }, 1000);
-
+                }, 500);
+                
+                // Also run immediately
+                performLogin();
             })()
         """.trimIndent()
         
