@@ -16,5 +16,9 @@
             android:id="@+id/nav_reflow"
             android:icon="@drawable/ic_currency"
             android:title="@string/menu_reflow" />
+        <item
+            android:id="@+id/nav_healthy"
+            android:icon="@drawable/ic_healthy"
+            android:title="@string/menu_healthy" />
     </group>
 </menu>

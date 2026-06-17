@@ -34,4 +34,10 @@
         android:name="com.thruxion.app.ui.flecha.FlechaFragment"
         android:label="@string/menu_webview"
         tools:layout="@layout/fragment_flecha" />
+
+    <fragment
+        android:id="@+id/nav_healthy"
+        android:name="com.thruxion.app.ui.healthy.HealthyFragment"
+        android:label="@string/menu_healthy"
+        tools:layout="@layout/fragment_healthy" />
 </navigation>

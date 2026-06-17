@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         // 3. Setup Unified AppBarConfiguration
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings, R.id.nav_webview
+                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings, R.id.nav_webview, R.id.nav_healthy
             ),
             binding.drawerLayout
         )
