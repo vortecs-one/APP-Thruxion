@@ -32,15 +32,17 @@ class FlechaFragment : Fragment() {
 
         setupWebView()
 
-        webView.loadUrl("https://qapta-odoo-odoov19.odoo.com/web/login")
+        // Use /web instead of /web/login to check for session first
+        webView.loadUrl("https://qapta-odoo-odoov19.odoo.com/web")
+        
         return view
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
-        // Enable cookie persistence
-        CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setAcceptThirdPartyCookies(webView, true)
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -49,6 +51,16 @@ class FlechaFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 progressBar.visibility = View.GONE
+                
+                // Force sync cookies to disk
+                cookieManager.flush()
+                
+                val currentUserEmail = com.thruxion.app.network.security.TokenManager.getUserEmail()
+                if (currentUserEmail == "vortecs.ink@gmail.com") {
+                    if (url != null && (url.contains("/web/login") || url.endsWith("/login"))) {
+                        injectAutoLoginScript()
+                    }
+                }
             }
         }
 
@@ -64,28 +76,68 @@ class FlechaFragment : Fragment() {
         }
 
         webView.settings.apply {
-            // Core performance settings
             javaScriptEnabled = true
             domStorageEnabled = true
-            
-            // Caching
+            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             
-            // Responsive settings
             useWideViewPort = true
             loadWithOverviewMode = true
             
-            // Additional optimizations
-            setSupportZoom(true)
-            builtInZoomControls = true
-            displayZoomControls = false
-            
-            // Security / Odoo specific
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            allowContentAccess = true
+            allowFileAccess = true
+            javaScriptCanOpenWindowsAutomatically = true
+
+            // Updated User Agent to Desktop for better compatibility
+            userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }
         
-        // Explicit hardware acceleration
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+    }
+
+    /**
+     * Refined injection script for Odoo with auto-press.
+     */
+    private fun injectAutoLoginScript() {
+        val testEmail = "admin"
+        val testPassword = "admin" 
+
+        val script = """
+            (function() {
+                if (window.autoLoginTriggered) return;
+                
+                function fillField(selector, value) {
+                    var el = document.querySelector(selector);
+                    if (el) {
+                        el.value = value;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                        el.dispatchEvent(new Event('blur', { bubbles: true }));
+                        return true;
+                    }
+                    return false;
+                }
+
+                var filledLogin = fillField("input[name='login']", '$testEmail');
+                var filledPass = fillField("input[name='password']", '$testPassword');
+                
+                if (filledLogin && filledPass) {
+                    window.autoLoginTriggered = true;
+                    setTimeout(function() {
+                        var btn = document.querySelector("button[type='submit'], .btn-primary, .oe_login_button");
+                        if (btn) {
+                            btn.click();
+                        } else {
+                            var form = document.querySelector("form");
+                            if (form) form.submit();
+                        }
+                    }, 800);
+                }
+            })()
+        """.trimIndent()
+        
+        webView.evaluateJavascript(script, null)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

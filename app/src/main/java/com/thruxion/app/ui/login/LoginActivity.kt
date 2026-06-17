@@ -62,7 +62,7 @@ class LoginActivity : AppCompatActivity()
             val demoUser = LoggedInUser("demo_user", "Demo User")
             UserSession.user = demoUser
             TokenManager.saveUserEmail("demo@qhago.com")
-            TokenManager.saveUserId(12345) // Dummy ID for demo
+            TokenManager.saveUserId(12345) 
             TokenManager.setLoggedIn(true)
             startActivity(intent)
             finish()
