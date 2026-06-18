@@ -1,6 +1,7 @@
 package com.thruxion.app.network
 
 import com.thruxion.app.network.api.CommunicationsApiService
+import com.thruxion.app.network.api.HealthyApiService
 import com.thruxion.app.network.api.HumansApiService
 import com.thruxion.app.network.security.ApiType
 
@@ -11,6 +12,7 @@ object ApiRegistry
 
   //private const val MACHINES = "$BASE_DOMAIN/machines/"
     private const val COMMUNICATIONS = "$BASE_DOMAIN/communications/"
+    private const val HEALTHY = "https://web-nutrition.vercel.app/"
 
     val communicationsApi: CommunicationsApiService by lazy {
         ApiClientFactory.create(COMMUNICATIONS, ApiType.COMMUNICATIONS)
@@ -20,6 +22,11 @@ object ApiRegistry
     val humansApi: HumansApiService by lazy {
         ApiClientFactory.create(HUMANS, ApiType.HUMANS)
             .create(HumansApiService::class.java)
+    }
+
+    val healthyApi: HealthyApiService by lazy {
+        ApiClientFactory.create(HEALTHY, ApiType.HUMANS) // Using HUMANS for default config
+            .create(HealthyApiService::class.java)
     }
 
     /*val machinesApi: MachinesApiService by lazy {

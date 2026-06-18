@@ -150,6 +150,7 @@ class LoginActivity : AppCompatActivity()
                             val loginResponse = response.body()
                             loginResponse?.user?.let { userData ->
                                 TokenManager.saveUserEmail(userData.email)
+                                TokenManager.saveUserPassword(passwordInput)
                                 TokenManager.saveHumanId(userData.human_id)
                                 TokenManager.saveUserId(userData.id)
                                 TokenManager.savePlatform(userData.platform)

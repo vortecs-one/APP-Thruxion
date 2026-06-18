@@ -11,6 +11,7 @@ object TokenManager {
     private const val KEY_COMM_TOKEN = "comm_token"
     private const val KEY_HUMANS_TOKEN = "humans_token"
     private const val KEY_USER_EMAIL = "user_email"
+    private const val KEY_USER_PASSWORD = "user_password"
     private const val KEY_HUMAN_ID = "human_id"
     private const val KEY_USER_ID = "user_id"
     private const val KEY_PLATFORM = "platform"
@@ -44,6 +45,10 @@ object TokenManager {
         sharedPreferences?.edit()?.putString(KEY_USER_EMAIL, email)?.apply()
     }
 
+    fun saveUserPassword(password: String) {
+        sharedPreferences?.edit()?.putString(KEY_USER_PASSWORD, password)?.apply()
+    }
+
     fun saveHumanId(id: Int) {
         sharedPreferences?.edit()?.putInt(KEY_HUMAN_ID, id)?.apply()
     }
@@ -70,6 +75,10 @@ object TokenManager {
 
     fun getUserEmail(): String? {
         return sharedPreferences?.getString(KEY_USER_EMAIL, null)
+    }
+
+    fun getUserPassword(): String? {
+        return sharedPreferences?.getString(KEY_USER_PASSWORD, null)
     }
 
     fun getHumanId(): Int {

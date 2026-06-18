@@ -13,7 +13,15 @@ import android.webkit.WebViewClient
 import android.widget.ProgressBar
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.thruxion.app.R
+import com.thruxion.app.network.ApiRegistry
+import com.thruxion.app.network.security.TokenManager
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 class HealthyFragment : Fragment() {
 
@@ -31,9 +39,63 @@ class HealthyFragment : Fragment() {
         progressBar = root.findViewById(R.id.progressBarHealthy)
 
         setupWebView()
-        webView.loadUrl("https://web-nutrition.vercel.app/login")
+        performHandoff()
 
         return root
+    }
+
+    private fun performHandoff() {
+        val email = TokenManager.getUserEmail() ?: ""
+        val password = TokenManager.getUserPassword() ?: ""
+
+        if (email.isEmpty() || password.isEmpty()) {
+            webView.loadUrl("https://web-nutrition.vercel.app/login")
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                progressBar.visibility = View.VISIBLE
+                val timestamp = System.currentTimeMillis()
+                val secret = "thruxion"
+                
+                // Construct the exact JSON body for signing
+                val bodyString = "{\"email\":\"$email\",\"password\":\"$password\"}"
+                val signatureData = "$timestamp.$bodyString"
+                val signature = hmacSha256(secret, signatureData)
+
+                val requestBody = bodyString.toRequestBody("application/json".toMediaType())
+
+                val response = ApiRegistry.healthyApi.issueHandoff(
+                    timestamp = timestamp,
+                    signature = signature,
+                    request = requestBody
+                )
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val handoffUrl = response.body()?.handoffUrl
+                    if (!handoffUrl.isNullOrEmpty()) {
+                        webView.loadUrl(handoffUrl)
+                    } else {
+                        webView.loadUrl("https://web-nutrition.vercel.app/login")
+                    }
+                } else {
+                    webView.loadUrl("https://web-nutrition.vercel.app/login")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("HealthyFragment", "Handoff error", e)
+                webView.loadUrl("https://web-nutrition.vercel.app/login")
+            } finally {
+                progressBar.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun hmacSha256(secret: String, data: String): String {
+        val sha256HMAC = Mac.getInstance("HmacSHA256")
+        val secretKey = SecretKeySpec(secret.toByteArray(), "HmacSHA256")
+        sha256HMAC.init(secretKey)
+        return sha256HMAC.doFinal(data.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
