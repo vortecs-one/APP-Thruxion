@@ -12,7 +12,12 @@ object ApiRegistry
 
   //private const val MACHINES = "$BASE_DOMAIN/machines/"
     private const val COMMUNICATIONS = "$BASE_DOMAIN/communications/"
-    private const val HEALTHY = "https://web-nutrition.vercel.app/"
+    
+    const val HEALTHY_BASE_URL = "https://web-nutrition-thruxion-thruput.vercel.app/"
+    const val HEALTHY_LOGIN_URL = "${HEALTHY_BASE_URL}login"
+    const val HEALTHY_HANDOFF_SECRET = "thruxion"
+
+    const val FLECHA_URL = "https://qapta-odoo-odoov19.odoo.com/web"
 
     val communicationsApi: CommunicationsApiService by lazy {
         ApiClientFactory.create(COMMUNICATIONS, ApiType.COMMUNICATIONS)
@@ -25,7 +30,7 @@ object ApiRegistry
     }
 
     val healthyApi: HealthyApiService by lazy {
-        ApiClientFactory.create(HEALTHY, ApiType.HUMANS) // Using HUMANS for default config
+        ApiClientFactory.create(HEALTHY_BASE_URL, ApiType.HUMANS) // Using HUMANS for default config
             .create(HealthyApiService::class.java)
     }
 

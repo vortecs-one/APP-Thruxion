@@ -46,7 +46,7 @@ class FlechaFragment : Fragment() {
         setupWebView()
 
         // Use /web instead of /web/login to check for session first
-        webView.loadUrl("https://qapta-odoo-odoov19.odoo.com/web")
+        webView.loadUrl(com.thruxion.app.network.ApiRegistry.FLECHA_URL)
         
         return view
     }

@@ -49,7 +49,7 @@ class HealthyFragment : Fragment() {
         val password = TokenManager.getUserPassword() ?: ""
 
         if (email.isEmpty() || password.isEmpty()) {
-            webView.loadUrl("https://web-nutrition.vercel.app/login")
+            webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
             return
         }
 
@@ -57,7 +57,7 @@ class HealthyFragment : Fragment() {
             try {
                 progressBar.visibility = View.VISIBLE
                 val timestamp = System.currentTimeMillis()
-                val secret = "thruxion"
+                val secret = ApiRegistry.HEALTHY_HANDOFF_SECRET
                 
                 // Construct the exact JSON body for signing
                 val bodyString = "{\"email\":\"$email\",\"password\":\"$password\"}"
@@ -77,14 +77,14 @@ class HealthyFragment : Fragment() {
                     if (!handoffUrl.isNullOrEmpty()) {
                         webView.loadUrl(handoffUrl)
                     } else {
-                        webView.loadUrl("https://web-nutrition.vercel.app/login")
+                        webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
                     }
                 } else {
-                    webView.loadUrl("https://web-nutrition.vercel.app/login")
+                    webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("HealthyFragment", "Handoff error", e)
-                webView.loadUrl("https://web-nutrition.vercel.app/login")
+                webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
             } finally {
                 progressBar.visibility = View.GONE
             }
