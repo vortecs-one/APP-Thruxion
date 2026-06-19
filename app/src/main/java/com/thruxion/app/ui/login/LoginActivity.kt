@@ -64,6 +64,7 @@ class LoginActivity : AppCompatActivity()
             TokenManager.saveUserEmail("demo@qhago.com")
             TokenManager.saveUserId(12345) 
             TokenManager.setLoggedIn(true)
+            com.thruxion.app.utils.LocaleManager.init(this@LoginActivity)
             startActivity(intent)
             finish()
         }
@@ -155,6 +156,9 @@ class LoginActivity : AppCompatActivity()
                                 TokenManager.saveUserId(userData.id)
                                 TokenManager.savePlatform(userData.platform)
                                 
+                                // Apply the user's preferred language if they have one saved
+                                com.thruxion.app.utils.LocaleManager.init(this@LoginActivity)
+
                                 // Update UserSession for immediate UI reaction
                                 UserSession.user = LoggedInUser(
                                     userId = userData.id.toString(),

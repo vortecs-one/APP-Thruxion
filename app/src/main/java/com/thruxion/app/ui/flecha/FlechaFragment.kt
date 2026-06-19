@@ -16,6 +16,7 @@ import android.widget.ProgressBar
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import com.thruxion.app.R
+import com.thruxion.app.utils.LocaleManager
 import com.thruxion.app.network.security.TokenManager
 
 class FlechaFragment : Fragment() {
@@ -67,11 +68,15 @@ class FlechaFragment : Fragment() {
                 
                 // Force sync cookies to disk
                 cookieManager.flush()
+
+                // ALWAYS inject the current language so the web app can react to it
+                val currentLang = LocaleManager.getLanguage()
+                webView.evaluateJavascript("window.appPreferredLanguage = '$currentLang';", null)
                 
                 val currentUserEmail = TokenManager.getUserEmail()
                 if (currentUserEmail == AUTHORIZED_EMAIL) {
                     if (url != null && (url.contains("/web/login") || url.endsWith("/login"))) {
-                        injectAutoLoginScript()
+                        injectAutoLoginScript(currentLang)
                     }
                 }
             }
@@ -91,15 +96,14 @@ class FlechaFragment : Fragment() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             
             useWideViewPort = true
             loadWithOverviewMode = true
             
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             allowContentAccess = true
-            allowFileAccess = true
+            allowFileAccess = false
             javaScriptCanOpenWindowsAutomatically = true
 
             // Updated User Agent to Desktop for better compatibility
@@ -113,7 +117,7 @@ class FlechaFragment : Fragment() {
      * Highly aggressive injection script for Odoo.
      * Forcefully removes cookie banners, shows a "Logging in" overlay, and automates login.
      */
-    private fun injectAutoLoginScript() {
+    private fun injectAutoLoginScript(lang: String) {
         val odooEmail = "admin"
         val odooPassword = "admin123"
 
@@ -121,6 +125,9 @@ class FlechaFragment : Fragment() {
             (function() {
                 if (window.autoLoginExecuting) return;
                 window.autoLoginExecuting = true;
+                
+                // Store preferred language for the web logic to handle
+                window.appPreferredLanguage = '$lang';
 
                 function log(msg) { console.log("[AutoLogin] " + msg); }
 

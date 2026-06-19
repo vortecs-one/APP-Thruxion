@@ -113,6 +113,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun logout() {
         TokenManager.clearTokens()
+        com.thruxion.app.utils.LocaleManager.init(this)
 
         // SECURITY: Securely clear WebView sessions to prevent data leakage between users
         val cookieManager = CookieManager.getInstance()

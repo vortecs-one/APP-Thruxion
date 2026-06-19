@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -17,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.thruxion.app.R
 import com.thruxion.app.network.ApiRegistry
 import com.thruxion.app.network.security.TokenManager
+import com.thruxion.app.utils.LocaleManager
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -27,6 +29,12 @@ class HealthyFragment : Fragment() {
 
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
+
+    companion object {
+        private var cachedHandoffUrl: String? = null
+        private var cacheTimestamp: Long = 0
+        private const val CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
@@ -47,9 +55,16 @@ class HealthyFragment : Fragment() {
     private fun performHandoff() {
         val email = TokenManager.getUserEmail() ?: ""
         val password = TokenManager.getUserPassword() ?: ""
+        val lang = LocaleManager.getLanguage()
+
+        // Set the language cookie globally for the domain
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setCookie(ApiRegistry.HEALTHY_BASE_URL, "app_lang=$lang; Path=/; Secure; SameSite=Lax")
+        cookieManager.flush()
 
         if (email.isEmpty() || password.isEmpty()) {
-            webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
+            webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
             return
         }
 
@@ -59,7 +74,6 @@ class HealthyFragment : Fragment() {
                 val timestamp = System.currentTimeMillis()
                 val secret = ApiRegistry.HEALTHY_HANDOFF_SECRET
                 
-                // Construct the exact JSON body for signing
                 val bodyString = "{\"email\":\"$email\",\"password\":\"$password\"}"
                 val signatureData = "$timestamp.$bodyString"
                 val signature = hmacSha256(secret, signatureData)
@@ -69,22 +83,24 @@ class HealthyFragment : Fragment() {
                 val response = ApiRegistry.healthyApi.issueHandoff(
                     timestamp = timestamp,
                     signature = signature,
+                    language = lang,
                     request = requestBody
                 )
 
                 if (response.isSuccessful && response.body()?.success == true) {
                     val handoffUrl = response.body()?.handoffUrl
                     if (!handoffUrl.isNullOrEmpty()) {
-                        webView.loadUrl(handoffUrl)
+                        // Load without modifying the signed URL, but with the header
+                        webView.loadUrl(handoffUrl, mapOf("x-app-language" to lang))
                     } else {
-                        webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
+                        webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
                     }
                 } else {
-                    webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
+                    webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("HealthyFragment", "Handoff error", e)
-                webView.loadUrl(ApiRegistry.HEALTHY_LOGIN_URL)
+                webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
             } finally {
                 progressBar.visibility = View.GONE
             }
@@ -107,6 +123,9 @@ class HealthyFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 progressBar.visibility = View.GONE
+                // Inject language on every page load as final fallback
+                val currentLang = LocaleManager.getLanguage()
+                view?.evaluateJavascript("window.appPreferredLanguage = '$currentLang';", null)
             }
         }
 
@@ -124,11 +143,10 @@ class HealthyFragment : Fragment() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             useWideViewPort = true
             loadWithOverviewMode = true
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }
     }

@@ -12,6 +12,7 @@ interface HealthyApiService {
     suspend fun issueHandoff(
         @Header("x-app-timestamp") timestamp: Long,
         @Header("x-app-signature") signature: String,
+        @Header("x-app-language") language: String,
         @Body request: RequestBody
     ): Response<HandoffResponse>
 }

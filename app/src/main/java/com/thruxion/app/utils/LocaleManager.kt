@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.thruxion.app.network.security.TokenManager
 
 object LocaleManager {
     private const val PREF_NAME = "locale_prefs"
@@ -15,12 +16,32 @@ object LocaleManager {
         applyLocale()
     }
 
+    private fun getLanguageKey(): String {
+        val userEmail = TokenManager.getUserEmail()
+        return if (userEmail != null) {
+            "${KEY_LANGUAGE}_$userEmail"
+        } else {
+            KEY_LANGUAGE
+        }
+    }
+
     fun getLanguage(): String {
-        return sharedPreferences?.getString(KEY_LANGUAGE, "en") ?: "en"
+        // Try user-specific language first, fallback to global app language
+        val userKey = getLanguageKey()
+        return sharedPreferences?.getString(userKey, null) 
+            ?: sharedPreferences?.getString(KEY_LANGUAGE, "en") 
+            ?: "en"
     }
 
     fun setLanguage(language: String) {
-        sharedPreferences?.edit()?.putString(KEY_LANGUAGE, language)?.apply()
+        val key = getLanguageKey()
+        sharedPreferences?.edit()?.putString(key, language)?.apply()
+        
+        // Also update global language if no user is logged in
+        if (TokenManager.getUserEmail() == null) {
+            sharedPreferences?.edit()?.putString(KEY_LANGUAGE, language)?.apply()
+        }
+
         applyLocale()
     }
 
