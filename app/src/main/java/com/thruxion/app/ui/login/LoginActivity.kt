@@ -127,13 +127,19 @@ class LoginActivity : AppCompatActivity()
                     Toast.makeText(this@LoginActivity, "Please fill all fields", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
+                
+                // Prevent double-click spamming
+                login.isEnabled = false
                 loading.visibility = View.VISIBLE
+                
                 lifecycleScope.launch {
                     try {
                         val rawToken = TokenManager.getHumansToken()
                         if (rawToken.isNullOrBlank()) {
-                            Toast.makeText(this@LoginActivity, "System not ready", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@LoginActivity, "Preparing secure connection...", Toast.LENGTH_SHORT).show()
+                            refreshSystemTokens() // Fetch tokens only when needed
                             loading.visibility = View.GONE
+                            login.isEnabled = true
                             return@launch
                         }
                         // Ensure Bearer is only added once
@@ -146,6 +152,8 @@ class LoginActivity : AppCompatActivity()
                             )
                         )
                         loading.visibility = View.GONE
+                        login.isEnabled = true
+                        
                         if (response.isSuccessful)
                         {
                             val loginResponse = response.body()
@@ -174,11 +182,12 @@ class LoginActivity : AppCompatActivity()
                         {
                             val errorBody = response.errorBody()?.string()
                             Log.e("USER_LOGIN", "400 Error Body: $errorBody")
-                            Toast.makeText(this@LoginActivity, "Error: $errorBody", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@LoginActivity, "Login Error: $errorBody", Toast.LENGTH_LONG).show()
                         }
                     }
                     catch (e: Exception) {
                         loading.visibility = View.GONE
+                        login.isEnabled = true
                         Log.e("USER_LOGIN", "Failure: ${e.message}")
                     }
                 }
@@ -194,26 +203,10 @@ class LoginActivity : AppCompatActivity()
 
         // JWT TOKEN
         lifecycleScope.launch {
-            val commResponse = communicationsApi.systemLogin(
-                SystemLoginRequest("chetu","chetu2025")
-            )
-            if(commResponse.isSuccessful) {
-                Log.d("JWT_TEST", "COMM RAW RESPONSE: ${commResponse.body()}")
-                commResponse.body()?.token?.let {
-                    TokenManager.saveCommunicationsToken(it)
-                }
-            }
-            val humansResponse = humansApi.systemLogin(
-                SystemLoginRequest("admin","admin")
-            )
-            login.isEnabled = false
-            if(humansResponse.isSuccessful)
-            {
-                Log.d("JWT_TEST", "HUMAN RAW RESPONSE: ${humansResponse.body()}")
-                humansResponse.body()?.token?.let {
-                    TokenManager.saveHumansToken(it)
-                    login.isEnabled = true // Enable now that we are "Secure"
-                }
+            if (TokenManager.getHumansToken().isNullOrBlank()) {
+                refreshSystemTokens()
+            } else {
+                login.isEnabled = true
             }
         }
     }
@@ -231,6 +224,30 @@ class LoginActivity : AppCompatActivity()
 
     private fun showLoginFailed(@StringRes errorString: Int) {
         Toast.makeText(applicationContext, errorString, Toast.LENGTH_SHORT).show()
+    }
+
+    private suspend fun refreshSystemTokens() {
+        try {
+            val commResponse = communicationsApi.systemLogin(
+                SystemLoginRequest("chetu", "chetu2025")
+            )
+            if (commResponse.isSuccessful) {
+                commResponse.body()?.token?.let {
+                    TokenManager.saveCommunicationsToken(it)
+                }
+            }
+            val humansResponse = humansApi.systemLogin(
+                SystemLoginRequest("admin", "admin")
+            )
+            if (humansResponse.isSuccessful) {
+                humansResponse.body()?.token?.let {
+                    TokenManager.saveHumansToken(it)
+                    binding.login.isEnabled = true
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("JWT_REFRESH", "Error refreshing tokens", e)
+        }
     }
 }
 
