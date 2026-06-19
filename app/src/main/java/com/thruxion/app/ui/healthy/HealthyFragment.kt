@@ -68,6 +68,13 @@ class HealthyFragment : Fragment() {
             return
         }
 
+        // 1. Check if we already have a URL loaded. If so, just update the lang cookie/JS and don't reload.
+        if (webView.url != null && webView.url!!.contains(ApiRegistry.HEALTHY_BASE_URL)) {
+            val currentLang = LocaleManager.getLanguage()
+            webView.evaluateJavascript("window.appPreferredLanguage = '$currentLang';", null)
+            return
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 progressBar.visibility = View.VISIBLE
@@ -143,12 +150,22 @@ class HealthyFragment : Fragment() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            
+            // 1. Enable Caching
             cacheMode = WebSettings.LOAD_DEFAULT
+            
+            // 2. Performance optimizations
             useWideViewPort = true
             loadWithOverviewMode = true
+            
+            // 3. Security (Already updated)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }
+        
+        // 4. Enable hardware acceleration for smoother rendering
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
