@@ -13,7 +13,7 @@
         android:paddingHorizontal="@dimen/fragment_horizontal_margin"
         android:paddingVertical="24dp">
 
-        <!-- PROFILE IMAGE -->
+        <!-- PROFILE IMAGE (LEFT) -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/iv_profile_image"
             android:layout_width="120dp"
@@ -25,7 +25,6 @@
             app:strokeWidth="2dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
             android:src="@drawable/avatar_1"
             android:contentDescription="@string/profile_image_content_description" />
 
@@ -39,16 +38,17 @@
             app:layout_constraintEnd_toEndOf="@id/iv_profile_image"
             android:contentDescription="@string/profile_image_content_description" />
 
-        <!-- NAMES FIELD -->
+        <!-- NAMES and LASTNAMES to the right of Image -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_names"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginStart="16dp"
             android:hint="@string/prompt_names"
-            app:startIconDrawable="@drawable/ic_profile"
-            app:layout_constraintTop_toBottomOf="@id/iv_profile_image">
+            app:layout_constraintTop_toTopOf="@id/iv_profile_image"
+            app:layout_constraintStart_toEndOf="@id/iv_profile_image"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_names"
@@ -57,16 +57,16 @@
                 android:inputType="textPersonName" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- LASTNAMES FIELD -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_lastnames"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:hint="@string/prompt_lastnames"
-            app:startIconDrawable="@drawable/ic_profile"
-            app:layout_constraintTop_toBottomOf="@id/til_names">
+            app:layout_constraintTop_toBottomOf="@id/til_names"
+            app:layout_constraintStart_toStartOf="@id/til_names"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_lastnames"
@@ -75,6 +75,122 @@
                 android:inputType="textPersonName" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- BIRTHDATE AND GENDER (SAME LINE) -->
+        <LinearLayout
+            android:id="@+id/ll_birth_gender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/til_lastnames">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_birthdate"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/prompt_birthdate"
+                app:startIconDrawable="@android:drawable/ic_menu_my_calendar">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_birthdate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_gender"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="@string/prompt_gender">
+
+                <AutoCompleteTextView
+                    android:id="@+id/act_gender"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- WEIGHT AND HEIGHT (SAME LINE BELOW BIRTHDATE/GENDER) -->
+        <LinearLayout
+            android:id="@+id/ll_weight_height"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/ll_birth_gender">
+
+            <!-- Weight -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_weight"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Weight">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_weight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_weight_unit"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:hint="Unit">
+
+                <AutoCompleteTextView
+                    android:id="@+id/act_weight_unit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Height -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_height"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Height">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_height"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_height_unit"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:hint="Unit">
+
+                <AutoCompleteTextView
+                    android:id="@+id/act_height_unit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
         <!-- DOCUMENT TYPE AND LEGAL ID FIELD -->
         <LinearLayout
             android:id="@+id/ll_document"
@@ -82,7 +198,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/til_lastnames">
+            app:layout_constraintTop_toBottomOf="@id/ll_weight_height">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_document_type"
@@ -119,7 +235,48 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-        <!-- EMAIL FIELD (READ ONLY or for reference) -->
+        <!-- PHONE NUMBER -->
+        <LinearLayout
+            android:id="@+id/ll_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/ll_document">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_country_code"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:hint="Code">
+
+                <AutoCompleteTextView
+                    android:id="@+id/act_country_code"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_phone"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Phone Number"
+                app:startIconDrawable="@android:drawable/stat_sys_phone_call">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_phone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- EMAIL FIELD -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_email"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -128,7 +285,7 @@
             android:layout_marginTop="4dp"
             android:hint="@string/prompt_email"
             app:startIconDrawable="@android:drawable/ic_dialog_email"
-            app:layout_constraintTop_toBottomOf="@id/ll_document">
+            app:layout_constraintTop_toBottomOf="@id/ll_phone">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_email"
@@ -136,42 +293,6 @@
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
                 android:enabled="false" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- BIRTHDATE FIELD -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_birthdate"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:hint="@string/prompt_birthdate"
-            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-            app:layout_constraintTop_toBottomOf="@id/til_email">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_birthdate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- GENDER FIELD -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_gender"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:hint="@string/prompt_gender"
-            app:layout_constraintTop_toBottomOf="@id/til_birthdate">
-
-            <AutoCompleteTextView
-                android:id="@+id/act_gender"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- SAVE BUTTON -->
@@ -182,7 +303,7 @@
             android:layout_marginTop="16dp"
             android:text="@string/action_save_profile"
             app:cornerRadius="12dp"
-            app:layout_constraintTop_toBottomOf="@id/til_gender" />
+            app:layout_constraintTop_toBottomOf="@id/til_email" />
 
         <!-- CHANGE PASSWORD BUTTON -->
         <com.google.android.material.button.MaterialButton

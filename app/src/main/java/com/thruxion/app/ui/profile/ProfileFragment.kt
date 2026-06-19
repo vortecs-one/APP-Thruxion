@@ -44,10 +44,31 @@ class ProfileFragment : Fragment() {
         val docTypes = arrayOf("Passport", "Driver's License", "State ID", "R.U.T")
         val docAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, docTypes)
         binding.actDocumentType.setAdapter(docAdapter)
+        // Set R.U.T as default
+        binding.actDocumentType.setText("R.U.T", false)
+        
         binding.actDocumentType.setOnItemClickListener { _, _, _, _ ->
             binding.actDocumentType.dismissDropDown()
             binding.actDocumentType.clearFocus()
         }
+
+        // Weight Unit Dropdown
+        val weightUnits = arrayOf("kg", "lbs")
+        val weightUnitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, weightUnits)
+        binding.actWeightUnit.setAdapter(weightUnitAdapter)
+        binding.actWeightUnit.setText("kg", false)
+
+        // Height Unit Dropdown
+        val heightUnits = arrayOf("cm", "ft/in")
+        val heightUnitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, heightUnits)
+        binding.actHeightUnit.setAdapter(heightUnitAdapter)
+        binding.actHeightUnit.setText("cm", false)
+
+        // Country Code Dropdown (Example codes)
+        val countryCodes = arrayOf("+56 (CL)", "+1 (US)", "+52 (MX)", "+54 (AR)", "+57 (CO)")
+        val countryCodeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, countryCodes)
+        binding.actCountryCode.setAdapter(countryCodeAdapter)
+        binding.actCountryCode.setText("+56 (CL)", false)
 
         // Gender Dropdown
         val genderOptions = arrayOf("Male", "Female", "Non-binary", "Other")
@@ -73,6 +94,14 @@ class ProfileFragment : Fragment() {
             val documentType = binding.actDocumentType.text.toString().trim()
             val birthdate = binding.etBirthdate.text.toString().trim()
             val gender = binding.actGender.text.toString().trim()
+            
+            // New fields (to be integrated with API later)
+            val weight = binding.etWeight.text.toString().trim()
+            val weightUnit = binding.actWeightUnit.text.toString()
+            val height = binding.etHeight.text.toString().trim()
+            val heightUnit = binding.actHeightUnit.text.toString()
+            val countryCode = binding.actCountryCode.text.toString()
+            val phone = binding.etPhone.text.toString().trim()
 
             var isValid = true
             if (names.isBlank()) {
@@ -99,6 +128,7 @@ class ProfileFragment : Fragment() {
             if (!isValid) return@setOnClickListener
 
             binding.pbProfileLoading.visibility = View.VISIBLE
+            // NOTE: API currently doesn't support weight, height, phone. Adding them to ViewModel/Repository will be the next step.
             viewModel.updateHuman(legalId, documentType, names, lastnames, birthdate, gender)
         }
 
@@ -123,6 +153,11 @@ class ProfileFragment : Fragment() {
                 else -> human.gender
             }
             binding.actGender.setText(displayGender, false)
+            
+            // Set R.U.T as default if no value is present
+            if (binding.actDocumentType.text.isNullOrBlank()) {
+                binding.actDocumentType.setText("R.U.T", false)
+            }
         }
 
         viewModel.updateResult.observe(viewLifecycleOwner) { result ->
