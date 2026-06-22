@@ -30,20 +30,62 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <!-- COORDINATE DISPLAY (Top Left of Map) -->
-        <TextView
-            android:id="@+id/tvMapCoordinates"
+        <!-- OUTDOOR MEASUREMENTS BAR (Top Left of Map) -->
+        <LinearLayout
+            android:id="@+id/llMapMeasurements"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:background="#80000000"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
-            android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:layout_margin="12dp"
+            android:layout_gravity="top|start"
+            android:background="#CC1A1A1A"
+            android:orientation="vertical"
+            android:padding="8dp"
             android:visibility="gone"
-            tools:text="Lat: -33.4489, Lon: -70.6693"
-            tools:visibility="visible" />
+            android:translationZ="60dp"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tvMapCoords"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@android:drawable/ic_menu_mylocation"
+                android:drawablePadding="6dp"
+                android:drawableTint="?attr/colorPrimary"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:text="Lat: -33.4489, Lon: -70.6693" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvMapHeading"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@android:drawable/ic_menu_compass"
+                    android:drawablePadding="4dp"
+                    android:drawableTint="#FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:layout_marginEnd="16dp"
+                    tools:text="340° NW" />
+
+                <TextView
+                    android:id="@+id/tvMapZoom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@android:drawable/ic_menu_zoom"
+                    android:drawablePadding="4dp"
+                    android:drawableTint="#FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    tools:text="Z 14.5" />
+            </LinearLayout>
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
@@ -62,6 +104,138 @@
         app:tint="?attr/colorPrimary"
         app:layout_constraintBottom_toBottomOf="@id/map_card"
         app:layout_constraintEnd_toEndOf="@id/map_card" />
+
+    <!-- ===================================================== -->
+    <!-- MAP LAYERS BUTTON (Moved into Map) -->
+    <!-- ===================================================== -->
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_map_layers"
+        style="@style/Widget.MaterialComponents.Button.Icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:padding="0dp"
+        android:insetLeft="0dp"
+        android:insetRight="0dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@android:drawable/ic_menu_mapmode"
+        app:iconPadding="0dp"
+        app:iconSize="22dp"
+        app:iconGravity="textStart"
+        app:iconTint="?attr/colorPrimary"
+        app:cornerRadius="20dp"
+        app:backgroundTint="#1A1A1A"
+        app:strokeColor="?attr/colorPrimary"
+        app:strokeWidth="2dp"
+        app:elevation="4dp"
+        app:layout_constraintBottom_toTopOf="@id/fab_my_location"
+        app:layout_constraintEnd_toEndOf="@id/map_card" />
+
+    <!-- MODERN MAP STYLE PICKER (Aligned above Layers Button) -->
+    <LinearLayout
+        android:id="@+id/llMapStylePicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@id/btn_map_layers"
+        app:layout_constraintEnd_toEndOf="@id/btn_map_layers"
+        app:layout_constraintStart_toStartOf="@id/btn_map_layers"
+        android:layout_marginBottom="8dp"
+        android:translationZ="50dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStyleLight"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="8dp"
+            android:padding="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            app:icon="@drawable/ic_map_light"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:cornerRadius="20dp"
+            app:elevation="6dp"
+            app:backgroundTint="#1A1A1A"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStyleDark"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="8dp"
+            android:padding="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            app:icon="@drawable/ic_map_dark"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:cornerRadius="20dp"
+            app:elevation="6dp"
+            app:backgroundTint="#1A1A1A"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStyleOutdoor"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="8dp"
+            android:padding="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            app:icon="@drawable/ic_map_outdoor"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:cornerRadius="20dp"
+            app:elevation="6dp"
+            app:backgroundTint="#1A1A1A"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStyleSport"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            app:icon="@drawable/ic_map_bike"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:cornerRadius="20dp"
+            app:elevation="6dp"
+            app:backgroundTint="#1A1A1A"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp" />
+
+    </LinearLayout>
 
     <!-- ===================================================== -->
     <!-- BOTTOM USER LIST -->
@@ -112,7 +286,7 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/btn_map_layers">
+                    app:layout_constraintEnd_toEndOf="parent">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edit_search"
@@ -125,27 +299,6 @@
                         android:paddingVertical="10dp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- MAP LAYERS BUTTON -->
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_map_layers"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:padding="0dp"
-                    android:insetLeft="0dp"
-                    android:insetRight="0dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@android:drawable/ic_menu_mapmode"
-                    app:iconPadding="0dp"
-                    app:iconSize="24dp"
-                    app:iconTint="?attr/colorPrimary"
-                    app:cornerRadius="22dp"
-                    app:layout_constraintTop_toTopOf="@id/search_input_layout"
-                    app:layout_constraintBottom_toBottomOf="@id/search_input_layout"
-                    app:layout_constraintEnd_toEndOf="parent" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -183,109 +336,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </com.google.android.material.card.MaterialCardView>
-
-    <!-- MODERN MAP STYLE PICKER (Aligned vertically above Layers Button) -->
-    <LinearLayout
-        android:id="@+id/llMapStylePicker"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone"
-        android:gravity="center"
-        app:layout_constraintBottom_toTopOf="@id/bottom_list_card"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="52dp"
-        android:layout_marginBottom="12dp"
-        android:translationZ="50dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStyleLight"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginBottom="8dp"
-            android:padding="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            app:icon="@drawable/ic_map_light"
-            app:iconPadding="0dp"
-            app:iconSize="24dp"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorPrimary"
-            app:cornerRadius="22dp"
-            app:elevation="6dp"
-            app:backgroundTint="#1A1A1A"
-            app:strokeColor="?attr/colorPrimary"
-            app:strokeWidth="2dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStyleDark"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginBottom="8dp"
-            android:padding="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            app:icon="@drawable/ic_map_dark"
-            app:iconPadding="0dp"
-            app:iconSize="24dp"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorPrimary"
-            app:cornerRadius="22dp"
-            app:elevation="6dp"
-            app:backgroundTint="#1A1A1A"
-            app:strokeColor="?attr/colorPrimary"
-            app:strokeWidth="2dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStyleOutdoor"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginBottom="8dp"
-            android:padding="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            app:icon="@drawable/ic_map_outdoor"
-            app:iconPadding="0dp"
-            app:iconSize="24dp"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorPrimary"
-            app:cornerRadius="22dp"
-            app:elevation="6dp"
-            app:backgroundTint="#1A1A1A"
-            app:strokeColor="?attr/colorPrimary"
-            app:strokeWidth="2dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStyleSport"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="0dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            app:icon="@drawable/ic_map_bike"
-            app:iconPadding="0dp"
-            app:iconSize="24dp"
-            app:iconGravity="textStart"
-            app:iconTint="?attr/colorPrimary"
-            app:cornerRadius="22dp"
-            app:elevation="6dp"
-            app:backgroundTint="#1A1A1A"
-            app:strokeColor="?attr/colorPrimary"
-            app:strokeWidth="2dp" />
-
-    </LinearLayout>
 
     <!-- ===================================================== -->
     <!-- TOP-FLOATING DETAIL CARD -->

@@ -30,20 +30,62 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <!-- COORDINATE DISPLAY (Top Left of Map) -->
-        <TextView
-            android:id="@+id/tvMapCoordinates"
+        <!-- OUTDOOR MEASUREMENTS BAR (Top Left of Map) -->
+        <LinearLayout
+            android:id="@+id/llMapMeasurements"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:background="#80000000"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
-            android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:layout_margin="12dp"
+            android:layout_gravity="top|start"
+            android:background="#CC1A1A1A"
+            android:orientation="vertical"
+            android:padding="8dp"
             android:visibility="gone"
-            tools:text="Lat: -33.4489, Lon: -70.6693"
-            tools:visibility="visible" />
+            android:translationZ="60dp"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tvMapCoords"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawablePadding="6dp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:drawableStartCompat="@android:drawable/ic_menu_mylocation"
+                app:drawableTint="?attr/colorPrimary"
+                tools:text="Lat: -33.4489, Lon: -70.6693" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvMapHeading"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="4dp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:layout_marginEnd="16dp"
+                    app:drawableStartCompat="@android:drawable/ic_menu_compass"
+                    app:drawableTint="#FFFFFF"
+                    tools:text="340° NW" />
+
+                <TextView
+                    android:id="@+id/tvMapZoom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="4dp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    app:drawableStartCompat="@android:drawable/ic_menu_zoom"
+                    app:drawableTint="#FFFFFF"
+                    tools:text="Z 14.5" />
+            </LinearLayout>
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 

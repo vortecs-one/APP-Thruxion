@@ -205,13 +205,27 @@ class ThruxionFragment : Fragment()
 
             map.addOnCameraMoveListener {
                 if (currentMapMode == MapMode.OUTDOOR) {
-                    val target = map.cameraPosition?.target
-                    if (target != null) {
-                        binding.tvMapCoordinates?.visibility = View.VISIBLE
-                        binding.tvMapCoordinates?.text = String.format(Locale.getDefault(), "Lat: %.5f, Lon: %.5f", target.latitude, target.longitude)
+                    val pos = map.cameraPosition
+                    val target = pos.target ?: return@addOnCameraMoveListener
+                    
+                    binding.llMapMeasurements?.visibility = View.VISIBLE
+                    binding.tvMapCoords?.text = String.format(Locale.getDefault(), "Lat: %.5f, Lon: %.5f", target.latitude, target.longitude)
+                    binding.tvMapZoom?.text = String.format(Locale.getDefault(), "Z %.1f", pos.zoom)
+                    
+                    val bearing = (pos.bearing + 360) % 360
+                    val cardinal = when (((bearing + 22.5) / 45).toInt() % 8) {
+                        0 -> "N"
+                        1 -> "NE"
+                        2 -> "E"
+                        3 -> "SE"
+                        4 -> "S"
+                        5 -> "SW"
+                        6 -> "W"
+                        else -> "NW"
                     }
+                    binding.tvMapHeading?.text = String.format(Locale.getDefault(), "%.0f° %s", bearing, cardinal)
                 } else {
-                    binding.tvMapCoordinates?.visibility = View.GONE
+                    binding.llMapMeasurements?.visibility = View.GONE
                 }
             }
 
@@ -324,14 +338,21 @@ class ThruxionFragment : Fragment()
         
         // Toggle coordinate display visibility and compass behavior based on mode
         if (mode == MapMode.OUTDOOR) {
-            binding.tvMapCoordinates.visibility = View.VISIBLE
-            mapLibreMap?.cameraPosition?.target?.let { target ->
-                binding.tvMapCoordinates.text = String.format(Locale.getDefault(), "Lat: %.5f, Lon: %.5f", target.latitude, target.longitude)
+            binding.llMapMeasurements?.visibility = View.VISIBLE
+            mapLibreMap?.cameraPosition?.let { pos ->
+                pos.target?.let { target ->
+                    binding.tvMapCoords?.text = String.format(Locale.getDefault(), "Lat: %.5f, Lon: %.5f", target.latitude, target.longitude)
+                }
+                binding.tvMapZoom?.text = String.format(Locale.getDefault(), "Z %.1f", pos.zoom)
             }
             // Ensure compass is always shown in outdoor mode for navigation
-            mapLibreMap?.uiSettings?.isCompassEnabled = true
+            mapLibreMap?.uiSettings?.apply {
+                isCompassEnabled = true
+                setCompassFadeFacingNorth(false) // Keep it visible even when facing North
+            }
         } else {
-            binding.tvMapCoordinates.visibility = View.GONE
+            binding.llMapMeasurements?.visibility = View.GONE
+            mapLibreMap?.uiSettings?.setCompassFadeFacingNorth(true)
         }
 
         val styleBuilder = if (styleUrl.trim().startsWith("{")) {
