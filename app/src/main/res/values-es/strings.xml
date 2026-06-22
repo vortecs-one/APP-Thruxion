@@ -118,4 +118,9 @@
     <string name="delete_contact_confirmation">¿Estás seguro de que deseas eliminar este contacto?</string>
     <string name="delete_place_confirmation">¿Estás seguro de que deseas eliminar este lugar?</string>
     <string name="delete_folder_confirmation">¿Estás seguro de que deseas eliminar esta carpeta y todo su contenido?</string>
+    <string name="map_light">Claro</string>
+    <string name="map_dark">Oscuro</string>
+    <string name="map_outdoor">Aire libre (OpenTopoMap)</string>
+    <string name="map_sport">Deporte (CyclOSM)</string>
+    <string name="select_map_style">Seleccionar estilo de mapa</string>
 </resources>

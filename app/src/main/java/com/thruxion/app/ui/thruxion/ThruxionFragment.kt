@@ -108,6 +108,9 @@ class ThruxionFragment : Fragment()
     private var isNavigating = false
     private var keyboardLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
+    private enum class MapMode { LIGHT, DARK, OUTDOOR, SPORT }
+    private var currentMapMode = if (ThemeManager.isDarkMode()) MapMode.DARK else MapMode.LIGHT
+
     private enum class ListMode {
         EXPLORE,
         SAVED_ROOT,
@@ -199,22 +202,121 @@ class ThruxionFragment : Fragment()
                 binding.userDetailCard.visibility = View.GONE
                 false
             }
-            applyMapStyle(ThemeManager.isDarkMode())
+            applyMapStyle(currentMapMode)
             binding.map.post {
                 resetMapPadding()
             }
         }
     }
 
-    private fun applyMapStyle(isDark: Boolean)
+    private fun applyMapStyle(mode: MapMode)
     {
+        currentMapMode = mode
         styleReady = false
-        val styleUrl =
-            if (isDark)
-                "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-            else
-                "https://tiles.openfreemap.org/styles/liberty"
-        mapLibreMap?.setStyle(styleUrl) { style ->
+        
+        // Configure Zoom limits based on style capabilities
+        val map = mapLibreMap
+        if (mode == MapMode.OUTDOOR) {
+            map?.setMaxZoomPreference(17.0)
+            map?.setMinZoomPreference(2.0)
+        } else if (mode == MapMode.SPORT) {
+            map?.setMaxZoomPreference(18.0)
+            map?.setMinZoomPreference(2.0)
+        } else {
+            map?.setMaxZoomPreference(22.0)
+            map?.setMinZoomPreference(0.0)
+        }
+
+        val styleUrl = when (mode) {
+            MapMode.DARK -> "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+            MapMode.OUTDOOR -> {
+                // OpenTopoMap Raster Style JSON with improved bounds and prefetching
+                """
+                {
+                  "version": 8,
+                  "name": "OpenTopoMap",
+                  "metadata": { "mapbox:autocomposite": true },
+                  "sources": {
+                    "opentopomap": {
+                      "type": "raster",
+                      "tiles": [
+                        "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+                        "https://b.tile.opentopomap.org/{z}/{x}/{y}.png",
+                        "https://c.tile.opentopomap.org/{z}/{x}/{y}.png"
+                      ],
+                      "tileSize": 256,
+                      "minzoom": 0,
+                      "maxzoom": 17,
+                      "attribution": "Map data: © OSM, SRTM | Style: © OpenTopoMap"
+                    }
+                  },
+                  "sprite": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm",
+                  "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+                  "layers": [
+                    {
+                      "id": "background",
+                      "type": "background",
+                      "paint": { "background-color": "#bcd1f0" }
+                    },
+                    {
+                      "id": "opentopomap",
+                      "type": "raster",
+                      "source": "opentopomap"
+                    }
+                  ]
+                }
+                """.trimIndent()
+            }
+            MapMode.SPORT -> {
+                // CyclOSM Raster Style JSON using standard OpenStreetMap.fr mirror for better availability
+                """
+                {
+                  "version": 8,
+                  "name": "CyclOSM",
+                  "sources": {
+                    "cyclosm": {
+                      "type": "raster",
+                      "tiles": [
+                        "https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+                        "https://b.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+                        "https://c.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
+                      ],
+                      "tileSize": 256,
+                      "minzoom": 0,
+                      "maxzoom": 18,
+                      "attribution": "Map data: © OSM contributors | Style: © CyclOSM"
+                    }
+                  },
+                  "sprite": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm",
+                  "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+                  "layers": [
+                    {
+                      "id": "background",
+                      "type": "background",
+                      "paint": { "background-color": "#bcd1f0" }
+                    },
+                    {
+                      "id": "cyclosm",
+                      "type": "raster",
+                      "source": "cyclosm"
+                    }
+                  ]
+                }
+                """.trimIndent()
+            }
+            MapMode.LIGHT -> "https://tiles.openfreemap.org/styles/liberty"
+        }
+
+        updatePickerSelection(mode)
+
+        val styleBuilder = if (styleUrl.trim().startsWith("{")) {
+            org.maplibre.android.maps.Style.Builder().fromJson(styleUrl)
+        } else {
+            org.maplibre.android.maps.Style.Builder().fromUri(styleUrl)
+        }
+
+        mapLibreMap?.setStyle(styleBuilder) { style ->
+            val isDark = mode == MapMode.DARK
             setupSearchIcon(style, isDark)
             setupAvatarImages(style)
             setupUserSourceAndLayer(style, isDark)
@@ -232,7 +334,7 @@ class ThruxionFragment : Fragment()
             
             if (currentSearchResults.isNotEmpty())
                 displaySearchResults(currentSearchResults)
-            Log.d("MAP", "STYLE READY")
+            Log.d("MAP", "STYLE READY: $mode")
         }
     }
 
@@ -444,13 +546,14 @@ class ThruxionFragment : Fragment()
             performSearch()
             true
         }
-        binding.switchMapMode.apply {
-            setOnCheckedChangeListener(null)
-            isChecked = ThemeManager.isDarkMode()
-            setOnCheckedChangeListener { _, isChecked ->
-                applyMapStyle(isChecked)
-            }
+        binding.btnMapLayers?.setOnClickListener {
+            toggleMapStylePicker()
         }
+        binding.btnStyleLight?.setOnClickListener { animateSelection(it); applyMapStyle(MapMode.LIGHT); toggleMapStylePicker() }
+        binding.btnStyleDark?.setOnClickListener { animateSelection(it); applyMapStyle(MapMode.DARK); toggleMapStylePicker() }
+        binding.btnStyleOutdoor?.setOnClickListener { animateSelection(it); applyMapStyle(MapMode.OUTDOOR); toggleMapStylePicker() }
+        binding.btnStyleSport?.setOnClickListener { animateSelection(it); applyMapStyle(MapMode.SPORT); toggleMapStylePicker() }
+
         binding.btnSavedPlaces.setOnClickListener {
             if (currentListMode == ListMode.EXPLORE) {
                 currentListMode = ListMode.SAVED_ROOT
@@ -859,6 +962,73 @@ class ThruxionFragment : Fragment()
         }
         else
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(-33.4489, -70.6693), 11.0),1200)
+    }
+
+    private fun toggleMapStylePicker() {
+        val picker = binding.llMapStylePicker ?: return
+        val isVisible = picker.visibility == View.VISIBLE
+        
+        if (!isVisible) {
+            // Entry animation: Slide + Cascading buttons
+            picker.visibility = View.VISIBLE
+            val transition = androidx.transition.TransitionSet().apply {
+                addTransition(androidx.transition.Slide(Gravity.BOTTOM))
+                addTransition(androidx.transition.Fade())
+                duration = 300
+            }
+            androidx.transition.TransitionManager.beginDelayedTransition(binding.root, transition)
+            
+            // Subtle rotation for the main button
+            binding.btnMapLayers?.animate()?.rotation(90f)?.setDuration(300)?.start()
+            
+            // Cascading entry for circle buttons
+            val buttons = listOf(binding.btnStyleLight, binding.btnStyleDark, binding.btnStyleOutdoor, binding.btnStyleSport)
+            buttons.forEachIndexed { index, button ->
+                button?.scaleX = 0f
+                button?.scaleY = 0f
+                button?.animate()?.scaleX(1f)?.scaleY(1f)?.setStartDelay(index * 50L)?.setDuration(200)?.start()
+            }
+        } else {
+            // Exit animation
+            val transition = androidx.transition.TransitionSet().apply {
+                addTransition(androidx.transition.Slide(Gravity.BOTTOM))
+                addTransition(androidx.transition.Fade())
+                duration = 200
+            }
+            androidx.transition.TransitionManager.beginDelayedTransition(binding.root, transition)
+            picker.visibility = View.GONE
+            binding.btnMapLayers?.animate()?.rotation(0f)?.setDuration(200)?.start()
+        }
+    }
+
+    private fun animateSelection(view: View) {
+        // Pop animation when a style is chosen
+        view.animate().scaleX(1.2f).scaleY(1.2f).setDuration(100).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+        }.start()
+        
+        // Haptic feedback
+        view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+    }
+
+    private fun updatePickerSelection(mode: MapMode) {
+        // Visual indicator of which mode is selected (elevation and stroke)
+        val buttons = mapOf(
+            MapMode.LIGHT to binding.btnStyleLight,
+            MapMode.DARK to binding.btnStyleDark,
+            MapMode.OUTDOOR to binding.btnStyleOutdoor,
+            MapMode.SPORT to binding.btnStyleSport
+        )
+        
+        buttons.forEach { (m, btn) ->
+            if (m == mode) {
+                btn?.elevation = 8f
+                btn?.strokeWidth = (3 * resources.displayMetrics.density).toInt()
+            } else {
+                btn?.elevation = 2f
+                btn?.strokeWidth = (1.5 * resources.displayMetrics.density).toInt()
+            }
+        }
     }
 
     private fun hasLocationPermission(): Boolean

@@ -115,4 +115,9 @@
     <string name="delete_contact_confirmation">Are you sure you want to delete this contact?</string>
     <string name="delete_place_confirmation">Are you sure you want to delete this place?</string>
     <string name="delete_folder_confirmation">Are you sure you want to delete this folder and all its contents?</string>
+    <string name="map_light">Light</string>
+    <string name="map_dark">Dark</string>
+    <string name="map_outdoor">Outdoor (OpenTopoMap)</string>
+    <string name="map_sport">Sport (CyclOSM)</string>
+    <string name="select_map_style">Select Map Style</string>
 </resources>
