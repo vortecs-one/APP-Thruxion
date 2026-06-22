@@ -30,6 +30,21 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- COORDINATE DISPLAY (Top Left of Map) -->
+        <TextView
+            android:id="@+id/tvMapCoordinates"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="#80000000"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:visibility="gone"
+            tools:text="Lat: -33.4489, Lon: -70.6693"
+            tools:visibility="visible" />
+
     </com.google.android.material.card.MaterialCardView>
 
     <!-- ===================================================== -->
