@@ -72,6 +72,15 @@
     <string name="connection_error">Connection error</string>
     <string name="navigate">Navigate</string>
     <string name="no_navigation_app_found">No navigation app found</string>
+    <string name="navigation_options">Navigation Options</string>
+    <string name="show_route">Show Route (Internal)</string>
+    <string name="external_navigation">External App</string>
+    <string name="calculating_route">Calculating route...</string>
+    <string name="route_error">Could not calculate route</string>
+    <string name="start_navigation">Start</string>
+    <string name="driving">Driving</string>
+    <string name="walking">Walking</string>
+    <string name="cycling">Cycling</string>
     <string name="edit_name">Edit Name</string>
     <string name="delete">Delete</string>
     <string name="updated">Updated</string>
@@ -100,6 +109,8 @@
     <string name="city_optional">City (Optional)</string>
     <string name="country">Country</string>
     <string name="shared_with_others">Shared with others</string>
+    <string name="share">Share</string>
+    <string name="open_in_external_map">Open In...</string>
     <string name="search_unavailable">Search unavailable (%d)</string>
     <string name="delete_contact_confirmation">Are you sure you want to delete this contact?</string>
     <string name="delete_place_confirmation">Are you sure you want to delete this place?</string>

@@ -64,6 +64,8 @@ import org.maplibre.android.location.LocationComponentActivationOptions
 import java.net.URLEncoder
 import androidx.core.graphics.toColorInt
 import org.maplibre.android.style.layers.FillLayer
+import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.geojson.LineString
 import kotlin.math.abs
 import kotlin.math.asin
@@ -94,10 +96,16 @@ class ThruxionFragment : Fragment()
     private val SAVED_SOURCE_ID = "saved-source"
     private val CONTACT_LAYER_ID = "contact-layer"
     private val CONTACT_SOURCE_ID = "contact-source"
+    private val ROUTE_LAYER_ID = "route-layer"
+    private val ROUTE_SOURCE_ID = "route-source"
     private lateinit var transformAdapter: TransformAdapter
     private var defaultUsers: List<MapUser> = emptyList()
     private var isSearchMode = false
     private var styleReady = false
+    private var routeJob: Job? = null
+    private var currentTravelMode = "driving"
+    private var lastSelectedFeature: Feature? = null
+    private var isNavigating = false
     private var keyboardLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
     private enum class ListMode {
@@ -213,6 +221,7 @@ class ThruxionFragment : Fragment()
             setupSearchSourceAndLayer(style, isDark)
             setupSavedSourceAndLayer(style, isDark)
             setupContactSourceAndLayer(style, isDark)
+            setupRouteSourceAndLayer(style, isDark)
             styleReady = true
             checkLocationPermission()
             
@@ -922,6 +931,23 @@ class ThruxionFragment : Fragment()
         }
     }
 
+    private fun setupRouteSourceAndLayer(style: org.maplibre.android.maps.Style, isDark: Boolean)
+    {
+        if (style.getSource(ROUTE_SOURCE_ID) == null)
+            style.addSource(GeoJsonSource(ROUTE_SOURCE_ID))
+
+        if (style.getLayer(ROUTE_LAYER_ID) == null)
+        {
+            val routeLayer = LineLayer(ROUTE_LAYER_ID, ROUTE_SOURCE_ID).withProperties(
+                lineColor(if (isDark) "#00BFFF" else "#1E90FF"),
+                lineWidth(5f),
+                lineCap(Property.LINE_CAP_ROUND),
+                lineJoin(Property.LINE_JOIN_ROUND)
+            )
+            style.addLayerBelow(routeLayer, SEARCH_LAYER_ID)
+        }
+    }
+
     private fun setupSearchSourceAndLayer(style: org.maplibre.android.maps.Style, isDark: Boolean)
     {
         if (style.getSource(SEARCH_SOURCE_ID) == null)
@@ -1115,6 +1141,7 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     private fun showUserDetails(feature: Feature, isSaved: Boolean = false)
     {
+        clearRoute()
         var finalIsSaved = isSaved
         var finalFeature = feature
 
@@ -1143,7 +1170,7 @@ class ThruxionFragment : Fragment()
         val avatarId = finalFeature.getStringProperty("avatar-id") ?: "avatar-0"
         // Setup Card UI
         binding.userDetailCard.apply {
-            this!!.findViewById<TextView>(R.id.tvUserName).text = name
+            this.findViewById<TextView>(R.id.tvUserName).text = name
             // Set Avatar
             val avatarIndex = avatarId.split("-").lastOrNull()?.toIntOrNull() ?: 0
             val resId = resources.getIdentifier("avatar_${avatarIndex + 1}", "drawable", requireContext().packageName)
@@ -1153,7 +1180,10 @@ class ThruxionFragment : Fragment()
             }
             // Calculate Distance
             updateDistanceOnCard(finalFeature)
+            
+            // Connect Button (Messages)
             findViewById<Button>(R.id.btnConnect).apply {
+                visibility = View.VISIBLE
                 text = context.getString(R.string.send_message)
                 setOnClickListener {
                     val remoteId = finalFeature.getStringProperty("remote-user-id")
@@ -1161,6 +1191,22 @@ class ThruxionFragment : Fragment()
                     val partnerId = remoteId ?: name
                     ChatDialogFragment.newInstance(partnerId, name).show(parentFragmentManager, "ChatDialog")
                 }
+            }
+            
+            // Navigate Button (In-app route)
+            findViewById<Button>(R.id.btnNavigate).apply {
+                visibility = View.VISIBLE
+                setOnClickListener {
+                    binding.llTravelModes?.visibility = View.VISIBLE
+                    drawRoute(finalFeature, currentTravelMode)
+                }
+            }
+
+            // Share Button (Direct System Chooser)
+            findViewById<Button>(R.id.btnShare).apply {
+                visibility = View.VISIBLE
+                text = getString(R.string.share)
+                setOnClickListener { shareLocation(finalFeature) }
             }
             
             val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
@@ -1178,6 +1224,8 @@ class ThruxionFragment : Fragment()
             // Interaction logic
             findViewById<View>(R.id.btnCloseCard).setOnClickListener {
                 visibility = View.GONE
+                clearRoute()
+                stopNavigation()
                 resetMapPadding()
             }
             visibility = View.VISIBLE
@@ -1187,6 +1235,7 @@ class ThruxionFragment : Fragment()
 
     private fun showLocationDetails(feature: Feature, isSaved: Boolean = false)
     {
+        clearRoute()
         var finalIsSaved = isSaved
         var finalFeature = feature
         
@@ -1222,9 +1271,25 @@ class ThruxionFragment : Fragment()
                 setColorFilter("#FF4500".toColorInt())
             }
             updateDistanceOnCard(finalFeature)
-            val actionBtn = findViewById<Button>(R.id.btnConnect)
-            actionBtn.text = getString(R.string.navigate)
-            actionBtn.setOnClickListener { openFossNavigation(finalFeature) }
+            
+            // Navigate Button (In-app route)
+            findViewById<Button>(R.id.btnNavigate).apply {
+                visibility = View.VISIBLE
+                setOnClickListener {
+                    binding.llTravelModes?.visibility = View.VISIBLE
+                    drawRoute(finalFeature, currentTravelMode)
+                }
+            }
+
+            // External Maps (Removed and moved to Share Dialog)
+            findViewById<Button>(R.id.btnConnect).visibility = View.GONE
+
+            // Share Button (Direct System Chooser with Map Intents)
+            findViewById<Button>(R.id.btnShare).apply {
+                visibility = View.VISIBLE
+                text = getString(R.string.share)
+                setOnClickListener { shareLocation(finalFeature) }
+            }
 
             val saveBtn = findViewById<MaterialButton>(R.id.btnSavePlace)
             if (finalIsSaved) {
@@ -1240,6 +1305,8 @@ class ThruxionFragment : Fragment()
 
             this.findViewById<View>(R.id.btnCloseCard).setOnClickListener {
                 visibility = View.GONE
+                clearRoute()
+                stopNavigation()
                 resetMapPadding()
             }
             visibility = View.VISIBLE
@@ -1306,15 +1373,217 @@ class ThruxionFragment : Fragment()
 
     private fun openFossNavigation(feature: Feature)
     {
+        lastSelectedFeature = feature
+        val options = arrayOf(getString(R.string.show_route), getString(R.string.external_navigation))
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.navigation_options))
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        binding.llTravelModes?.visibility = View.VISIBLE
+                        binding.btnStartNavigation?.visibility = View.VISIBLE
+                        binding.btnStartNavigation?.setOnClickListener { startNavigation(feature) }
+                        setupModeClickListeners(feature)
+                        drawRoute(feature, currentTravelMode)
+                    }
+                    1 -> shareLocation(feature)
+                }
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private fun setupModeClickListeners(feature: Feature)
+    {
+        binding.btnModeDriving?.setOnClickListener { updateTravelMode("driving", feature) }
+        binding.btnModeWalking?.setOnClickListener { updateTravelMode("walking", feature) }
+        binding.btnModeCycling?.setOnClickListener { updateTravelMode("cycling", feature) }
+    }
+
+    private fun updateTravelMode(mode: String, feature: Feature)
+    {
+        currentTravelMode = mode
+        updateTravelModeUI()
+        drawRoute(feature, mode)
+    }
+
+    private fun updateTravelModeUI()
+    {
+        val primaryColor = TypedValue()
+        requireContext().theme.resolveAttribute(androidx.appcompat.R.attr.colorPrimary, primaryColor, true)
+        val grayColor = Color.parseColor("#757575")
+
+        binding.ivModeDriving?.setColorFilter(if (currentTravelMode == "driving") primaryColor.data else grayColor)
+        binding.ivModeWalking?.setColorFilter(if (currentTravelMode == "walking") primaryColor.data else grayColor)
+        binding.ivModeCycling?.setColorFilter(if (currentTravelMode == "cycling") primaryColor.data else grayColor)
+    }
+
+    private fun drawRoute(feature: Feature, mode: String = "driving")
+    {
+        val destination = feature.geometry() as? Point ?: return
+        val map = mapLibreMap ?: return
+        val location = map.locationComponent.lastKnownLocation ?: run {
+            Toast.makeText(context, "Current location not available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        routeJob?.cancel()
+        routeJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val url = java.net.URL(
+                    "https://router.project-osrm.org/route/v1/$mode/" +
+                            "${location.longitude},${location.latitude};" +
+                            "${destination.longitude()},${destination.latitude()}?" +
+                            "overview=full&geometries=geojson"
+                )
+                val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    setRequestProperty("User-Agent", "QHagoApp/1.0")
+                    connectTimeout = 10000
+                    readTimeout = 10000
+                }
+
+                if (connection.responseCode == 200) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResponse = org.json.JSONObject(response)
+                    val routes = jsonResponse.getJSONArray("routes")
+                    if (routes.length() > 0) {
+                        val route = routes.getJSONObject(0)
+                        val duration = route.getDouble("duration") // in seconds
+                        val geometry = route.getJSONObject("geometry").toString()
+                        val lineString = LineString.fromJson(geometry)
+
+                        withContext(Dispatchers.Main) {
+                            updateTimeUI(mode, duration)
+                            
+                            val style = mapLibreMap?.style
+                            if (style != null) {
+                                val source = style.getSource(ROUTE_SOURCE_ID) as? GeoJsonSource
+                                source?.setGeoJson(lineString)
+
+                                // Zoom to fit route
+                                val points = lineString.coordinates().map { LatLng(it.latitude(), it.longitude()) }
+                                val bounds = LatLngBounds.Builder().includes(points).build()
+                                mapLibreMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150), 1000)
+                            }
+                        }
+                    }
+                }
+                
+                fetchAllETAs(location.latitude, location.longitude, destination.latitude(), destination.longitude())
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, getString(R.string.route_error), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun fetchAllETAs(lat1: Double, lon1: Double, lat2: Double, lon2: Double)
+    {
+        val modes = listOf("driving", "walking", "cycling")
+        modes.forEach { mode ->
+            if (mode == currentTravelMode) return@forEach
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val url = java.net.URL("https://router.project-osrm.org/route/v1/$mode/$lon1,$lat1;$lon2,$lat2?overview=false")
+                    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        setRequestProperty("User-Agent", "QHagoApp/1.0")
+                    }
+                    if (conn.responseCode == 200) {
+                        val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                        val json = org.json.JSONObject(resp)
+                        val routes = json.getJSONArray("routes")
+                        if (routes.length() > 0) {
+                            val duration = routes.getJSONObject(0).getDouble("duration")
+                            withContext(Dispatchers.Main) {
+                                updateTimeUI(mode, duration)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+    }
+
+    private fun updateTimeUI(mode: String, durationInSeconds: Double)
+    {
+        val minutes = (durationInSeconds / 60).toInt()
+        val timeStr = if (minutes < 60) "$minutes min" else "${minutes / 60}h ${minutes % 60}m"
+        when (mode) {
+            "driving" -> binding.tvTimeDriving?.text = timeStr
+            "walking" -> binding.tvTimeWalking?.text = timeStr
+            "cycling" -> binding.tvTimeCycling?.text = timeStr
+        }
+    }
+
+    private fun startNavigation(feature: Feature)
+    {
+        val map = mapLibreMap ?: return
+        isNavigating = true
+        map.locationComponent.apply {
+            cameraMode = CameraMode.TRACKING_GPS
+            renderMode = RenderMode.GPS
+        }
+        binding.btnStartNavigation?.visibility = View.GONE
+        Toast.makeText(context, "Navigation started", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun stopNavigation()
+    {
+        isNavigating = false
+        mapLibreMap?.locationComponent?.apply {
+            cameraMode = CameraMode.TRACKING
+            renderMode = RenderMode.COMPASS
+        }
+        binding.btnStartNavigation?.visibility = View.GONE
+        binding.llTravelModes?.visibility = View.GONE
+    }
+
+    private fun shareLocation(feature: Feature) {
         val point = feature.geometry() as? Point ?: return
-        val uri = "geo:${point.latitude()},${point.longitude()}?q=${point.latitude()},${point.longitude()}"
-        val intent = Intent(Intent.ACTION_VIEW, uri.toUri())
-        try {
-            startActivity(intent)
+        val lat = point.latitude()
+        val lon = point.longitude()
+        val name = feature.getStringProperty("title") ?: feature.getStringProperty("name") ?: "Location"
+        
+        // 1. Sharing Intent (Standard apps like WhatsApp, RRSS)
+        val shareText = "Check out this location on Qhago: $name\n" +
+                "https://www.google.com/maps/search/?api=1&query=$lat,$lon"
+        
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
         }
-        catch (e: Exception) {
-            Toast.makeText(context, "No navigation app found", Toast.LENGTH_SHORT).show()
+
+        // 2. Map Intents (Specific apps to show as "View" options)
+        val mapIntents = mutableListOf<Intent>()
+
+        fun addMapIntent(packageName: String, uri: String) {
+            try {
+                requireContext().packageManager.getPackageInfo(packageName, 0)
+                mapIntents.add(Intent(Intent.ACTION_VIEW, uri.toUri()).setPackage(packageName))
+            } catch (e: Exception) {}
         }
+
+        addMapIntent("com.google.android.apps.maps", "geo:$lat,$lon?q=$lat,$lon($name)")
+        addMapIntent("com.waze", "waze://?ll=$lat,$lon&navigate=yes")
+        addMapIntent("com.ubercab", "uber://?action=setPickup&pickup=my_location&dropoff[latitude]=$lat&dropoff[longitude]=$lon&dropoff[nickname]=$name")
+
+        // 3. Create Chooser and merge
+        val chooser = Intent.createChooser(shareIntent, getString(R.string.share))
+        if (mapIntents.isNotEmpty()) {
+            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, mapIntents.toTypedArray())
+        }
+        startActivity(chooser)
+    }
+
+    private fun clearRoute()
+    {
+        val style = mapLibreMap?.style ?: return
+        val source = style.getSource(ROUTE_SOURCE_ID) as? GeoJsonSource
+        source?.setGeoJson(FeatureCollection.fromFeatures(emptyArray()))
     }
 
     /**
@@ -1542,7 +1811,7 @@ class ThruxionFragment : Fragment()
             setAdapter(ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, countries))
             threshold = 1
         }
-        val countryLayout = TextInputLayout(context, null, com.google.android.material.R.attr.textInputStyle).apply {
+        val countryLayout = TextInputLayout(context).apply {
             addView(countryInput)
         }
 

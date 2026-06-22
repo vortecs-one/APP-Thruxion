@@ -241,6 +241,90 @@
                     tools:text="0.45 km · Restaurant" />
             </LinearLayout>
 
+            <!-- Travel Modes & Times -->
+            <LinearLayout
+                android:id="@+id/llTravelModes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                android:baselineAligned="false"
+                app:layout_constraintTop_toBottomOf="@id/ivUserAvatar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <LinearLayout
+                    android:id="@+id/btnModeDriving"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp">
+                    <ImageView
+                        android:id="@+id/ivModeDriving"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_car"
+                        app:tint="?attr/colorPrimary" />
+                    <TextView
+                        android:id="@+id/tvTimeDriving"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        tools:text="--" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnModeWalking"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp">
+                    <ImageView
+                        android:id="@+id/ivModeWalking"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_walk"
+                        app:tint="#757575" />
+                    <TextView
+                        android:id="@+id/tvTimeWalking"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        tools:text="--" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnModeCycling"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp">
+                    <ImageView
+                        android:id="@+id/ivModeCycling"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_bike"
+                        app:tint="#757575" />
+                    <TextView
+                        android:id="@+id/tvTimeCycling"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        tools:text="--" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- Compact Action Button (FOSS Navigation/Connect) -->
             <LinearLayout
                 android:id="@+id/llActions"
@@ -248,9 +332,21 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="12dp"
-                app:layout_constraintTop_toBottomOf="@id/ivUserAvatar"
+                app:layout_constraintTop_toBottomOf="@id/llTravelModes"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStartNavigation"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/start_navigation"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="#4CAF50" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnConnect"
