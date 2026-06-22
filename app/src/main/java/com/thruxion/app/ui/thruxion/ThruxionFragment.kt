@@ -158,14 +158,14 @@ class ThruxionFragment : Fragment()
             mapLibreMap = map
             map.moveCamera(CameraUpdateFactory.bearingTo(0.0)) // Ensure north is up
             map.uiSettings.apply {
-                isCompassEnabled = true
+                isCompassEnabled = false // Disabled built-in compass to use integrated one
                 isLogoEnabled = true
                 isAttributionEnabled = true
                 isRotateGesturesEnabled = true 
                 isTiltGesturesEnabled = true   
                 
-                //MAP COMPASS
-                setCompassMargins(0, 150, 40, 0)
+                //MAP COMPASS (Aligned with top-right dashboard)
+                setCompassMargins(0, 16, 16, 0)
                 //MAP LIBRE ICON AND INGO
                 setLogoGravity(Gravity.BOTTOM or Gravity.START)
                 setLogoMargins(40, 0, 0, 40)
@@ -224,6 +224,9 @@ class ThruxionFragment : Fragment()
                         else -> "NW"
                     }
                     binding.tvMapHeading?.text = String.format(Locale.getDefault(), "%.0f° %s", bearing, cardinal)
+                    
+                    // Rotate the integrated compass needle
+                    binding.ivMapCompass?.rotation = -pos.bearing.toFloat()
                 } else {
                     binding.llMapMeasurements?.visibility = View.GONE
                 }
@@ -345,14 +348,17 @@ class ThruxionFragment : Fragment()
                 }
                 binding.tvMapZoom?.text = String.format(Locale.getDefault(), "Z %.1f", pos.zoom)
             }
-            // Ensure compass is always shown in outdoor mode for navigation
+            // Ensure compass behavior for navigation
             mapLibreMap?.uiSettings?.apply {
-                isCompassEnabled = true
+                isCompassEnabled = true // Re-enabled standard compass
                 setCompassFadeFacingNorth(false) // Keep it visible even when facing North
             }
         } else {
             binding.llMapMeasurements?.visibility = View.GONE
-            mapLibreMap?.uiSettings?.setCompassFadeFacingNorth(true)
+            mapLibreMap?.uiSettings?.apply {
+                isCompassEnabled = true // Enable standard compass for other modes
+                setCompassFadeFacingNorth(true)
+            }
         }
 
         val styleBuilder = if (styleUrl.trim().startsWith("{")) {
