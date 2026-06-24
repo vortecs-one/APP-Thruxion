@@ -158,19 +158,17 @@ class ThruxionFragment : Fragment()
             mapLibreMap = map
             map.moveCamera(CameraUpdateFactory.bearingTo(0.0)) // Ensure north is up
             map.uiSettings.apply {
-                isCompassEnabled = false // Disabled built-in compass to use integrated one
+                isCompassEnabled = false // Disable native compass to use our styled ones
                 isLogoEnabled = true
                 isAttributionEnabled = true
                 isRotateGesturesEnabled = true 
                 isTiltGesturesEnabled = true   
                 
-                //MAP COMPASS (Aligned with top-right dashboard)
-                setCompassMargins(0, 16, 16, 0)
-                //MAP LIBRE ICON AND INGO
+                //MAP LIBRE ICON AND INFO
                 setLogoGravity(Gravity.BOTTOM or Gravity.START)
                 setLogoMargins(40, 0, 0, 40)
                 setAttributionGravity(Gravity.BOTTOM or Gravity.END)
-                setAttributionMargins(0, 0, 750, 40) // 120 right margin to clear the FAB
+                setAttributionMargins(0, 0, 750, 40)
             }
             map.addOnMapClickListener { latLng ->
                 val screenPoint = map.projection.toScreenLocation(latLng)
@@ -204,16 +202,23 @@ class ThruxionFragment : Fragment()
             }
 
             map.addOnCameraMoveListener {
+                val pos = map.cameraPosition
+                val target = pos.target ?: return@addOnCameraMoveListener
+                val bearing = pos.bearing.toFloat()
+                
+                // Sync the standalone styled compass
+                binding.btnStyledCompass?.apply {
+                    rotation = -bearing
+                    visibility = if (bearing != 0f) View.VISIBLE else View.GONE
+                }
+
                 if (currentMapMode == MapMode.OUTDOOR) {
-                    val pos = map.cameraPosition
-                    val target = pos.target ?: return@addOnCameraMoveListener
-                    
                     binding.llMapMeasurements?.visibility = View.VISIBLE
                     binding.tvMapCoords?.text = String.format(Locale.getDefault(), "Lat: %.5f, Lon: %.5f", target.latitude, target.longitude)
                     binding.tvMapZoom?.text = String.format(Locale.getDefault(), "Z %.1f", pos.zoom)
                     
-                    val bearing = (pos.bearing + 360) % 360
-                    val cardinal = when (((bearing + 22.5) / 45).toInt() % 8) {
+                    val absBearing = (bearing + 360) % 360
+                    val cardinal = when (((absBearing + 22.5) / 45).toInt() % 8) {
                         0 -> "N"
                         1 -> "NE"
                         2 -> "E"
@@ -223,10 +228,7 @@ class ThruxionFragment : Fragment()
                         6 -> "W"
                         else -> "NW"
                     }
-                    binding.tvMapHeading?.text = String.format(Locale.getDefault(), "%.0f° %s", bearing, cardinal)
-                    
-                    // Rotate the integrated compass needle
-                    binding.ivMapCompass?.rotation = -pos.bearing.toFloat()
+                    binding.tvMapHeading?.text = String.format(Locale.getDefault(), "%.0f° %s", absBearing, cardinal)
                 } else {
                     binding.llMapMeasurements?.visibility = View.GONE
                 }
@@ -339,7 +341,7 @@ class ThruxionFragment : Fragment()
 
         updatePickerSelection(mode)
         
-        // Toggle coordinate display visibility and compass behavior based on mode
+        // Toggle coordinate display visibility based on mode
         if (mode == MapMode.OUTDOOR) {
             binding.llMapMeasurements?.visibility = View.VISIBLE
             mapLibreMap?.cameraPosition?.let { pos ->
@@ -348,18 +350,11 @@ class ThruxionFragment : Fragment()
                 }
                 binding.tvMapZoom?.text = String.format(Locale.getDefault(), "Z %.1f", pos.zoom)
             }
-            // Ensure compass behavior for navigation
-            mapLibreMap?.uiSettings?.apply {
-                isCompassEnabled = true // Re-enabled standard compass
-                setCompassFadeFacingNorth(false) // Keep it visible even when facing North
-            }
         } else {
             binding.llMapMeasurements?.visibility = View.GONE
-            mapLibreMap?.uiSettings?.apply {
-                isCompassEnabled = true // Enable standard compass for other modes
-                setCompassFadeFacingNorth(true)
-            }
         }
+        // Native compass is permanently disabled to use our styled ones
+        mapLibreMap?.uiSettings?.isCompassEnabled = false
 
         val styleBuilder = if (styleUrl.trim().startsWith("{")) {
             org.maplibre.android.maps.Style.Builder().fromJson(styleUrl)
@@ -576,6 +571,9 @@ class ThruxionFragment : Fragment()
     // --------------------------------------------------
     private fun setupUI()
     {
+        binding.btnStyledCompass?.setOnClickListener {
+            mapLibreMap?.animateCamera(CameraUpdateFactory.bearingTo(0.0), 1000)
+        }
         binding.fabMyLocation.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
             viewModel.updateUsersAroundLocation(location.latitude, location.longitude)

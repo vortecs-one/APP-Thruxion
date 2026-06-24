@@ -30,19 +30,47 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- STYLED COMPASS BUTTON (Standalone) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_styled_compass"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_gravity="top|end"
+            android:padding="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_arrow_up"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconGravity="textStart"
+            app:iconTint="?attr/colorPrimary"
+            app:cornerRadius="20dp"
+            app:backgroundTint="@color/black"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="2dp"
+            app:elevation="8dp"
+            android:translationZ="150dp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
         <!-- OUTDOOR MEASUREMENTS BAR (Modern Dashboard Style - Top Right) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/llMapMeasurements"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="75dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_gravity="top|end"
             app:cardBackgroundColor="#CC1A1A1A"
-            app:cardCornerRadius="14dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="8dp"
             app:strokeColor="?attr/colorPrimary"
-            app:strokeWidth="1dp"
+            app:strokeWidth="2dp"
             android:visibility="gone"
             android:translationZ="100dp"
             tools:visibility="visible">
@@ -51,9 +79,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="16dp">
 
-                <!-- TOP ROW: ZOOM AND HEADING -->
+                <!-- TOP ROW: ZOOM, HEADING -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -70,14 +98,14 @@
                             android:layout_height="wrap_content"
                             android:text="ZOOM"
                             android:textColor="#B3FFFFFF"
-                            android:textSize="8sp"
+                            android:textSize="10sp"
                             android:textStyle="bold" />
                         <TextView
                             android:id="@+id/tvMapZoom"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textColor="?attr/colorPrimary"
-                            android:textSize="12sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
                             android:fontFamily="monospace"
                             tools:text="Z 14.5" />
@@ -90,15 +118,6 @@
                         android:layout_marginHorizontal="12dp"
                         android:background="#40FFFFFF" />
 
-                    <!-- COMPASS & HEADING MODULE -->
-                    <ImageView
-                        android:id="@+id/ivMapCompass"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:src="@android:drawable/ic_menu_compass"
-                        android:layout_marginEnd="8dp"
-                        app:tint="?attr/colorPrimary" />
-
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -108,14 +127,14 @@
                             android:layout_height="wrap_content"
                             android:text="HEADING"
                             android:textColor="#B3FFFFFF"
-                            android:textSize="8sp"
+                            android:textSize="10sp"
                             android:textStyle="bold" />
                         <TextView
                             android:id="@+id/tvMapHeading"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textColor="?attr/colorPrimary"
-                            android:textSize="12sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
                             android:fontFamily="monospace"
                             tools:text="340° NW" />
@@ -126,7 +145,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="10dp"
+                    android:layout_marginVertical="8dp"
                     android:background="#40FFFFFF" />
 
                 <!-- BOTTOM ROW: COORDINATES -->
@@ -135,23 +154,22 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@android:drawable/ic_menu_mylocation"
-                        app:tint="?attr/colorPrimary" />
                     <TextView
                         android:id="@+id/tvMapCoords"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="10dp"
                         android:textColor="?attr/colorPrimary"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
                         android:textStyle="bold"
                         android:fontFamily="monospace"
                         tools:text="Lat: -33.4489, Lon: -70.6693" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@android:drawable/ic_menu_mylocation"
+                        app:tint="?attr/colorPrimary" />
                 </LinearLayout>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -161,15 +179,27 @@
     <!-- MY LOCATION FAB -->
     <!-- ===================================================== -->
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/fab_my_location"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        style="@style/Widget.MaterialComponents.Button.Icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_margin="16dp"
-        android:contentDescription="@string/my_location"
-        app:fabSize="mini"
-        app:srcCompat="@drawable/ic_my_location"
-        app:tint="?attr/colorPrimary"
+        android:padding="0dp"
+        android:insetLeft="0dp"
+        android:insetRight="0dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@drawable/ic_my_location"
+        app:iconPadding="0dp"
+        app:iconSize="22dp"
+        app:iconGravity="textStart"
+        app:iconTint="?attr/colorPrimary"
+        app:cornerRadius="20dp"
+        app:backgroundTint="@color/black"
+        app:strokeColor="?attr/colorPrimary"
+        app:strokeWidth="2dp"
+        app:elevation="6dp"
         app:layout_constraintBottom_toBottomOf="@id/map_card"
         app:layout_constraintEnd_toEndOf="@id/map_card" />
 
@@ -195,9 +225,10 @@
         app:iconGravity="textStart"
         app:iconTint="?attr/colorPrimary"
         app:cornerRadius="20dp"
-        app:backgroundTint="@color/login_blue"
-        app:strokeWidth="0dp"
-        app:elevation="4dp"
+        app:backgroundTint="@color/black"
+        app:strokeColor="?attr/colorPrimary"
+        app:strokeWidth="2dp"
+        app:elevation="6dp"
         app:layout_constraintBottom_toTopOf="@id/fab_my_location"
         app:layout_constraintEnd_toEndOf="@id/map_card" />
 
