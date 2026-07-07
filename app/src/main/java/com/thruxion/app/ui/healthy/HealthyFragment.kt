@@ -25,10 +25,28 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.webkit.PermissionRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+
 class HealthyFragment : Fragment() {
 
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
+
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            pendingPermissionRequest?.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+        } else {
+            android.widget.Toast.makeText(context, R.string.camera_permission_denied, android.widget.Toast.LENGTH_SHORT).show()
+            pendingPermissionRequest?.deny()
+        }
+        pendingPermissionRequest = null
+    }
+
+    private var pendingPermissionRequest: PermissionRequest? = null
 
     companion object {
         private var cachedHandoffUrl: String? = null
@@ -145,6 +163,23 @@ class HealthyFragment : Fragment() {
                     progressBar.progress = newProgress
                 }
             }
+
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                if (request == null) return
+                
+                val resources = request.resources
+                if (resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+                    } else {
+                        pendingPermissionRequest = request
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                } else {
+                    // For other resources, grant if requested
+                    request.grant(resources)
+                }
+            }
         }
 
         webView.settings.apply {
@@ -160,6 +195,9 @@ class HealthyFragment : Fragment() {
             
             // 3. Security (Already updated)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+
+            // 4. Media Capture (Necessary for barcode scanning in WebView)
+            mediaPlaybackRequiresUserGesture = false
 
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }

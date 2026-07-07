@@ -70,6 +70,8 @@
     <string name="save_contact">Guardar contacto</string>
     <string name="send_message">Enviar mensaje</string>
     <string name="location_permission_denied">Permiso de ubicación denegado</string>
+    <string name="camera_permission_denied">Permiso de cámara denegado</string>
+    <string name="camera_permission_rationale">La aplicación necesita acceso a la cámara para escanear códigos de barras.</string>
     <string name="map_initializing">Inicializando mapa...</string>
     <string name="no_locations_found">No se encontraron ubicaciones</string>
     <string name="connection_error">Error de conexión</string>

@@ -67,6 +67,8 @@
     <string name="save_contact">Save Contact</string>
     <string name="send_message">Send Message</string>
     <string name="location_permission_denied">Location permission denied</string>
+    <string name="camera_permission_denied">Camera permission denied</string>
+    <string name="camera_permission_rationale">The app needs camera access to scan barcodes.</string>
     <string name="map_initializing">Map initializing...</string>
     <string name="no_locations_found">No locations found</string>
     <string name="connection_error">Connection error</string>
