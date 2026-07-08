@@ -88,10 +88,10 @@ class LoginActivity : AppCompatActivity()
             val loginResult = it ?: return@Observer
 
             loading.visibility = View.GONE
-            if (loginResult.error != null) {
+            if (loginResult.error != null)
                 showLoginFailed(loginResult.error)
-            }
-            if (loginResult.success != null) {
+            if (loginResult.success != null)
+            {
                 updateUiWithUser(loginResult.success)
                 setResult(RESULT_OK)
                 finish()
@@ -203,11 +203,10 @@ class LoginActivity : AppCompatActivity()
 
         // JWT TOKEN
         lifecycleScope.launch {
-            if (TokenManager.getHumansToken().isNullOrBlank()) {
+            if (TokenManager.getHumansToken().isNullOrBlank())
                 refreshSystemTokens()
-            } else {
+            else
                 login.isEnabled = true
-            }
         }
     }
 

@@ -65,11 +65,10 @@ class ChatDialogFragment : DialogFragment() {
         val partnerId = arguments?.getString(ARG_PARTNER_ID)
         val partnerName = arguments?.getString(ARG_PARTNER_NAME)
         
-        if (partnerId != null) {
+        if (partnerId != null)
             viewModel.navigateToDetail(partnerId, partnerName)
-        } else {
+        else
             viewModel.navigateToList()
-        }
     }
 
     override fun onCreateView(

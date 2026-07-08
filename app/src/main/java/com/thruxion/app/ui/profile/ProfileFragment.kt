@@ -155,9 +155,8 @@ class ProfileFragment : Fragment() {
             binding.actGender.setText(displayGender, false)
             
             // Set R.U.T as default if no value is present
-            if (binding.actDocumentType.text.isNullOrBlank()) {
+            if (binding.actDocumentType.text.isNullOrBlank())
                 binding.actDocumentType.setText("R.U.T", false)
-            }
         }
 
         viewModel.updateResult.observe(viewLifecycleOwner) { result ->

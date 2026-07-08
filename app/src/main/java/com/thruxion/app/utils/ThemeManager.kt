@@ -25,11 +25,10 @@ object ThemeManager {
 
     private fun updateCurrentThemeVariable() {
         val isDark = sharedPreferences?.getBoolean(KEY_IS_DARK_MODE, false) ?: false
-        currentTheme = if (isDark) {
+        currentTheme = if (isDark)
             AppCompatDelegate.MODE_NIGHT_YES
-        } else {
+        else
             AppCompatDelegate.MODE_NIGHT_NO
-        }
     }
 
     fun isDarkMode(): Boolean {

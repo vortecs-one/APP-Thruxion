@@ -53,9 +53,9 @@ class H2HFragment : Fragment() {
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                if (newProgress == 100) {
+                if (newProgress == 100)
                     progressBar.visibility = View.GONE
-                } else {
+                else {
                     progressBar.visibility = View.VISIBLE
                     progressBar.progress = newProgress
                 }
@@ -77,9 +77,9 @@ class H2HFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
-            if (webView.canGoBack()) {
+            if (webView.canGoBack())
                 webView.goBack()
-            } else {
+            else {
                 isEnabled = false
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }

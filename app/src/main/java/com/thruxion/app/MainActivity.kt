@@ -79,9 +79,8 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     // Use onNavDestinationSelected for standard navigation items
                     val handled = NavigationUI.onNavDestinationSelected(item, navController)
-                    if (handled) {
+                    if (handled)
                         binding.drawerLayout?.closeDrawer(GravityCompat.START)
-                    }
                     handled
                 }
             }
@@ -103,11 +102,10 @@ class MainActivity : AppCompatActivity() {
             val keypadHeight = screenHeight - rect.bottom
 
             // If keyboard is visible (occupies more than 15% of the screen)
-            if (keypadHeight > screenHeight * 0.15) {
+            if (keypadHeight > screenHeight * 0.15)
                 binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
-            } else {
+            else
                 binding.appBarMain.contentMain.bottomNavView?.visibility = View.VISIBLE
-            }
         }
     }
 

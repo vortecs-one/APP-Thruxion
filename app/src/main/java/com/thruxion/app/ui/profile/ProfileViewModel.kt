@@ -30,11 +30,10 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = humansApi.getHumanById(humanId)
-                if (response.isSuccessful) {
+                if (response.isSuccessful)
                     response.body()?.data?.let {
                         _humanData.value = it
                     }
-                }
             } catch (e: Exception) {
                 // Error handling
             }

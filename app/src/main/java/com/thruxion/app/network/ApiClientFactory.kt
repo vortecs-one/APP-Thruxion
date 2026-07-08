@@ -24,9 +24,8 @@ object ApiClientFactory
 
         val client = OkHttpClient.Builder()
             .apply {
-                if (BuildConfig.DEBUG) {
+                if (BuildConfig.DEBUG)
                     addInterceptor(logging)
-                }
             }
             .addInterceptor(AuthInterceptor(apiType))
             .build()

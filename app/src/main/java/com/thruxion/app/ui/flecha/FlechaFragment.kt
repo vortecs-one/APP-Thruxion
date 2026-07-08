@@ -75,18 +75,17 @@ class FlechaFragment : Fragment() {
                 
                 val currentUserEmail = TokenManager.getUserEmail()
                 if (currentUserEmail == AUTHORIZED_EMAIL) {
-                    if (url != null && (url.contains("/web/login") || url.endsWith("/login"))) {
+                    if (url != null && (url.contains("/web/login") || url.endsWith("/login")))
                         injectAutoLoginScript(currentLang)
-                    }
                 }
             }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                if (newProgress == 100) {
+                if (newProgress == 100)
                     progressBar.visibility = View.GONE
-                } else {
+                else {
                     progressBar.visibility = View.VISIBLE
                     progressBar.progress = newProgress
                 }
@@ -209,9 +208,8 @@ class FlechaFragment : Fragment() {
 
                 const interval = setInterval(() => {
                     performLogin();
-                    if (!window.location.href.includes('/login') && window.autoLoginDone) {
+                    if (!window.location.href.includes('/login') && window.autoLoginDone)
                         clearInterval(interval);
-                    }
                 }, 500);
                 
                 performLogin();
@@ -224,9 +222,9 @@ class FlechaFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
-            if (webView.canGoBack()) {
+            if (webView.canGoBack())
                 webView.goBack()
-            } else {
+            else {
                 isEnabled = false
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }

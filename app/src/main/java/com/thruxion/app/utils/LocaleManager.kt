@@ -18,11 +18,10 @@ object LocaleManager {
 
     private fun getLanguageKey(): String {
         val userEmail = TokenManager.getUserEmail()
-        return if (userEmail != null) {
+        return if (userEmail != null)
             "${KEY_LANGUAGE}_$userEmail"
-        } else {
+        else
             KEY_LANGUAGE
-        }
     }
 
     fun getLanguage(): String {
@@ -38,9 +37,8 @@ object LocaleManager {
         sharedPreferences?.edit()?.putString(key, language)?.apply()
         
         // Also update global language if no user is logged in
-        if (TokenManager.getUserEmail() == null) {
+        if (TokenManager.getUserEmail() == null)
             sharedPreferences?.edit()?.putString(KEY_LANGUAGE, language)?.apply()
-        }
 
         applyLocale()
     }

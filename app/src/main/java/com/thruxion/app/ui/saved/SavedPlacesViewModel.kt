@@ -61,7 +61,7 @@ class SavedPlacesViewModel(application: Application) : AndroidViewModel(applicat
                 if (it.systemTag == null) repository.deleteFolder(it) 
             }
             repository.getFolderByName(userId, name, "PLACE")?.let { 
-                if (it.systemTag == null) repository.deleteFolder(it) 
+                if (it.systemTag == null) repository.deleteFolder(it)
             }
         }
 

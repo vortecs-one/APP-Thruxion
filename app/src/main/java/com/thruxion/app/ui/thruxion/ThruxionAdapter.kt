@@ -66,9 +66,10 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.textViewItemTransform.text = item.user.name
                 val resName = "avatar_${item.user.avatarIndex + 1}"
                 val resId = binding.imageViewItemTransform.resources.getIdentifier(resName, "drawable", binding.imageViewItemTransform.context.packageName)
-                if (resId != 0) {
+                if (resId != 0)
                     binding.imageViewItemTransform.setImageResource(resId)
-                } else {
+                else
+                {
                     // Show justice icon for lawyers, otherwise profile/smile
                     val icon = if (item.user.name.contains("Lawyer", ignoreCase = true) || item.user.name.contains("Abogado", ignoreCase = true)) 
                                R.drawable.ic_justice else R.drawable.ic_profile
@@ -76,10 +77,13 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                     binding.imageViewItemTransform.setColorFilter(yellowColor)
                 }
                 binding.btnItemSave?.visibility = View.VISIBLE
-                if (item.isSaved) {
+                if (item.isSaved)
+                {
                     binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
                     binding.btnItemSave?.setIconTintResource(R.color.purple_500)
-                } else {
+                }
+                else
+                {
                     binding.btnItemSave?.setIconResource(R.drawable.ic_add)
                     binding.btnItemSave?.setIconTintResource(R.color.fluor_green)
                 }
@@ -89,10 +93,13 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.imageViewItemTransform.setImageResource(R.drawable.ic_searched_place)
                 binding.imageViewItemTransform.setColorFilter(yellowColor)
                 binding.btnItemSave?.visibility = View.VISIBLE
-                if (item.isSaved) {
+                if (item.isSaved)
+                {
                     binding.btnItemSave?.setIconResource(R.drawable.ic_edit)
                     binding.btnItemSave?.setIconTintResource(R.color.purple_500)
-                } else {
+                }
+                else
+                {
                     binding.btnItemSave?.setIconResource(R.drawable.ic_add)
                     binding.btnItemSave?.setIconTintResource(R.color.fluor_green)
                 }
@@ -135,9 +142,10 @@ class TransformViewHolder(private val binding: ItemThruxionBinding) : RecyclerVi
                 binding.textViewItemTransform.text = item.contact.name
                 val resName = "avatar_${item.contact.avatarIndex + 1}"
                 val resId = binding.imageViewItemTransform.resources.getIdentifier(resName, "drawable", binding.imageViewItemTransform.context.packageName)
-                if (resId != 0) {
+                if (resId != 0)
                     binding.imageViewItemTransform.setImageResource(resId)
-                } else {
+                else
+                {
                     // Show justice icon for lawyers, otherwise profile/smile
                     val icon = if (item.contact.name.contains("Lawyer", ignoreCase = true) || item.contact.name.contains("Abogado", ignoreCase = true)) 
                                R.drawable.ic_justice else R.drawable.ic_profile

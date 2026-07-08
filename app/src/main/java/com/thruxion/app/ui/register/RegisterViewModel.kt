@@ -93,15 +93,16 @@ class RegisterViewModel : ViewModel() {
                             if (regResponse?.user_id != null || regResponse?.message?.contains("created", ignoreCase = true) == true) {
                                 // Perform auto-login to get the full UserLoginResponse needed for the session
                                 val loginRes = humansApi.userLogin(UserLoginRequest(email, password))
-                                if (loginRes.isSuccessful) {
+                                if (loginRes.isSuccessful)
+                                {
                                     loginRes.body()?.let {
                                         _registerResult.value = Result.Success(it)
                                     } ?: run {
                                         _registerResult.value = Result.Error(Exception("Registration successful, but login failed"))
                                     }
-                                } else {
-                                    _registerResult.value = Result.Error(Exception("Registration successful, but auto-login failed"))
                                 }
+                                else
+                                    _registerResult.value = Result.Error(Exception("Registration successful, but auto-login failed"))
                             } else {
                                 val msg = regResponse?.message ?: "User registration failed"
                                 _registerResult.value = Result.Error(Exception(msg))
@@ -112,11 +113,10 @@ class RegisterViewModel : ViewModel() {
                         }
                     } else {
                         // Check if human creation was actually successful (even if ID is missing in JSON)
-                        if (createResponse?.success == true || createResponse?.message?.contains("success", ignoreCase = true) == true || createResponse?.message?.contains("created", ignoreCase = true) == true) {
+                        if (createResponse?.success == true || createResponse?.message?.contains("success", ignoreCase = true) == true || createResponse?.message?.contains("created", ignoreCase = true) == true)
                              _registerResult.value = Result.Error(Exception("Human created but ID was not returned by API"))
-                        } else {
+                        else
                              _registerResult.value = Result.Error(Exception(createResponse?.message ?: "Human creation failed"))
-                        }
                     }
                 } else {
                     val error = humanRes.errorBody()?.string() ?: "Human creation failed"

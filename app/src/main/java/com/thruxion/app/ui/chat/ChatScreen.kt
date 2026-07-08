@@ -97,15 +97,15 @@ fun ChatListScreen(viewModel: ChatViewModel, onClose: () -> Unit) {
                         PinnedChatItemCircle(pinned) {
                             viewModel.navigateToDetail(pinned.id, pinned.name)
                         }
-                        if (pinned != DEFAULT_PINNED_CHATS.last()) {
+                        if (pinned != DEFAULT_PINNED_CHATS.last())
                             Spacer(modifier = Modifier.width(20.dp))
-                        }
                     }
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
             }
 
-            if (activeChats.isNotEmpty()) {
+            if (activeChats.isNotEmpty())
+            {
                 item {
                     Text(
                         text = "Recent Chats",
@@ -221,9 +221,8 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     LaunchedEffect(messages.size, imeVisible) {
-        if (messages.isNotEmpty()) {
+        if (messages.isNotEmpty())
             listState.animateScrollToItem(messages.size - 1)
-        }
     }
 
     Column(

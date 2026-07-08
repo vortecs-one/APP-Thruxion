@@ -31,15 +31,16 @@ import android.webkit.PermissionRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 
-class HealthyFragment : Fragment() {
-
+class HealthyFragment : Fragment()
+{
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
 
     private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
+        if (isGranted)
             pendingPermissionRequest?.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
-        } else {
+        else
+        {
             android.widget.Toast.makeText(context, R.string.camera_permission_denied, android.widget.Toast.LENGTH_SHORT).show()
             pendingPermissionRequest?.deny()
         }
@@ -112,27 +113,30 @@ class HealthyFragment : Fragment() {
                     request = requestBody
                 )
 
-                if (response.isSuccessful && response.body()?.success == true) {
+                if (response.isSuccessful && response.body()?.success == true)
+                {
                     val handoffUrl = response.body()?.handoffUrl
-                    if (!handoffUrl.isNullOrEmpty()) {
-                        // Load without modifying the signed URL, but with the header
+                    if (!handoffUrl.isNullOrEmpty())
                         webView.loadUrl(handoffUrl, mapOf("x-app-language" to lang))
-                    } else {
+                    else
                         webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
-                    }
-                } else {
-                    webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
+
                 }
-            } catch (e: Exception) {
+                else
+                    webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
+            }
+            catch (e: Exception) {
                 android.util.Log.e("HealthyFragment", "Handoff error", e)
                 webView.loadUrl("${ApiRegistry.HEALTHY_LOGIN_URL}?lang=$lang")
-            } finally {
+            }
+            finally {
                 progressBar.visibility = View.GONE
             }
         }
     }
 
-    private fun hmacSha256(secret: String, data: String): String {
+    private fun hmacSha256(secret: String, data: String): String
+    {
         val sha256HMAC = Mac.getInstance("HmacSHA256")
         val secretKey = SecretKeySpec(secret.toByteArray(), "HmacSHA256")
         sha256HMAC.init(secretKey)
@@ -154,67 +158,69 @@ class HealthyFragment : Fragment() {
             }
         }
 
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                if (newProgress == 100) {
+        webView.webChromeClient = object : WebChromeClient()
+        {
+            override fun onProgressChanged(view: WebView?, newProgress: Int)
+            {
+                if (newProgress == 100)
                     progressBar.visibility = View.GONE
-                } else {
+                else
+                {
                     progressBar.visibility = View.VISIBLE
                     progressBar.progress = newProgress
                 }
             }
 
-            override fun onPermissionRequest(request: PermissionRequest?) {
+            override fun onPermissionRequest(request: PermissionRequest?)
+            {
                 if (request == null) return
-                
                 val resources = request.resources
                 if (resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
-                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                         request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
-                    } else {
+                    else
+                    {
                         pendingPermissionRequest = request
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
-                } else {
+                }
+                else
                     // For other resources, grant if requested
                     request.grant(resources)
-                }
             }
         }
 
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            
             // 1. Enable Caching
             cacheMode = WebSettings.LOAD_DEFAULT
-            
             // 2. Performance optimizations
             useWideViewPort = true
             loadWithOverviewMode = true
-            
             // 3. Security (Already updated)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-
             // 4. Media Capture (Necessary for barcode scanning in WebView)
             mediaPlaybackRequiresUserGesture = false
-
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }
-        
         // 4. Enable hardware acceleration for smoother rendering
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?)
+    {
         super.onViewCreated(view, savedInstanceState)
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
-            if (webView.canGoBack()) {
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner)
+        {
+            if (webView.canGoBack())
                 webView.goBack()
-            } else {
+            else
+            {
                 isEnabled = false
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
         }
     }
+
 }
