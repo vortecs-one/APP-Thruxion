@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,15 +31,14 @@ import java.util.*
 data class PinnedChat(
     val id: String,
     val name: String,
-    val description: String,
     val color: Color
 )
 
 val DEFAULT_PINNED_CHATS = listOf(
-    PinnedChat("assistant", "AI", "ThruxionAI", Color(0xFF007F95)),
-    PinnedChat("sos", "S.O.S", "S.O.S", Color(0xFFD32F2F)),
-    PinnedChat("qhago", "Q?", "Qhago?", Color(0xFF1976D2)),
-    PinnedChat("mywitness", "Mw", "MyWitness", Color(0xFF7B1FA2))
+    PinnedChat("assistant", "AI", Color(0xFF007F95)),
+    PinnedChat("sos", "S.O.S", Color(0xFFD32F2F)),
+    PinnedChat("qhago", "Q?", Color(0xFF1976D2)),
+    PinnedChat("mywitness", "Mw", Color(0xFF7B1FA2))
 )
 
 @Composable

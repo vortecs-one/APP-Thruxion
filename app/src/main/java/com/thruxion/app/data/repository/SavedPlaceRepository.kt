@@ -23,11 +23,9 @@ class SavedPlaceRepository(
     suspend fun updateFolder(folder: Folder) = folderDao.updateFolder(folder)
     suspend fun deleteFolder(folder: Folder) = folderDao.deleteFolder(folder)
 
-    fun getPlacesInFolder(folderId: Long, userId: String): Flow<List<SavedPlace>> = savedPlaceDao.getPlacesInFolder(folderId, userId)
     suspend fun insertPlace(place: SavedPlace) = savedPlaceDao.insertPlace(place)
     suspend fun deletePlace(place: SavedPlace) = savedPlaceDao.deletePlace(place)
 
-    fun getContactsInFolder(folderId: Long, userId: String): Flow<List<Contact>> = contactDao.getContactsInFolder(folderId, userId)
     suspend fun insertContact(contact: Contact) = contactDao.insertContact(contact)
     suspend fun deleteContact(contact: Contact) = contactDao.deleteContact(contact)
 }

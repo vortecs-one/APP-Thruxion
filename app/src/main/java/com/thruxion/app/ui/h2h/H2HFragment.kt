@@ -85,8 +85,4 @@ class H2HFragment : Fragment() {
             }
         }
     }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-    }
 }

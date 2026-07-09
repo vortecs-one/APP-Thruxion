@@ -49,12 +49,6 @@ class HealthyFragment : Fragment()
 
     private var pendingPermissionRequest: PermissionRequest? = null
 
-    companion object {
-        private var cachedHandoffUrl: String? = null
-        private var cacheTimestamp: Long = 0
-        private const val CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-    }
-
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
         inflater: LayoutInflater,

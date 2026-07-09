@@ -64,12 +64,6 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
             repository.sendMessage(content, currentUserId, _partnerId.value, _partnerName.value)
         }
     }
-
-    fun clearChat() {
-        viewModelScope.launch {
-            repository.clearChat(currentUserId, _partnerId.value)
-        }
-    }
 }
 
 class ChatViewModelFactory(private val repository: ChatRepository) : ViewModelProvider.Factory {

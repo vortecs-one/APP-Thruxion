@@ -32,8 +32,6 @@ data class SearchResult(
 
 class TransformViewModel : ViewModel()
 {
-    private val _healthStatus = MutableLiveData<String>()
-    val healthStatus: LiveData<String> = _healthStatus
     // Security: private MutableLiveData and public LiveData
     private val _users = MutableLiveData<List<MapUser>>()
     val users: LiveData<List<MapUser>> = _users
@@ -85,26 +83,14 @@ class TransformViewModel : ViewModel()
             try
             {
                 // Test Communications API
-                val commsRes = ApiRegistry.communicationsApi.getCommunicationHealth()
+                ApiRegistry.communicationsApi.getCommunicationHealth()
                 // Test Humans API
-                val humansRes = ApiRegistry.humansApi.getHumansHealth()
+                ApiRegistry.humansApi.getHumansHealth()
                 // isSuccessful checks for codes 200-299
-                if (commsRes.isSuccessful && humansRes.isSuccessful)
-                {
-                    _healthStatus.postValue("All API Systems Online")
-                    Log.d("NetworkTest", "Comms: OK, Humans: OK")
-                }
-                else
-                {
-                    val commsStatus = if(commsRes.isSuccessful) "OK" else "Error ${commsRes.code()}"
-                    val humansStatus = if(humansRes.isSuccessful) "OK" else "Error ${humansRes.code()}"
-                    _healthStatus.postValue("Comms: $commsStatus | Humans: $humansStatus")
-                    Log.e("NetworkTest", "Comms: $commsStatus, Humans: $humansStatus")
-                }
+                Log.d("NetworkTest", "API Health check performed")
             }
             catch (e: Exception)
             {
-                _healthStatus.postValue("Connection Error: ${e.localizedMessage}")
                 Log.e("NetworkTest", "Exception: ", e)
             }
         }

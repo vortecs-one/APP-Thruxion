@@ -89,7 +89,6 @@ class ThruxionFragment : Fragment()
     private var mapLibreMap: MapLibreMap? = null
     private var currentSearchResults: List<SearchResult> = emptyList()
     private var searchJob: Job? = null
-    private var isLocationInitialized = false
     private val SEARCH_LAYER_ID = "search-layer"
     private val SEARCH_SOURCE_ID = "search-source"
     private val SAVED_LAYER_ID = "saved-layer"
@@ -104,8 +103,6 @@ class ThruxionFragment : Fragment()
     private var styleReady = false
     private var routeJob: Job? = null
     private var currentTravelMode = "driving"
-    private var lastSelectedFeature: Feature? = null
-    private var isNavigating = false
     private var keyboardLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
     private enum class MapMode { LIGHT, DARK, OUTDOOR, SPORT }
@@ -124,7 +121,6 @@ class ThruxionFragment : Fragment()
     private var selectedFolder: Folder? = null
     private var pendingSaveItem: Any? = null
     private var pendingSaveTargetType: String? = null
-    private var pendingActionItem: Any? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?)
@@ -1002,7 +998,6 @@ class ThruxionFragment : Fragment()
         locationComponent.isLocationComponentEnabled = true
         locationComponent.cameraMode = CameraMode.TRACKING
         locationComponent.renderMode = RenderMode.COMPASS
-        isLocationInitialized = true
         val location = locationComponent.lastKnownLocation
         if (location != null)
         {
@@ -1593,7 +1588,6 @@ class ThruxionFragment : Fragment()
 
     private fun openFossNavigation(feature: Feature)
     {
-        lastSelectedFeature = feature
         val options = arrayOf(getString(R.string.show_route), getString(R.string.external_navigation))
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.navigation_options))
@@ -1742,7 +1736,6 @@ class ThruxionFragment : Fragment()
     private fun startNavigation(feature: Feature)
     {
         val map = mapLibreMap ?: return
-        isNavigating = true
         map.locationComponent.apply {
             cameraMode = CameraMode.TRACKING_GPS
             renderMode = RenderMode.GPS
@@ -1753,7 +1746,6 @@ class ThruxionFragment : Fragment()
 
     private fun stopNavigation()
     {
-        isNavigating = false
         mapLibreMap?.locationComponent?.apply {
             cameraMode = CameraMode.TRACKING
             renderMode = RenderMode.COMPASS
