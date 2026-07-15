@@ -13,6 +13,7 @@ import com.thruxion.app.R
 import com.thruxion.app.databinding.DialogChangePasswordBinding
 import com.thruxion.app.databinding.FragmentProfileBinding
 import com.thruxion.app.data.Result
+import com.thruxion.app.network.security.TokenManager
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,14 +30,14 @@ class ProfileFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
-        val root: View = binding.root
+        return binding.root
+    }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         setupUI()
         setupObservers()
-        
         viewModel.fetchHuman()
-
-        return root
     }
 
     private fun setupUI() {
@@ -139,28 +140,44 @@ class ProfileFragment : Fragment() {
 
     private fun setupObservers() {
         viewModel.humanData.observe(viewLifecycleOwner) { human ->
-            binding.etNames.setText(human.name)
-            binding.etLastnames.setText(human.lastname)
-            binding.etLegalId.setText(human.legal_id)
-            binding.etEmail.setText(human.users?.firstOrNull()?.email)
-            binding.etBirthdate.setText(human.birthdate?.split("T")?.firstOrNull())
+            binding.etNames.setText(human.name ?: "")
+            binding.etLastnames.setText(human.lastname ?: "")
+            binding.etLegalId.setText(human.legal_id ?: "")
+            
+            // Try to get email from human object, fallback to TokenManager if not present
+            val email = human.users?.firstOrNull()?.email ?: TokenManager.getUserEmail()
+            binding.etEmail.setText(email ?: "")
+            
+            binding.etBirthdate.setText(human.birthdate?.split("T")?.firstOrNull() ?: "")
             
             // Map gender code to display name for the dropdown
             val displayGender = when(human.gender?.uppercase()) {
                 "XY" -> "Male"
                 "XX" -> "Female"
                 "NON-BINARY" -> "Non-binary"
-                else -> human.gender
+                else -> human.gender ?: ""
             }
-            binding.actGender.setText(displayGender, false)
+            if (displayGender.isNotEmpty()) {
+                binding.actGender.setText(displayGender, false)
+            }
             
             // Set R.U.T as default if no value is present
             if (binding.actDocumentType.text.isNullOrBlank())
                 binding.actDocumentType.setText("R.U.T", false)
         }
 
+        viewModel.loading.observe(viewLifecycleOwner) { isLoading ->
+            binding.pbProfileLoading.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.btnSaveProfile.isEnabled = !isLoading
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { errorMsg ->
+            errorMsg?.let {
+                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            }
+        }
+
         viewModel.updateResult.observe(viewLifecycleOwner) { result ->
-            binding.pbProfileLoading.visibility = View.GONE
             when (result) {
                 is Result.Success -> {
                     Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
@@ -176,7 +193,6 @@ class ProfileFragment : Fragment() {
         }
 
         viewModel.changePasswordResult.observe(viewLifecycleOwner) { result ->
-            binding.pbProfileLoading.visibility = View.GONE
             when (result) {
                 is Result.Success -> {
                     Toast.makeText(context, R.string.password_changed_successfully, Toast.LENGTH_SHORT).show()

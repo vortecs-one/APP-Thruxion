@@ -17,6 +17,12 @@ class ProfileViewModel : ViewModel() {
     private val _humanData = MutableLiveData<HumanResponse>()
     val humanData: LiveData<HumanResponse> = _humanData
 
+    private val _loading = MutableLiveData<Boolean>()
+    val loading: LiveData<Boolean> = _loading
+
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> = _error
+
     private val _changePasswordResult = MutableLiveData<Result<String>>()
     val changePasswordResult: LiveData<Result<String>> = _changePasswordResult
 
@@ -25,17 +31,30 @@ class ProfileViewModel : ViewModel() {
 
     fun fetchHuman() {
         val humanId = TokenManager.getHumanId()
-        if (humanId == -1) return
+        if (humanId == -1) {
+            _error.value = "Session invalid. Please login again."
+            return
+        }
 
+        _loading.value = true
+        _error.value = null
         viewModelScope.launch {
             try {
                 val response = humansApi.getHumanById(humanId)
-                if (response.isSuccessful)
-                    response.body()?.data?.let {
-                        _humanData.value = it
+                if (response.isSuccessful) {
+                    val data = response.body()?.data
+                    if (data != null) {
+                        _humanData.value = data
+                    } else {
+                        _error.value = "Profile data is empty"
                     }
+                } else {
+                    _error.value = "Error loading profile: ${response.message()} (${response.code()})"
+                }
             } catch (e: Exception) {
-                // Error handling
+                _error.value = "Network error: ${e.localizedMessage ?: "Unknown error"}"
+            } finally {
+                _loading.value = false
             }
         }
     }
@@ -49,6 +68,7 @@ class ProfileViewModel : ViewModel() {
             return
         }
 
+        _loading.value = true
         viewModelScope.launch {
             try {
                 // Ensure gender is sent as the code expected by API (XY/XX)
@@ -117,6 +137,8 @@ class ProfileViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _updateResult.value = Result.Error(e)
+            } finally {
+                _loading.value = false
             }
         }
     }
@@ -128,6 +150,7 @@ class ProfileViewModel : ViewModel() {
             return
         }
 
+        _loading.value = true
         viewModelScope.launch {
             try {
                 val request = ChangePasswordRequest(currentPassword, newPassword)
@@ -140,6 +163,8 @@ class ProfileViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _changePasswordResult.value = Result.Error(e)
+            } finally {
+                _loading.value = false
             }
         }
     }
