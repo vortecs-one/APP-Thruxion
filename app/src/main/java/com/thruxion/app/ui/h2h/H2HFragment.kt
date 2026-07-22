@@ -65,10 +65,12 @@ class H2HFragment : Fragment() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             useWideViewPort = true
             loadWithOverviewMode = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            loadsImagesAutomatically = true
         }
         
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)

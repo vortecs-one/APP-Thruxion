@@ -10,12 +10,21 @@ import com.thruxion.app.network.model.ChangePasswordRequest
 import com.thruxion.app.network.model.HumanResponse
 import com.thruxion.app.network.model.UpdateHumanRequest
 import com.thruxion.app.network.security.TokenManager
+import com.thruxion.app.utils.HealthManager
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class ProfileViewModel : ViewModel() {
 
     private val _humanData = MutableLiveData<HumanResponse>()
     val humanData: LiveData<HumanResponse> = _humanData
+
+    private val _steps = MutableLiveData<Long>()
+    val steps: LiveData<Long> = _steps
+
+    private val _heartRate = MutableLiveData<Int>()
+    val heartRate: LiveData<Int> = _heartRate
 
     private val _loading = MutableLiveData<Boolean>()
     val loading: LiveData<Boolean> = _loading
@@ -55,6 +64,23 @@ class ProfileViewModel : ViewModel() {
                 _error.value = "Network error: ${e.localizedMessage ?: "Unknown error"}"
             } finally {
                 _loading.value = false
+            }
+        }
+    }
+
+    fun fetchHealthData(healthManager: HealthManager) {
+        viewModelScope.launch {
+            try {
+                val endTime = Instant.now()
+                val startTime = endTime.minus(24, ChronoUnit.HOURS)
+                
+                val totalSteps = healthManager.readTotalSteps(startTime, endTime)
+                _steps.postValue(totalSteps)
+
+                val lastHr = healthManager.readLatestHeartRate()
+                lastHr?.let { _heartRate.postValue(it) }
+            } catch (e: Exception) {
+                // Silently fail or log for health data
             }
         }
     }

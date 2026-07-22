@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-sdk tools:overrideLibrary="androidx.health.connect.client" />
+
     <!-- Permissions for Connectivity and Maps -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -13,12 +16,25 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!-- Health Connect Permissions (Modern Android 14+) -->
+    <uses-permission android:name="android.permission.health.READ_STEPS"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
+
+    <!-- Health Connect Permissions (Legacy Support for APK version - UPPERCASE required for some versions) -->
+    <uses-permission android:name="androidx.health.permission.STEPS.READ" />
+    <uses-permission android:name="androidx.health.permission.HEART_RATE.READ" />
+    <!-- Adding Write as a dummy to improve discovery on some Samsung/Legacy systems -->
+    <uses-permission android:name="androidx.health.permission.STEPS.WRITE" />
+
     <!-- Queries for external navigation apps (Android 11+) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="geo" />
         </intent>
+        <package android:name="com.google.android.apps.healthdata" />
+        <package android:name="com.huawei.health" />
     </queries>
 
     <application
@@ -63,7 +79,28 @@
             android:theme="@style/Theme.QhagoApp.NoActionBar"
             android:windowSoftInputMode="adjustResize"
             tools:ignore="LockedOrientationActivity"
-            android:exported="false">
+            android:exported="true">
+            <!-- Huawei Auth Redirect -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.thruxion.app" android:host="huawei-auth" />
+            </intent-filter>
+        </activity>
+
+        <!-- Health Connect Permissions Rationale -->
+        <activity
+            android:name=".ui.health.HealthPermissionsRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+            <!-- Required for discovery on some Android 13 versions -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
         </activity>
     </application>
 

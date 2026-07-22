@@ -14,6 +14,7 @@ import com.thruxion.app.databinding.DialogChangePasswordBinding
 import com.thruxion.app.databinding.FragmentProfileBinding
 import com.thruxion.app.data.Result
 import com.thruxion.app.network.security.TokenManager
+import com.thruxion.app.utils.HealthManager
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -23,6 +24,7 @@ class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
     private val viewModel: ProfileViewModel by viewModels()
+    private lateinit var healthManager: HealthManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,104 +35,63 @@ class ProfileFragment : Fragment() {
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?)
+    {
         super.onViewCreated(view, savedInstanceState)
+        healthManager = HealthManager(requireContext())
         setupUI()
         setupObservers()
         viewModel.fetchHuman()
     }
 
-    private fun setupUI() {
+    override fun onResume()
+    {
+        super.onResume()
+        // Fetch health data if enabled in settings
+        val healthEnabled = requireContext().getSharedPreferences("health_prefs", android.content.Context.MODE_PRIVATE)
+            .getBoolean("sync_enabled", false)
+        if (healthEnabled)
+            viewModel.fetchHealthData(healthManager)
+        else
+            binding.cardHealthDashboard.visibility = View.GONE
+
+    }
+
+    private fun setupUI()
+    {
         // Document Type Dropdown
         val docTypes = arrayOf("Passport", "Driver's License", "State ID", "R.U.T")
         val docAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, docTypes)
         binding.actDocumentType.setAdapter(docAdapter)
         // Set R.U.T as default
         binding.actDocumentType.setText("R.U.T", false)
-        
         binding.actDocumentType.setOnItemClickListener { _, _, _, _ ->
-            binding.actDocumentType.dismissDropDown()
-            binding.actDocumentType.clearFocus()
+            // Handle selection if needed
         }
-
-        // Weight Unit Dropdown
-        val weightUnits = arrayOf("kg", "lbs")
-        val weightUnitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, weightUnits)
-        binding.actWeightUnit.setAdapter(weightUnitAdapter)
-        binding.actWeightUnit.setText("kg", false)
-
-        // Height Unit Dropdown
-        val heightUnits = arrayOf("cm", "ft/in")
-        val heightUnitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, heightUnits)
-        binding.actHeightUnit.setAdapter(heightUnitAdapter)
-        binding.actHeightUnit.setText("cm", false)
-
-        // Country Code Dropdown (Example codes)
-        val countryCodes = arrayOf("+56 (CL)", "+1 (US)", "+52 (MX)", "+54 (AR)", "+57 (CO)")
-        val countryCodeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, countryCodes)
-        binding.actCountryCode.setAdapter(countryCodeAdapter)
-        binding.actCountryCode.setText("+56 (CL)", false)
 
         // Gender Dropdown
-        val genderOptions = arrayOf("Male", "Female", "Non-binary", "Other")
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, genderOptions)
-        binding.actGender.setAdapter(adapter)
-        binding.actGender.setOnItemClickListener { _, _, _, _ ->
-            binding.actGender.dismissDropDown()
-            binding.actGender.clearFocus()
-        }
+        val genders = arrayOf("Male", "Female", "Non-binary")
+        val genderAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, genders)
+        binding.actGender.setAdapter(genderAdapter)
 
         binding.etBirthdate.setOnClickListener {
             showDatePicker()
         }
 
-        binding.tilLegalId.setEndIconOnClickListener {
-            Toast.makeText(context, "Camera scanning coming soon...", Toast.LENGTH_SHORT).show()
-        }
-
         binding.btnSaveProfile.setOnClickListener {
-            val names = binding.etNames.text.toString().trim()
-            val lastnames = binding.etLastnames.text.toString().trim()
-            val legalId = binding.etLegalId.text.toString().trim()
-            val documentType = binding.actDocumentType.text.toString().trim()
-            val birthdate = binding.etBirthdate.text.toString().trim()
-            val gender = binding.actGender.text.toString().trim()
-            
-            // New fields (to be integrated with API later)
-            val weight = binding.etWeight.text.toString().trim()
-            val weightUnit = binding.actWeightUnit.text.toString()
-            val height = binding.etHeight.text.toString().trim()
-            val heightUnit = binding.actHeightUnit.text.toString()
-            val countryCode = binding.actCountryCode.text.toString()
-            val phone = binding.etPhone.text.toString().trim()
+            val name = binding.etNames.text.toString()
+            val lastname = binding.etLastnames.text.toString()
+            val legalId = binding.etLegalId.text.toString()
+            val birthdate = binding.etBirthdate.text.toString()
+            val gender = binding.actGender.text.toString()
+            val docType = binding.actDocumentType.text.toString()
 
-            var isValid = true
-            if (names.isBlank()) {
-                binding.tilNames.error = "Name is required"
-                isValid = false
-            } else {
-                binding.tilNames.error = null
+            if (name.isBlank() || lastname.isBlank()) {
+                Toast.makeText(context, "Name and Lastname are required", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
 
-            if (lastnames.isBlank()) {
-                binding.tilLastnames.error = "Last name is required"
-                isValid = false
-            } else {
-                binding.tilLastnames.error = null
-            }
-
-            if (legalId.isBlank()) {
-                binding.tilLegalId.error = "Legal ID is required"
-                isValid = false
-            } else {
-                binding.tilLegalId.error = null
-            }
-
-            if (!isValid) return@setOnClickListener
-
-            binding.pbProfileLoading.visibility = View.VISIBLE
-            // NOTE: API currently doesn't support weight, height, phone. Adding them to ViewModel/Repository will be the next step.
-            viewModel.updateHuman(legalId, documentType, names, lastnames, birthdate, gender)
+            viewModel.updateHuman(legalId, docType, name, lastname, birthdate, gender)
         }
 
         binding.btnChangePassword.setOnClickListener {
@@ -202,41 +163,50 @@ class ProfileFragment : Fragment() {
                 }
             }
         }
+
+        viewModel.steps.observe(viewLifecycleOwner) { steps ->
+            // Use reflection or standard findView if binding isn't updated
+            binding.root.findViewById<android.widget.TextView>(R.id.tv_health_steps)?.text = steps.toString()
+            binding.root.findViewById<android.widget.TextView>(R.id.tv_health_status)?.text = getString(R.string.updated)
+            binding.cardHealthDashboard.visibility = View.VISIBLE
+        }
+
+        viewModel.heartRate.observe(viewLifecycleOwner) { bpm ->
+            binding.root.findViewById<android.widget.TextView>(R.id.tv_health_heart_rate)?.text = bpm.toString()
+            binding.cardHealthDashboard.visibility = View.VISIBLE
+        }
     }
 
     private fun showChangePasswordDialog() {
         val dialogBinding = DialogChangePasswordBinding.inflate(layoutInflater)
+        
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.action_change_password)
             .setView(dialogBinding.root)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
+            .setPositiveButton(R.string.save) { _, _ ->
                 val currentPassword = dialogBinding.etCurrentPassword.text.toString()
                 val newPassword = dialogBinding.etNewPassword.text.toString()
 
-                if (currentPassword.isBlank() || newPassword.isBlank()) {
-                    Toast.makeText(context, "Fields cannot be empty", Toast.LENGTH_SHORT).show()
+                if (newPassword.length < 6) {
+                    Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                binding.pbProfileLoading.visibility = View.VISIBLE
                 viewModel.changePassword(currentPassword, newPassword)
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
     private fun showDatePicker() {
         val datePicker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText("Select birthdate")
-            .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+            .setTitleText("Select Birthdate")
             .build()
 
         datePicker.addOnPositiveButtonClickListener { selection ->
-            val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-            calendar.timeInMillis = selection
-            val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-            format.timeZone = TimeZone.getTimeZone("UTC")
-            binding.etBirthdate.setText(format.format(calendar.time))
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val dateString = sdf.format(Date(selection))
+            binding.etBirthdate.setText(dateString)
         }
 
         datePicker.show(parentFragmentManager, "DATE_PICKER")

@@ -187,11 +187,13 @@ class HealthyFragment : Fragment()
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            databaseEnabled = true
             // 1. Enable Caching
             cacheMode = WebSettings.LOAD_DEFAULT
             // 2. Performance optimizations
             useWideViewPort = true
             loadWithOverviewMode = true
+            loadsImagesAutomatically = true
             // 3. Security (Already updated)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             // 4. Media Capture (Necessary for barcode scanning in WebView)

@@ -95,6 +95,7 @@ class FlechaFragment : Fragment() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             
             useWideViewPort = true
@@ -104,6 +105,7 @@ class FlechaFragment : Fragment() {
             allowContentAccess = true
             allowFileAccess = false
             javaScriptCanOpenWindowsAutomatically = true
+            loadsImagesAutomatically = true
 
             // Updated User Agent to Desktop for better compatibility
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
