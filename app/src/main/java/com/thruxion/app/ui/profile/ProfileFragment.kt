@@ -19,8 +19,8 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ProfileFragment : Fragment() {
-
+class ProfileFragment : Fragment()
+{
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
     private val viewModel: ProfileViewModel by viewModels()
@@ -99,7 +99,8 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    private fun setupObservers() {
+    private fun setupObservers()
+     {
         viewModel.humanData.observe(viewLifecycleOwner) { human ->
             binding.etNames.setText(human.name ?: "")
             binding.etLastnames.setText(human.lastname ?: "")

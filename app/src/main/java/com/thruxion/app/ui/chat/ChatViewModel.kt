@@ -29,6 +29,9 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
     private val _partnerName = MutableStateFlow<String>("Qhago Assistant")
     val partnerName: StateFlow<String> = _partnerName
 
+    private val _isEncryptionEnabled = MutableStateFlow(false)
+    val isEncryptionEnabled: StateFlow<Boolean> = _isEncryptionEnabled
+
     private val currentUserId: String 
         get() = TokenManager.getUserId().toString()
 
@@ -58,10 +61,20 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
         _uiMode.value = ChatUiMode.LIST
     }
 
+    fun toggleEncryption() {
+        _isEncryptionEnabled.value = !_isEncryptionEnabled.value
+    }
+
     fun sendMessage(content: String) {
         if (content.isBlank()) return
         viewModelScope.launch {
-            repository.sendMessage(content, currentUserId, _partnerId.value, _partnerName.value)
+            repository.sendMessage(
+                content, 
+                currentUserId, 
+                _partnerId.value, 
+                _partnerName.value,
+                _isEncryptionEnabled.value
+            )
         }
     }
 }

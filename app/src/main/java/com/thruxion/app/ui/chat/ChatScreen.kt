@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -214,6 +216,7 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
     val messages by viewModel.messages.collectAsState()
     val chatName by viewModel.partnerName.collectAsState()
     val chatPartnerId by viewModel.partnerId.collectAsState()
+    val isEncryptionEnabled by viewModel.isEncryptionEnabled.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
@@ -278,6 +281,17 @@ fun ChatDetailScreen(viewModel: ChatViewModel, onBack: () -> Unit, onClose: () -
             modifier = Modifier.fillMaxWidth().padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(
+                onClick = { viewModel.toggleEncryption() },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Toggle Encryption",
+                    tint = if (isEncryptionEnabled) Color(0xFF007F95) else Color.Gray
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
             TextField(
                 value = inputText,
                 onValueChange = { inputText = it },
@@ -329,7 +343,18 @@ fun WhatsAppMessageBubble(message: ChatMessage) {
         ) {
             Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                 Column {
-                    Text(text = message.content, color = Color.Black, fontSize = 16.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (message.isOversecDecrypted) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Oversec Encrypted",
+                                tint = Color(0xFF007F95),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                        Text(text = message.content, color = Color.Black, fontSize = 16.sp)
+                    }
                     Text(
                         text = timeFormatter.format(Date(message.timestamp)),
                         color = Color.Gray, fontSize = 11.sp, modifier = Modifier.align(Alignment.End)

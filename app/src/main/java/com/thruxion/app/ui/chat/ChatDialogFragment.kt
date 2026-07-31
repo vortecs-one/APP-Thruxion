@@ -36,6 +36,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import com.thruxion.app.data.AppDatabase
 import com.thruxion.app.data.repository.ChatRepositoryImpl
+import com.thruxion.app.utils.CryptoManager
 
 class ChatDialogFragment : DialogFragment() {
 
@@ -54,7 +55,8 @@ class ChatDialogFragment : DialogFragment() {
 
     private val viewModel: ChatViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
-        val repository = ChatRepositoryImpl(database.chatMessageDao())
+        val cryptoManager = try { CryptoManager(requireContext()) } catch (e: Exception) { null }
+        val repository = ChatRepositoryImpl(database.chatMessageDao(), cryptoManager)
         ChatViewModelFactory(repository)
     }
 

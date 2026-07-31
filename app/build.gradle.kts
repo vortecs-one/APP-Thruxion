@@ -87,8 +87,8 @@ dependencies {
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
-    //implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    //implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Tink for Oversec-style encryption
+    implementation("com.google.crypto.tink:tink-android:1.15.0")
     // MAPS
     implementation ("org.maplibre.gl:android-sdk:13.0.2")
     
