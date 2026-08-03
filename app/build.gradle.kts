@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation("androidx.activity:activity-compose:1.10.1")
     implementation(libs.androidx.material3)
     implementation(libs.androidx.foundation)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
@@ -89,6 +90,9 @@ dependencies {
     implementation(libs.okhttp.logging)
     // Tink for Oversec-style encryption
     implementation("com.google.crypto.tink:tink-android:1.15.0")
+    // Images
+    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
     // MAPS
     implementation ("org.maplibre.gl:android-sdk:13.0.2")
     

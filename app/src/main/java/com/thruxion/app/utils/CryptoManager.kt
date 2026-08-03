@@ -32,18 +32,28 @@ class CryptoManager(context: Context) {
      * Encrypts the plaintext using ChaCha20-Poly1305.
      */
     fun encrypt(plaintext: String): ByteArray {
-        return aead.encrypt(
-            plaintext.toByteArray(StandardCharsets.UTF_8),
-            null // No associated data for now
-        )
+        return encrypt(plaintext.toByteArray(StandardCharsets.UTF_8))
+    }
+
+    /**
+     * Encrypts raw bytes.
+     */
+    fun encrypt(data: ByteArray): ByteArray {
+        return aead.encrypt(data, null)
     }
 
     /**
      * Decrypts the ciphertext using ChaCha20-Poly1305.
      */
     fun decrypt(ciphertext: ByteArray): String {
-        val decrypted = aead.decrypt(ciphertext, null)
-        return String(decrypted, StandardCharsets.UTF_8)
+        return String(decryptToBytes(ciphertext), StandardCharsets.UTF_8)
+    }
+
+    /**
+     * Decrypts to raw bytes.
+     */
+    fun decryptToBytes(ciphertext: ByteArray): ByteArray {
+        return aead.decrypt(ciphertext, null)
     }
 
     companion object {

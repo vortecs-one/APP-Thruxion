@@ -13,12 +13,9 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -29,13 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import com.thruxion.app.data.AppDatabase
 import com.thruxion.app.data.repository.ChatRepositoryImpl
+import com.thruxion.app.network.ApiRegistry
 import com.thruxion.app.utils.CryptoManager
 
 class ChatDialogFragment : DialogFragment() {
@@ -56,7 +58,12 @@ class ChatDialogFragment : DialogFragment() {
     private val viewModel: ChatViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
         val cryptoManager = try { CryptoManager(requireContext()) } catch (e: Exception) { null }
-        val repository = ChatRepositoryImpl(database.chatMessageDao(), cryptoManager)
+        val repository = ChatRepositoryImpl(
+            database.chatMessageDao(),
+            database.contactDao(),
+            ApiRegistry.communicationsApi,
+            cryptoManager
+        )
         ChatViewModelFactory(repository)
     }
 
@@ -81,7 +88,14 @@ class ChatDialogFragment : DialogFragment() {
         return ComposeView(requireContext()).apply {
             setContent {
                 var isVisible by remember { mutableStateOf(false) }
+                val configuration = LocalConfiguration.current
+                val isTablet = configuration.screenWidthDp > 600
                 
+                val closeAction = {
+                    isVisible = false
+                    postDelayed({ dismiss() }, 300)
+                }
+
                 LaunchedEffect(Unit) {
                     isVisible = true
                 }
@@ -89,38 +103,49 @@ class ChatDialogFragment : DialogFragment() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding()
-                        .padding(start = 20.dp, end = 20.dp, bottom = 120.dp, top = 40.dp),
-                    contentAlignment = Alignment.BottomCenter
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable(enabled = isVisible) { 
+                             closeAction()
+                        }
+                        .statusBarsPadding()
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+                    contentAlignment = if (isTablet) Alignment.Center else Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
                         visible = isVisible,
-                        enter = slideInVertically(
-                            initialOffsetY = { it / 3 },
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        ) + fadeIn() + scaleIn(
-                            initialScale = 0.5f,
-                            transformOrigin = TransformOrigin(0.9f, 0.9f)
-                        ),
-                        exit = slideOutVertically(targetOffsetY = { it / 3 }) + fadeOut() + scaleOut(targetScale = 0.5f)
+                        enter = if (isTablet) {
+                            fadeIn() + scaleIn(initialScale = 0.9f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy))
+                        } else {
+                            slideInVertically(
+                                initialOffsetY = { it },
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            ) + fadeIn()
+                        },
+                        exit = if (isTablet) {
+                            fadeOut() + scaleOut(targetScale = 0.9f)
+                        } else {
+                            slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                        }
                     ) {
                         Surface(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(0.75f)
-                                .clip(RoundedCornerShape(24.dp)),
-                            tonalElevation = 12.dp,
-                            shadowElevation = 8.dp
+                                .then(
+                                    if (isTablet) Modifier.widthIn(max = 600.dp).fillMaxHeight(0.8f)
+                                    else Modifier.fillMaxWidth().fillMaxHeight(0.9f)
+                                )
+                                .padding(horizontal = if (isTablet) 32.dp else 16.dp)
+                                .padding(bottom = if (isTablet) 0.dp else 16.dp)
+                                .clickable(enabled = false) { } // Prevent clicks from going to background
+                                .clip(RoundedCornerShape(28.dp)),
+                            tonalElevation = 8.dp,
+                            shadowElevation = 12.dp
                         ) {
                             ChatMain(
                                 viewModel = viewModel,
-                                onClose = { 
-                                    isVisible = false
-                                    view?.postDelayed({ dismiss() }, 300)
-                                }
+                                onClose = { closeAction() }
                             )
                         }
                     }
@@ -134,6 +159,8 @@ class ChatDialogFragment : DialogFragment() {
         dialog?.window?.let { window ->
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             window.setBackgroundDrawableResource(android.R.color.transparent)
+            // Allow Compose to handle IME manually without the Window resizing
+            window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         }
     }
 }

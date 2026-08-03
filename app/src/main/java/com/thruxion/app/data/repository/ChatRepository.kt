@@ -7,5 +7,6 @@ interface ChatRepository {
     fun getMessages(currentUserId: String, partnerId: String): Flow<List<ChatMessage>>
     fun getActiveChats(currentUserId: String): Flow<List<ChatMessage>>
     suspend fun sendMessage(content: String, currentUserId: String, partnerId: String, partnerName: String, encrypt: Boolean = false)
+    suspend fun sendImage(imageUri: String, currentUserId: String, partnerId: String, partnerName: String, encrypt: Boolean = false)
     suspend fun clearChat(currentUserId: String, partnerId: String)
 }

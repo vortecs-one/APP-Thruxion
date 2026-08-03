@@ -13,7 +13,7 @@ import com.thruxion.app.data.model.Contact
 import com.thruxion.app.data.model.Folder
 import com.thruxion.app.data.model.SavedPlace
 
-@Database(entities = [Folder::class, SavedPlace::class, Contact::class, ChatMessage::class], version = 11, exportSchema = false)
+@Database(entities = [Folder::class, SavedPlace::class, Contact::class, ChatMessage::class], version = 12, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun savedPlaceDao(): SavedPlaceDao

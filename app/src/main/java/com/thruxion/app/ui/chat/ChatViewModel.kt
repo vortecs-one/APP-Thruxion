@@ -77,6 +77,18 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
             )
         }
     }
+
+    fun sendImage(imageUri: String) {
+        viewModelScope.launch {
+            repository.sendImage(
+                imageUri,
+                currentUserId,
+                _partnerId.value,
+                _partnerName.value,
+                _isEncryptionEnabled.value
+            )
+        }
+    }
 }
 
 class ChatViewModelFactory(private val repository: ChatRepository) : ViewModelProvider.Factory {

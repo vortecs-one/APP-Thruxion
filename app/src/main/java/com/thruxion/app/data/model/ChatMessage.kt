@@ -16,12 +16,15 @@ data class ChatMessage(
     val partnerName: String, // Added to persist the display name in the chat list
     val timestamp: Long = System.currentTimeMillis(),
     val isFromUser: Boolean,
+    val type: String = "TEXT", // TEXT or IMAGE
+    val mediaUrl: String? = null,
     @Ignore
     var isOversecDecrypted: Boolean = false
 ) {
     // Required for Room because of @Ignore
     constructor(
         id: String, content: String, senderId: String, receiverId: String,
-        ownerId: String, partnerName: String, timestamp: Long, isFromUser: Boolean
-    ) : this(id, content, senderId, receiverId, ownerId, partnerName, timestamp, isFromUser, false)
+        ownerId: String, partnerName: String, timestamp: Long, isFromUser: Boolean,
+        type: String = "TEXT", mediaUrl: String? = null
+    ) : this(id, content, senderId, receiverId, ownerId, partnerName, timestamp, isFromUser, type, mediaUrl, false)
 }
