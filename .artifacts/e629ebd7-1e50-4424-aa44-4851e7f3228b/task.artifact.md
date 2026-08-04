@@ -1,3 +1,5 @@
-- [x] Update `ThruxionFragment.kt` to keep "My Location" icon visible when keyboard is open
+- [x] Update `MainActivity.kt` to clear focus on FAB click
+- [x] Update `fragment_thruxion.xml` to make root focusable
+- [x] Update `ThruxionFragment.kt` to clear focus on map/UI interactions
 - [x] Verify build and functionality
 - [x] Create walkthrough

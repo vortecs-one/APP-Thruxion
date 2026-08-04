@@ -194,6 +194,7 @@ class ThruxionFragment : Fragment()
                 }
                 // If tapping empty map space, hide cards
                 binding.userDetailCard.visibility = View.GONE
+                binding.editSearch.clearFocus()
                 false
             }
 
@@ -571,6 +572,7 @@ class ThruxionFragment : Fragment()
             mapLibreMap?.animateCamera(CameraUpdateFactory.bearingTo(0.0), 1000)
         }
         binding.fabMyLocation.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
+            binding.editSearch.clearFocus()
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
             viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
             binding.searchCard.post {
@@ -593,6 +595,7 @@ class ThruxionFragment : Fragment()
             true
         }
         binding.btnMapLayers?.setOnClickListener {
+            binding.editSearch.clearFocus()
             toggleMapStylePicker()
         }
         binding.btnStyleLight?.setOnClickListener { animateSelection(it); applyMapStyle(MapMode.LIGHT); toggleMapStylePicker() }
@@ -1883,11 +1886,18 @@ class ThruxionFragment : Fragment()
 
             // If keyboard is visible (occupies more than 15% of the screen)
             if (keypadHeight > screenHeight * 0.15) {
-                // Keep only the top of the list (search bar and icons) visible
-                currentBinding.recyclerView.visibility = View.GONE
-                currentBinding.bottomListCard.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                if (currentBinding.editSearch.hasFocus()) {
+                    // Keyboard opened from map search - keep only the search bar visible
+                    currentBinding.bottomListCard.visibility = View.VISIBLE
+                    currentBinding.recyclerView.visibility = View.GONE
+                    currentBinding.bottomListCard.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                } else {
+                    // Keyboard opened from somewhere else (e.g. Chat) - hide the map search bar
+                    currentBinding.bottomListCard.visibility = View.GONE
+                }
             } else {
                 // Keyboard is hidden - restore full list
+                currentBinding.bottomListCard.visibility = View.VISIBLE
                 currentBinding.recyclerView.visibility = View.VISIBLE
                 
                 // Restore fixed height (240dp)

@@ -37,6 +37,8 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab?.setOnClickListener {
+            // Clear focus from any active view (e.g. Map Search Bar) before showing chat
+            currentFocus?.clearFocus()
             ChatDialogFragment.newInstance().show(supportFragmentManager, "ChatDialog")
         }
 
