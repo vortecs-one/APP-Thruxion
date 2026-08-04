@@ -109,10 +109,13 @@ class MainActivity : AppCompatActivity() {
             val keypadHeight = screenHeight - rect.bottom
 
             // If keyboard is visible (occupies more than 15% of the screen)
-            if (keypadHeight > screenHeight * 0.15)
+            if (keypadHeight > screenHeight * 0.15) {
                 binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
-            else
+                binding.appBarMain.fab?.hide()
+            } else {
                 binding.appBarMain.contentMain.bottomNavView?.visibility = View.VISIBLE
+                binding.appBarMain.fab?.show()
+            }
         }
     }
 

@@ -1,0 +1,3 @@
+- [x] Update `MainActivity.kt` to hide FAB when keyboard is visible
+- [x] Verify build and functionality
+- [x] Create walkthrough
