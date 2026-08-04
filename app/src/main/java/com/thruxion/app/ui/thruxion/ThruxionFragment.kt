@@ -100,6 +100,7 @@ class ThruxionFragment : Fragment()
     private lateinit var transformAdapter: TransformAdapter
     private var defaultUsers: List<MapUser> = emptyList()
     private var isSearchMode = false
+    private var isKeyboardVisible = false
     private var styleReady = false
     private var routeJob: Job? = null
     private var currentTravelMode = "driving"
@@ -194,7 +195,9 @@ class ThruxionFragment : Fragment()
                 }
                 // If tapping empty map space, hide cards
                 binding.userDetailCard.visibility = View.GONE
-                binding.editSearch.clearFocus()
+                if (!isKeyboardVisible || !binding.editSearch.hasFocus()) {
+                    binding.editSearch.clearFocus()
+                }
                 false
             }
 
@@ -572,7 +575,9 @@ class ThruxionFragment : Fragment()
             mapLibreMap?.animateCamera(CameraUpdateFactory.bearingTo(0.0), 1000)
         }
         binding.fabMyLocation.setOnClickListener {    val map = mapLibreMap ?: return@setOnClickListener
-            binding.editSearch.clearFocus()
+            if (!isKeyboardVisible || !binding.editSearch.hasFocus()) {
+                binding.editSearch.clearFocus()
+            }
             val location = map.locationComponent.lastKnownLocation ?: return@setOnClickListener
             viewModel.updateUsersAroundLocation(location.latitude, location.longitude)
             binding.searchCard.post {
@@ -595,7 +600,9 @@ class ThruxionFragment : Fragment()
             true
         }
         binding.btnMapLayers?.setOnClickListener {
-            binding.editSearch.clearFocus()
+            if (!isKeyboardVisible || !binding.editSearch.hasFocus()) {
+                binding.editSearch.clearFocus()
+            }
             toggleMapStylePicker()
         }
         binding.btnStyleLight?.setOnClickListener { animateSelection(it); applyMapStyle(MapMode.LIGHT); toggleMapStylePicker() }
@@ -1880,12 +1887,13 @@ class ThruxionFragment : Fragment()
             root.getWindowVisibleDisplayFrame(rect)
             val screenHeight = root.rootView.height
             val keypadHeight = screenHeight - rect.bottom
+            isKeyboardVisible = keypadHeight > screenHeight * 0.15
 
             // Safety check: avoid NPE if fragment view is being destroyed
             val currentBinding = _binding ?: return@OnGlobalLayoutListener
 
             // If keyboard is visible (occupies more than 15% of the screen)
-            if (keypadHeight > screenHeight * 0.15) {
+            if (isKeyboardVisible) {
                 if (currentBinding.editSearch.hasFocus()) {
                     // Keyboard opened from map search - keep only the search bar visible
                     currentBinding.bottomListCard.visibility = View.VISIBLE
