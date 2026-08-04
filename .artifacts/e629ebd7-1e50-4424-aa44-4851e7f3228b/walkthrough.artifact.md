@@ -1,47 +1,37 @@
-# Walkthrough - Hide FAB when Keyboard is Displayed
+# Walkthrough - Keep My Location Icon Visible on Map
 
-I have updated `MainActivity` to automatically hide the main Floating Action Button (FAB) whenever the software keyboard is shown. This prevents the FAB from overlapping with the keyboard or other UI elements while the user is typing.
+I have fixed the issue where the "My Location" icon would disappear from the map when the keyboard was opened. The icon now remains visible and properly positioned above the search bar while typing.
 
 ## Changes Made
 
-### MainActivity
+### ThruxionFragment
 
-#### [MainActivity.kt](file:///home/vortecs/Documents/APPs/APP-QHago/app/src/main/java/com/thruxion/app/MainActivity.kt)
+#### [ThruxionFragment.kt](file:///home/vortecs/Documents/APPs/APP-QHago/app/src/main/java/com/thruxion/app/ui/thruxion/ThruxionFragment.kt)
 
-Modified the `setupKeyboardListener` method to include FAB visibility toggling:
+Modified the `setupKeyboardListener` to prevent it from hiding the location FAB:
 
 ```diff
-     private fun setupKeyboardListener() {
-         val root = binding.root
-         root.viewTreeObserver.addOnGlobalLayoutListener {
-             val rect = Rect()
-             root.getWindowVisibleDisplayFrame(rect)
-             val screenHeight = root.rootView.height
-             val keypadHeight = screenHeight - rect.bottom
-
              // If keyboard is visible (occupies more than 15% of the screen)
--            if (keypadHeight > screenHeight * 0.15)
--                binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
--            else
--                binding.appBarMain.contentMain.bottomNavView?.visibility = View.VISIBLE
-+            if (keypadHeight > screenHeight * 0.15) {
-+                binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
-+                binding.appBarMain.fab?.hide()
-+            } else {
-+                binding.appBarMain.contentMain.bottomNavView?.visibility = View.VISIBLE
-+                binding.appBarMain.fab?.show()
-+            }
-         }
-     }
-```
+             if (keypadHeight > screenHeight * 0.15) {
+                 // Keep only the top of the list (search bar and icons) visible
+                 currentBinding.recyclerView.visibility = View.GONE
+-                currentBinding.fabMyLocation.visibility = View.GONE
+                 currentBinding.bottomListCard.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
+             } else {
+                 // Keyboard is hidden - restore full list
+                 currentBinding.recyclerView.visibility = View.VISIBLE
+-                currentBinding.fabMyLocation.visibility = View.VISIBLE
 
-- Used `fab?.hide()` and `fab?.show()` to leverage Material Design's built-in animations for a smoother user experience.
+                 // Restore fixed height (240dp)
+```
 
 ## Verification Results
 
 ### Automated Tests
-- Ran `:app:assembleDebug` and the build finished successfully, confirming no syntax errors or resource ID mismatches.
+- Ran `:app:assembleDebug` and the build finished successfully.
 
 ### Manual Verification Recommended
-- Focus on any input field (e.g., in Profile or Settings) to trigger the keyboard.
-- Verify that the Chat FAB disappears smoothly and reappears when the keyboard is dismissed.
+1. Open the Map screen (Thruxion tab).
+2. Tap the search field to trigger the keyboard.
+3. Observe that the "My Location" button (target icon) remains visible above the keyboard.
+4. Dismiss the keyboard and verify it still behaves correctly.

@@ -1885,12 +1885,10 @@ class ThruxionFragment : Fragment()
             if (keypadHeight > screenHeight * 0.15) {
                 // Keep only the top of the list (search bar and icons) visible
                 currentBinding.recyclerView.visibility = View.GONE
-                currentBinding.fabMyLocation.visibility = View.GONE
                 currentBinding.bottomListCard.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
             } else {
                 // Keyboard is hidden - restore full list
                 currentBinding.recyclerView.visibility = View.VISIBLE
-                currentBinding.fabMyLocation.visibility = View.VISIBLE
                 
                 // Restore fixed height (240dp)
                 val heightInPx = TypedValue.applyDimension(

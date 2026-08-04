@@ -1,3 +1,3 @@
-- [x] Update `MainActivity.kt` to hide FAB when keyboard is visible
+- [x] Update `ThruxionFragment.kt` to keep "My Location" icon visible when keyboard is open
 - [x] Verify build and functionality
 - [x] Create walkthrough

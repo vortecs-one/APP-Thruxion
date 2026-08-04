@@ -1,27 +1,22 @@
-# Hide FAB when Keyboard is Displayed
+# Fix My Location Icon disappearing on Map when Keyboard is opened
 
-The goal is to hide the Floating Action Button (FAB) in `MainActivity` when the software keyboard is visible to improve UI clarity and prevent overlapping.
-
-## User Review Required
-
-> [!NOTE]
-> The current implementation already hides the `BottomNavigationView` when the keyboard is visible. I will extend this logic to also hide the FAB.
+The goal is to keep the "My Location" FAB visible on the map even when the software keyboard is displayed. Currently, a keyboard listener in `ThruxionFragment` explicitly hides this button.
 
 ## Proposed Changes
 
-### MainActivity
+### ThruxionFragment
 
-#### [MODIFY] [MainActivity.kt](file:///home/vortecs/Documents/APPs/APP-QHago/app/src/main/java/com/thruxion/app/MainActivity.kt)
-- Update `setupKeyboardListener` to toggle the visibility of the FAB.
-- Use `fab.hide()` and `fab.show()` for smooth animations.
-- Ensure all possible locations of the FAB (depending on screen configuration) are handled if accessible via binding.
+#### [MODIFY] [ThruxionFragment.kt](file:///home/vortecs/Documents/APPs/APP-QHago/app/src/main/java/com/thruxion/app/ui/thruxion/ThruxionFragment.kt)
+- Remove the lines in `setupKeyboardListener` that set `fabMyLocation.visibility` to `View.GONE` and `View.VISIBLE`.
+- This will ensure the button remains visible and properly positioned (it is constrained to the bottom of the map area, which resizes when the keyboard appears).
 
 ## Verification Plan
 
 ### Automated Tests
-- I will verify if the code compiles by running a gradle build (optional, but good for sanity).
+- Build the app to ensure no regressions.
 
 ### Manual Verification
-- Deploy the app and focus an `EditText` (e.g., in the Profile screen or Reflow screen).
-- Observe that the FAB in `MainActivity` disappears when the keyboard is shown and reappears when hidden.
-- Note: This change affects the main Chat FAB. FABs used as local UI elements (like the "Send" button in Chat or the "Edit Image" button in Profile) will remain visible if they are necessary for interaction while the keyboard is up.
+- Navigate to the Thruxion (Map) screen.
+- Tap on the search bar to open the keyboard.
+- Verify that both the "My Location" icon (target symbol) and the "Map Layers" icon (yellow world symbol) remain visible above the search bar.
+- Verify that the "My Location" button still works while the keyboard is open.
