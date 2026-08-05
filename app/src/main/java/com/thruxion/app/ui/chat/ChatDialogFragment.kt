@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import com.thruxion.app.data.AppDatabase
@@ -106,9 +107,7 @@ class ChatDialogFragment : DialogFragment() {
                         .background(Color.Black.copy(alpha = 0.4f))
                         .clickable(enabled = isVisible) { 
                              closeAction()
-                        }
-                        .statusBarsPadding()
-                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+                        },
                     contentAlignment = if (isTablet) Alignment.Center else Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
@@ -132,14 +131,16 @@ class ChatDialogFragment : DialogFragment() {
                     ) {
                         Surface(
                             modifier = Modifier
+                                .padding(horizontal = if (isTablet) 32.dp else 12.dp)
+                                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
+                                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom))
+                                .padding(bottom = 12.dp)
                                 .then(
                                     if (isTablet) Modifier.widthIn(max = 600.dp).fillMaxHeight(0.8f)
-                                    else Modifier.fillMaxWidth().fillMaxHeight(0.9f)
+                                    else Modifier.fillMaxWidth().heightIn(max = (configuration.screenHeightDp * 0.85).dp)
                                 )
-                                .padding(horizontal = if (isTablet) 32.dp else 16.dp)
-                                .padding(bottom = if (isTablet) 0.dp else 16.dp)
-                                .clickable(enabled = false) { } // Prevent clicks from going to background
-                                .clip(RoundedCornerShape(28.dp)),
+                                .clip(RoundedCornerShape(28.dp))
+                                .clickable(enabled = false) { }, // Prevent clicks from going to background
                             tonalElevation = 8.dp,
                             shadowElevation = 12.dp
                         ) {
@@ -159,8 +160,12 @@ class ChatDialogFragment : DialogFragment() {
         dialog?.window?.let { window ->
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             window.setBackgroundDrawableResource(android.R.color.transparent)
-            // Allow Compose to handle IME manually without the Window resizing
-            window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+            
+            // 1. Enable true edge-to-edge for the Dialog window
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            
+            // 2. Use ADJUST_RESIZE to let the window resize when keyboard opens
+            window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         }
     }
 }
