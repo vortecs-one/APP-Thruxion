@@ -63,6 +63,7 @@ class ChatDialogFragment : DialogFragment() {
             database.chatMessageDao(),
             database.contactDao(),
             ApiRegistry.communicationsApi,
+            requireContext().contentResolver,
             cryptoManager
         )
         ChatViewModelFactory(repository)

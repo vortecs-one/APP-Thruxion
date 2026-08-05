@@ -29,7 +29,7 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
     private val _partnerName = MutableStateFlow<String>("Qhago Assistant")
     val partnerName: StateFlow<String> = _partnerName
 
-    private val _isEncryptionEnabled = MutableStateFlow(false)
+    private val _isEncryptionEnabled = MutableStateFlow(true)
     val isEncryptionEnabled: StateFlow<Boolean> = _isEncryptionEnabled
 
     private val currentUserId: String 

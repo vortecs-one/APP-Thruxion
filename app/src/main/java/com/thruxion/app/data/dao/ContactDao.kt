@@ -12,6 +12,9 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE folderId = :folderId AND userId = :userId")
     fun getContactsInFolder(folderId: Long, userId: String): Flow<List<Contact>>
 
+    @Query("SELECT * FROM contacts WHERE remoteUserId = :remoteId LIMIT 1")
+    suspend fun getContactByRemoteId(remoteId: String): Contact?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertContact(contact: Contact)
 

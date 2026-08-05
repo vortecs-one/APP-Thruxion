@@ -5,6 +5,7 @@ import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import java.nio.charset.StandardCharsets
 
 /**
@@ -54,6 +55,22 @@ class CryptoManager(context: Context) {
      */
     fun decryptToBytes(ciphertext: ByteArray): ByteArray {
         return aead.decrypt(ciphertext, null)
+    }
+
+    /**
+     * Encrypts data using a provided shared secret.
+     */
+    fun encryptWithSecret(data: ByteArray, sharedSecret: ByteArray): ByteArray {
+        val aeadWithSecret = ChaCha20Poly1305(sharedSecret)
+        return aeadWithSecret.encrypt(data, null)
+    }
+
+    /**
+     * Decrypts data using a provided shared secret.
+     */
+    fun decryptWithSecret(ciphertext: ByteArray, sharedSecret: ByteArray): ByteArray {
+        val aeadWithSecret = ChaCha20Poly1305(sharedSecret)
+        return aeadWithSecret.decrypt(ciphertext, null)
     }
 
     companion object {
