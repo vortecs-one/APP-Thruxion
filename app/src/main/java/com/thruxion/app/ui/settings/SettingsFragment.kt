@@ -15,6 +15,7 @@ import com.thruxion.app.utils.LocaleManager
 import com.thruxion.app.utils.ThemeManager
 import com.thruxion.app.utils.HealthManager
 import com.thruxion.app.utils.HuaweiAuthManager
+import com.thruxion.app.utils.MetaMaskManager
 import com.thruxion.app.network.security.TokenManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.lifecycle.lifecycleScope
@@ -101,7 +102,43 @@ class SettingsFragment : Fragment() {
             HuaweiAuthManager.startLogin(requireContext())
         }
 
+        binding.btnConnectWallet.setOnClickListener {
+            if (MetaMaskManager.isLoggedIn()) {
+                MetaMaskManager.logout()?.thenAccept {
+                    requireActivity().runOnUiThread { updateWalletUI() }
+                }
+            } else {
+                MetaMaskManager.login()?.thenAccept {
+                    requireActivity().runOnUiThread { 
+                        updateWalletUI()
+                        Toast.makeText(context, "Wallet Connected", Toast.LENGTH_SHORT).show()
+                    }
+                }?.exceptionally { 
+                    requireActivity().runOnUiThread { 
+                        Toast.makeText(context, "Login failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
+                    null
+                }
+            }
+        }
+
         updateLanguageText()
+        updateWalletUI()
+    }
+
+    private fun updateWalletUI() {
+        if (MetaMaskManager.isLoggedIn()) {
+            val address = MetaMaskManager.getPublicAddress()
+            binding.tvWalletStatus.text = "Wallet Connected"
+            binding.tvWalletAddress.text = if (address.length > 12) 
+                "${address.take(8)}...${address.takeLast(6)}" 
+            else address
+            binding.btnConnectWallet.text = "Logout"
+        } else {
+            binding.tvWalletStatus.text = "Wallet Disconnected"
+            binding.tvWalletAddress.text = "Not connected"
+            binding.btnConnectWallet.text = "Connect"
+        }
     }
 
     private fun syncSwitchState() {

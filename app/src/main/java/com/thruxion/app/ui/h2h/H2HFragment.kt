@@ -73,6 +73,7 @@ class H2HFragment : Fragment() {
             loadsImagesAutomatically = true
         }
         
+        webView.addJavascriptInterface(WalletJavascriptInterface(), "NativeWallet")
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
 

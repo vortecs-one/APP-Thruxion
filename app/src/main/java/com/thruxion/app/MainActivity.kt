@@ -19,6 +19,7 @@ import com.thruxion.app.network.security.TokenManager
 import com.thruxion.app.ui.chat.ChatDialogFragment
 import com.thruxion.app.ui.login.LoginActivity
 import com.thruxion.app.utils.ThemeManager
+import com.thruxion.app.utils.MetaMaskManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.thruxion.app.utils.HuaweiAuthManager
 
@@ -95,11 +96,16 @@ class MainActivity : AppCompatActivity() {
         
         // 8. Handle Auth Redirects
         HuaweiAuthManager.handleAuthRedirect(this, intent)
+        
+        // 9. Initialize MetaMask / Web3Auth
+        MetaMaskManager.init(this)
+        MetaMaskManager.setResultUrl(intent.data)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         HuaweiAuthManager.handleAuthRedirect(this, intent)
+        MetaMaskManager.setResultUrl(intent.data)
     }
 
     private fun setupKeyboardListener() {
