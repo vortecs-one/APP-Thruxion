@@ -10,6 +10,10 @@ import com.web3auth.core.types.AuthConnection
 import com.web3auth.core.types.Web3AuthResponse
 import org.torusresearch.fetchnodedetails.types.Web3AuthNetwork
 import org.web3j.crypto.Credentials
+import org.web3j.protocol.Web3j
+import org.web3j.protocol.core.DefaultBlockParameterName
+import org.web3j.protocol.http.HttpService
+import org.web3j.utils.Convert
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -21,6 +25,9 @@ object MetaMaskManager {
     
     private const val CLIENT_ID = "BGiQzOQVw_kEBI4c66cDKrYwTDsnWr2iQOLiZnojd7PTGssirKtDasVsNV3V0UtvMdtYXof8Z9122N1V4Vl6GPw" 
     
+    // Default RPC for balance checks (Sepolia Testnet)
+    private const val DEFAULT_RPC = "https://rpc.ankr.com/eth_sepolia"
+
     private var web3Auth: Web3Auth? = null
     private var isInitialized = false
 
@@ -77,6 +84,27 @@ object MetaMaskManager {
         } catch (e: Exception) {
             Log.e(TAG, "Error deriving address", e)
             ""
+        }
+    }
+
+    /**
+     * Fetches the wallet balance from the blockchain.
+     */
+    fun getBalance(rpcUrl: String = DEFAULT_RPC): CompletableFuture<String> {
+        val address = getPublicAddress()
+        if (address.isEmpty()) return CompletableFuture.completedFuture("0.00")
+        
+        return CompletableFuture.supplyAsync {
+            try {
+                val web3j = Web3j.build(HttpService(rpcUrl))
+                val balanceResponse = web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST).send()
+                val wei = balanceResponse.balance
+                val eth = Convert.fromWei(wei.toString(), Convert.Unit.ETHER)
+                String.format("%.4f", eth.toDouble())
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fetching balance", e)
+                "N/A"
+            }
         }
     }
 

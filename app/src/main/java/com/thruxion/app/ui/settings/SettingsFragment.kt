@@ -122,6 +122,14 @@ class SettingsFragment : Fragment() {
             }
         }
 
+        binding.cardWallet.setOnClickListener {
+            if (MetaMaskManager.isLoggedIn()) {
+                WalletDetailsDialogFragment().show(parentFragmentManager, "WalletDetails")
+            } else {
+                Toast.makeText(context, "Please connect your wallet first", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         updateLanguageText()
         updateWalletUI()
     }
