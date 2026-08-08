@@ -34,4 +34,14 @@ interface WearableProvider {
      * Fetches the latest heart rate reading.
      */
     suspend fun getLatestHeartRate(context: Context): Int?
+
+    /**
+     * Fetches total distance (meters) for the given time range.
+     */
+    suspend fun getDistance(context: Context, startTime: Instant, endTime: Instant): Double
+
+    /**
+     * Fetches total calories (kcal) for the given time range.
+     */
+    suspend fun getCalories(context: Context, startTime: Instant, endTime: Instant): Double
 }

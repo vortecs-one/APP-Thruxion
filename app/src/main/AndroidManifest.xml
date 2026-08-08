@@ -83,7 +83,15 @@
             android:windowSoftInputMode="adjustResize"
             android:launchMode="singleTop"
             android:exported="true">
-            <!-- Huawei Auth Redirect -->
+            <!-- Huawei Auth Redirect (HTTPS) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="thruxion.com" android:pathPrefix="/huawei-auth" />
+            </intent-filter>
+
+            <!-- Huawei Auth Redirect (Custom Scheme Fallback for JS Redirect) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

@@ -3,12 +3,18 @@ package com.thruxion.app.network
 import com.thruxion.app.network.api.CommunicationsApiService
 import com.thruxion.app.network.api.HealthyApiService
 import com.thruxion.app.network.api.HumansApiService
+import com.thruxion.app.network.api.HuaweiHealthApi
 import com.thruxion.app.network.security.ApiType
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 
 object ApiRegistry
 {
     private const val BASE_DOMAIN = "https://thruxion.com/api"
     private const val HUMANS = "$BASE_DOMAIN/humans/"
+    private const val HUAWEI_HEALTH_BASE_URL = "https://health-api.cloud.huawei.com/healthkit/v1/"
 
   //private const val MACHINES = "$BASE_DOMAIN/machines/"
     private const val COMMUNICATIONS = "$BASE_DOMAIN/communications/"
@@ -39,6 +45,18 @@ object ApiRegistry
     val healthyApi: HealthyApiService by lazy {
         ApiClientFactory.create(HEALTHY_BASE_URL, ApiType.HUMANS) // Using HUMANS for default config
             .create(HealthyApiService::class.java)
+    }
+
+    val huaweiHealthApi: HuaweiHealthApi by lazy {
+        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+        val client = OkHttpClient.Builder().addInterceptor(logging).build()
+
+        Retrofit.Builder()
+            .baseUrl(HUAWEI_HEALTH_BASE_URL)
+            .addConverterFactory(MoshiConverterFactory.create())
+            .client(client)
+            .build()
+            .create(HuaweiHealthApi::class.java)
     }
 
 

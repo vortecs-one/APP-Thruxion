@@ -12,6 +12,7 @@ import androidx.navigation.ui.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import android.widget.TextView
+import android.widget.Toast
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import com.thruxion.app.databinding.ActivityMainBinding
@@ -22,6 +23,8 @@ import com.thruxion.app.utils.ThemeManager
 import com.thruxion.app.utils.MetaMaskManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.thruxion.app.utils.HuaweiAuthManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -95,7 +98,15 @@ class MainActivity : AppCompatActivity() {
         setupKeyboardListener()
         
         // 8. Handle Auth Redirects
-        HuaweiAuthManager.handleAuthRedirect(this, intent)
+        intent.data?.let { uri ->
+            lifecycleScope.launch {
+                if (HuaweiAuthManager.handleAuthRedirect(this@MainActivity, uri)) {
+                    Toast.makeText(this@MainActivity, "Huawei Account Connected!", Toast.LENGTH_SHORT).show()
+                    // Navigate to Healthy Fragment
+                    findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_healthy)
+                }
+            }
+        }
         
         // 9. Initialize MetaMask / Web3Auth
         MetaMaskManager.init(this)
@@ -104,7 +115,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        HuaweiAuthManager.handleAuthRedirect(this, intent)
+        intent.data?.let { uri ->
+            lifecycleScope.launch {
+                if (HuaweiAuthManager.handleAuthRedirect(this@MainActivity, uri)) {
+                    Toast.makeText(this@MainActivity, "Huawei Account Connected!", Toast.LENGTH_SHORT).show()
+                    // Navigate to Healthy Fragment
+                    findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_healthy)
+                }
+            }
+        }
         MetaMaskManager.setResultUrl(intent.data)
     }
 

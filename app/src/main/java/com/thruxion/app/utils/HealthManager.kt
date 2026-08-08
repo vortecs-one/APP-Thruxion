@@ -17,7 +17,7 @@ import java.time.temporal.ChronoUnit
  * Manager for Wearable and Health operations.
  * Coordinates multiple providers (Health Connect, Huawei, etc.).
  */
-class HealthManager(private val context: Context) {
+class HealthManager(internal val context: Context) {
 
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
@@ -79,6 +79,32 @@ class HealthManager(private val context: Context) {
             }
         }
         return null
+    }
+
+    /**
+     * Aggregates distance from all connected providers.
+     */
+    suspend fun readTotalDistance(startTime: Instant, endTime: Instant): Double {
+        var total = 0.0
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                total += provider.getDistance(context, startTime, endTime)
+            }
+        }
+        return total
+    }
+
+    /**
+     * Aggregates calories from all connected providers.
+     */
+    suspend fun readTotalCalories(startTime: Instant, endTime: Instant): Double {
+        var total = 0.0
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                total += provider.getCalories(context, startTime, endTime)
+            }
+        }
+        return total
     }
 
     // --- LEGACY METHODS (Maintained for existing UI compatibility) ---

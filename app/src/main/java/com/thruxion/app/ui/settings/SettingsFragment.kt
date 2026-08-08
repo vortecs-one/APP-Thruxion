@@ -99,7 +99,16 @@ class SettingsFragment : Fragment() {
         }
 
         binding.btnConnectHuaweiDirect.setOnClickListener {
-            HuaweiAuthManager.startLogin(requireContext())
+            lifecycleScope.launch {
+                val isConnected = HuaweiAuthManager.getValidAccessToken(requireContext()) != null
+                if (isConnected) {
+                    HuaweiAuthManager.disconnect(requireContext())
+                    updateHuaweiUI()
+                    Toast.makeText(context, "Huawei Account Disconnected", Toast.LENGTH_SHORT).show()
+                } else {
+                    HuaweiAuthManager.startLogin(requireContext())
+                }
+            }
         }
 
         binding.btnConnectWallet.setOnClickListener {
@@ -129,9 +138,18 @@ class SettingsFragment : Fragment() {
                 Toast.makeText(context, "Please connect your wallet first", Toast.LENGTH_SHORT).show()
             }
         }
-
+        
+        // ... (remaining setup)
         updateLanguageText()
         updateWalletUI()
+        updateHuaweiUI()
+    }
+
+    private fun updateHuaweiUI() {
+        lifecycleScope.launch {
+            val isConnected = HuaweiAuthManager.getValidAccessToken(requireContext()) != null
+            binding.btnConnectHuaweiDirect.text = if (isConnected) "Disconnect Huawei Account" else "Connect Huawei Account (Direct API)"
+        }
     }
 
     private fun updateWalletUI() {

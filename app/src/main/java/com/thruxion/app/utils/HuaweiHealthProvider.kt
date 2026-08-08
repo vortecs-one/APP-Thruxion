@@ -2,6 +2,9 @@ package com.thruxion.app.utils
 
 import android.content.Context
 import android.util.Log
+import com.thruxion.app.network.ApiRegistry
+import com.thruxion.app.network.api.PolymerizeRequest
+import com.thruxion.app.network.api.PolymerizeWith
 import java.time.Instant
 
 /**
@@ -9,34 +12,113 @@ import java.time.Instant
  */
 class HuaweiHealthProvider : WearableProvider {
     override val id: String = "huawei"
-    override val displayName: String = "Huawei Health (Direct)"
+    override val displayName: String = "Huawei Health"
 
     override suspend fun isConnected(context: Context): Boolean {
-        // Check if we have valid OAuth tokens in EncryptedSharedPreferences
-        val prefs = context.getSharedPreferences("huawei_prefs", Context.MODE_PRIVATE)
-        return prefs.getString("access_token", null) != null
+        return HuaweiAuthManager.getValidAccessToken(context) != null
     }
 
     override suspend fun connect(context: Context): Boolean {
-        // This usually involves opening a Custom Tab or WebView for OAuth
-        Log.d("HuaweiProvider", "Starting Huawei OAuth Flow")
-        return false 
+        HuaweiAuthManager.startLogin(context)
+        return true
     }
 
     override suspend fun disconnect(context: Context) {
-        context.getSharedPreferences("huawei_prefs", Context.MODE_PRIVATE)
-            .edit().clear().apply()
+        HuaweiAuthManager.disconnect(context)
     }
 
     override suspend fun getSteps(context: Context, startTime: Instant, endTime: Instant): Long {
-        // 1. Check/Refresh Token
-        // 2. Call Huawei REST API: GET /healthkit/v1/sampleSetGroups
-        // https://developer.huawei.com/consumer/en/doc/development/HMSCore-References/health-rest-api-introduction-0000001050071661
-        return 0L
+        val token = HuaweiAuthManager.getValidAccessToken(context) ?: return 0L
+        
+        return try {
+            val request = PolymerizeRequest(
+                polymerizeWith = listOf(PolymerizeWith("com.huawei.continuous.steps.delta")),
+                startTime = startTime.toEpochMilli(),
+                endTime = endTime.toEpochMilli()
+            )
+            
+            val response = ApiRegistry.huaweiHealthApi.polymerize("Bearer $token", request)
+            if (response.isSuccessful) {
+                var totalSteps = 0L
+                response.body()?.group?.forEach { group ->
+                    group.sampleSet?.forEach { sampleSet ->
+                        sampleSet.samplePoints?.forEach { point ->
+                            point.value?.forEach { value ->
+                                totalSteps += value.intValue ?: 0
+                            }
+                        }
+                    }
+                }
+                totalSteps
+            } else {
+                0L
+            }
+        } catch (e: Exception) {
+            Log.e("HuaweiProvider", "Error fetching steps", e)
+            0L
+        }
     }
 
     override suspend fun getLatestHeartRate(context: Context): Int? {
-        // Similar to getSteps but for heart rate data type
-        return null
+        val token = HuaweiAuthManager.getValidAccessToken(context) ?: return null
+        val now = Instant.now()
+        val oneHourAgo = now.minusSeconds(3600)
+
+        return try {
+            val request = PolymerizeRequest(
+                polymerizeWith = listOf(PolymerizeWith("com.huawei.instantaneous.heart_rate")),
+                startTime = oneHourAgo.toEpochMilli(),
+                endTime = now.toEpochMilli()
+            )
+
+            val response = ApiRegistry.huaweiHealthApi.polymerize("Bearer $token", request)
+            if (response.isSuccessful) {
+                response.body()?.group?.lastOrNull()?.sampleSet?.lastOrNull()?.samplePoints?.lastOrNull()?.let { point ->
+                    point.value?.lastOrNull()?.fpValue?.toInt()
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("HuaweiProvider", "Error fetching heart rate", e)
+            null
+        }
+    }
+
+    override suspend fun getDistance(context: Context, startTime: Instant, endTime: Instant): Double {
+        val token = HuaweiAuthManager.getValidAccessToken(context) ?: return 0.0
+        return fetchMetric(token, "com.huawei.continuous.distance.delta", startTime, endTime)
+    }
+
+    override suspend fun getCalories(context: Context, startTime: Instant, endTime: Instant): Double {
+        val token = HuaweiAuthManager.getValidAccessToken(context) ?: return 0.0
+        return fetchMetric(token, "com.huawei.continuous.calories.burnt", startTime, endTime)
+    }
+
+    private suspend fun fetchMetric(token: String, dataTypeName: String, startTime: Instant, endTime: Instant): Double {
+        return try {
+            val request = PolymerizeRequest(
+                polymerizeWith = listOf(PolymerizeWith(dataTypeName)),
+                startTime = startTime.toEpochMilli(),
+                endTime = endTime.toEpochMilli()
+            )
+            val response = ApiRegistry.huaweiHealthApi.polymerize("Bearer $token", request)
+            if (response.isSuccessful) {
+                var total = 0.0
+                response.body()?.group?.forEach { group ->
+                    group.sampleSet?.forEach { sampleSet ->
+                        sampleSet.samplePoints?.forEach { point ->
+                            point.value?.forEach { value ->
+                                total += value.fpValue ?: value.intValue?.toDouble() ?: 0.0
+                            }
+                        }
+                    }
+                }
+                total
+            } else 0.0
+        } catch (e: Exception) {
+            Log.e("HuaweiProvider", "Error fetching $dataTypeName", e)
+            0.0
+        }
     }
 }

@@ -2,8 +2,10 @@ package com.thruxion.app.utils
 
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Instant
@@ -56,6 +58,34 @@ class HealthConnectProvider : WearableProvider {
             response.records.lastOrNull()?.samples?.lastOrNull()?.beatsPerMinute?.toInt()
         } catch (e: Exception) {
             null
+        }
+    }
+
+    override suspend fun getDistance(context: Context, startTime: Instant, endTime: Instant): Double {
+        return try {
+            val response = getClient(context).readRecords(
+                ReadRecordsRequest(
+                    DistanceRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+                )
+            )
+            response.records.sumOf { it.distance.inMeters }
+        } catch (e: Exception) {
+            0.0
+        }
+    }
+
+    override suspend fun getCalories(context: Context, startTime: Instant, endTime: Instant): Double {
+        return try {
+            val response = getClient(context).readRecords(
+                ReadRecordsRequest(
+                    TotalCaloriesBurnedRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+                )
+            )
+            response.records.sumOf { it.energy.inKilocalories }
+        } catch (e: Exception) {
+            0.0
         }
     }
 }

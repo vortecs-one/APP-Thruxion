@@ -30,11 +30,13 @@ import android.content.pm.PackageManager
 import android.webkit.PermissionRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.thruxion.app.utils.HealthManager
 
 class HealthyFragment : Fragment()
 {
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
+    private lateinit var healthManager: HealthManager
 
     private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted)
@@ -58,6 +60,7 @@ class HealthyFragment : Fragment()
         val root = inflater.inflate(R.layout.fragment_healthy, container, false)
         webView = root.findViewById(R.id.webViewHealthy)
         progressBar = root.findViewById(R.id.progressBarHealthy)
+        healthManager = HealthManager(requireContext())
 
         setupWebView()
         performHandoff()
@@ -200,6 +203,8 @@ class HealthyFragment : Fragment()
             mediaPlaybackRequiresUserGesture = false
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         }
+        // Bridge for health data
+        webView.addJavascriptInterface(HealthyJavascriptInterface(healthManager), "NativeHealthy")
         // 4. Enable hardware acceleration for smoother rendering
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
