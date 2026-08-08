@@ -97,34 +97,37 @@ class MainActivity : AppCompatActivity() {
         // 7. Setup Keyboard Visibility Listener
         setupKeyboardListener()
         
-        // 8. Handle Auth Redirects
-        intent.data?.let { uri ->
-            lifecycleScope.launch {
-                if (HuaweiAuthManager.handleAuthRedirect(this@MainActivity, uri)) {
-                    Toast.makeText(this@MainActivity, "Huawei Account Connected!", Toast.LENGTH_SHORT).show()
-                    // Navigate to Healthy Fragment
-                    findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_healthy)
-                }
+        // 8. & 9. Handle Auth Redirects (Huawei & MetaMask)
+        handleIntentData(intent)
+        
+        // Initialize MetaMask / Web3Auth
+        MetaMaskManager.init(this)
+    }
+
+    private fun handleIntentData(intent: Intent) {
+        val uri = intent.data ?: return
+        
+        lifecycleScope.launch {
+            // Check if it's a Huawei redirect
+            if (HuaweiAuthManager.handleAuthRedirect(this@MainActivity, uri)) {
+                Toast.makeText(this@MainActivity, "Huawei Account Connected!", Toast.LENGTH_SHORT).show()
+                findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_healthy)
+                intent.data = null // Consume the data
+                return@launch
+            }
+            
+            // Check if it's a MetaMask redirect
+            if (uri.scheme == "com.thruxion.app" && uri.host == "auth") {
+                MetaMaskManager.setResultUrl(uri)
+                intent.data = null // Consume the data
             }
         }
-        
-        // 9. Initialize MetaMask / Web3Auth
-        MetaMaskManager.init(this)
-        MetaMaskManager.setResultUrl(intent.data)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.data?.let { uri ->
-            lifecycleScope.launch {
-                if (HuaweiAuthManager.handleAuthRedirect(this@MainActivity, uri)) {
-                    Toast.makeText(this@MainActivity, "Huawei Account Connected!", Toast.LENGTH_SHORT).show()
-                    // Navigate to Healthy Fragment
-                    findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_healthy)
-                }
-            }
-        }
-        MetaMaskManager.setResultUrl(intent.data)
+        setIntent(intent) // Update activity intent to the new one
+        handleIntentData(intent)
     }
 
     private fun setupKeyboardListener() {

@@ -20,7 +20,7 @@ object HuaweiAuthManager {
     
     private const val CLIENT_ID = "118565965"
     private const val CLIENT_SECRET = "ef1f21366f067670560a3691d38b129ba779c57335442e04c97bcc866b6477fc"
-    private const val REDIRECT_URI = "https://thruxion.com/huawei-auth"
+    private const val REDIRECT_URI = "https://web-nutrition.vercel.app/huawei-auth"
     
     private const val AUTH_URL = "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize"
     private const val TOKEN_URL = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"

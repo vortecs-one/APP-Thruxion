@@ -88,7 +88,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="thruxion.com" android:pathPrefix="/huawei-auth" />
+                <data android:scheme="https" android:host="web-nutrition.vercel.app" android:pathPrefix="/huawei-auth" />
             </intent-filter>
 
             <!-- Huawei Auth Redirect (Custom Scheme Fallback for JS Redirect) -->
