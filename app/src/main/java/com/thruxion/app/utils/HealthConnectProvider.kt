@@ -88,4 +88,11 @@ class HealthConnectProvider : WearableProvider {
             0.0
         }
     }
+
+    override suspend fun getLatestWeight(context: Context): Double? = null
+    override suspend fun getDailySleep(context: Context): Int = 0
+    override suspend fun getLatestStress(context: Context): Int? = null
+    override suspend fun getLatestSpO2(context: Context): Int? = null
+    override suspend fun getLatestBloodPressure(context: Context): Pair<Int, Int>? = null
+    override suspend fun getLatestSkinTemperature(context: Context): Double? = null
 }

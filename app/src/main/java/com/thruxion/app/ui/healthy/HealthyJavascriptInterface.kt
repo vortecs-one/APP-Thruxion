@@ -39,6 +39,36 @@ class HealthyJavascriptInterface(private val healthManager: HealthManager) {
     }
 
     @JavascriptInterface
+    fun getWeight(): Double = runBlocking {
+        healthManager.readLatestWeight() ?: 0.0
+    }
+
+    @JavascriptInterface
+    fun getSleepDuration(): Int = runBlocking {
+        healthManager.readDailySleep()
+    }
+
+    @JavascriptInterface
+    fun getStressScore(): Int = runBlocking {
+        healthManager.readLatestStress() ?: 0
+    }
+
+    @JavascriptInterface
+    fun getSpO2(): Int = runBlocking {
+        healthManager.readLatestSpO2() ?: 0
+    }
+
+    @JavascriptInterface
+    fun getBloodPressure(): String = runBlocking {
+        healthManager.readLatestBloodPressure()?.let { "${it.first}/${it.second}" } ?: ""
+    }
+
+    @JavascriptInterface
+    fun getSkinTemperature(): Double = runBlocking {
+        healthManager.readLatestSkinTemperature() ?: 0.0
+    }
+
+    @JavascriptInterface
     fun isHealthConnected(): Boolean = runBlocking {
         healthManager.providers.any { it.isConnected(healthManager.context) }
     }

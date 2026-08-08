@@ -18,17 +18,14 @@ import org.json.JSONObject
  */
 object HuaweiAuthManager {
     
-    private const val CLIENT_ID = "118565965"
-    private const val CLIENT_SECRET = "ef1f21366f067670560a3691d38b129ba779c57335442e04c97bcc866b6477fc"
+    private const val CLIENT_ID = "118568027"
+    private const val CLIENT_SECRET = "97f33551011e96df63419fba1d1aa8aac2dde9305f766695f1fb03c6038ebed1"
     private const val REDIRECT_URI = "https://web-nutrition.vercel.app/huawei-auth"
     
     private const val AUTH_URL = "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize"
     private const val TOKEN_URL = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
     private const val SCOPES = "https://www.huawei.com/healthkit/step.read " +
-            "https://www.huawei.com/healthkit/heartrate.read " +
-            "https://www.huawei.com/healthkit/distance.read " +
-            "https://www.huawei.com/healthkit/calories.read " +
-            "https://www.huawei.com/healthkit/activity.read"
+            "https://www.huawei.com/healthkit/heartrate.read"
 
     private fun getEncryptedPrefs(context: Context): android.content.SharedPreferences {
         val masterKey = MasterKey.Builder(context)
@@ -45,30 +42,59 @@ object HuaweiAuthManager {
     }
 
     fun startLogin(context: Context) {
+        val state = java.util.UUID.randomUUID().toString()
+        saveState(context, state)
+
         val uri = Uri.parse(AUTH_URL).buildUpon()
             .appendQueryParameter("client_id", CLIENT_ID)
             .appendQueryParameter("response_type", "code")
             .appendQueryParameter("redirect_uri", REDIRECT_URI)
             .appendQueryParameter("scope", SCOPES)
             .appendQueryParameter("access_type", "offline")
+            .appendQueryParameter("state", state)
             .build()
 
         val customTabsIntent = CustomTabsIntent.Builder().build()
         customTabsIntent.launchUrl(context, uri)
     }
 
+    private fun saveState(context: Context, state: String) {
+        context.getSharedPreferences("huawei_prefs_temp", Context.MODE_PRIVATE)
+            .edit().putString("oauth_state", state).apply()
+    }
+
     suspend fun handleAuthRedirect(context: Context, uri: Uri): Boolean {
         val uriStr = uri.toString()
-        if (uriStr.startsWith(REDIRECT_URI) || uriStr.startsWith("com.thruxion.app://huawei-auth")) {
+        Log.d("HuaweiAuth", "Handling redirect URI: $uriStr")
+        
+        if (uriStr.contains("code=")) {
             val code = uri.getQueryParameter("code")
+            val state = uri.getQueryParameter("state")
+            
+            Log.d("HuaweiAuth", "Extracted code: $code, state: $state")
+            
             if (code != null) {
-                return exchangeCodeForToken(context, code)
+                if (validateState(context, state)) {
+                    return exchangeCodeForToken(context, code)
+                } else {
+                    val saved = context.getSharedPreferences("huawei_prefs_temp", Context.MODE_PRIVATE).getString("oauth_state", null)
+                    Log.e("HuaweiAuth", "State validation failed. Received: $state, Expected: $saved")
+                }
             }
+        } else {
+            Log.w("HuaweiAuth", "Redirect URI does not contain a code")
         }
         return false
     }
 
+    private fun validateState(context: Context, receivedState: String?): Boolean {
+        val savedState = context.getSharedPreferences("huawei_prefs_temp", Context.MODE_PRIVATE)
+            .getString("oauth_state", null)
+        return savedState != null && savedState == receivedState
+    }
+
     private suspend fun exchangeCodeForToken(context: Context, code: String): Boolean = withContext(Dispatchers.IO) {
+        Log.d("HuaweiAuth", "Exchanging code for token. Code: $code")
         try {
             val client = OkHttpClient()
             val requestBody = FormBody.Builder()
@@ -85,14 +111,18 @@ object HuaweiAuthManager {
                 .build()
 
             val response = client.newCall(request).execute()
+            val responseBody = response.body?.string() ?: ""
+            
             if (response.isSuccessful) {
-                val responseBody = response.body?.string() ?: ""
+                Log.d("HuaweiAuth", "Token exchange successful")
                 val json = JSONObject(responseBody)
                 saveTokens(context, json)
                 return@withContext true
+            } else {
+                Log.e("HuaweiAuth", "Token exchange failed. Status: ${response.code}. Body: $responseBody")
             }
         } catch (e: Exception) {
-            Log.e("HuaweiAuth", "Error exchanging code", e)
+            Log.e("HuaweiAuth", "Error during code exchange", e)
         }
         false
     }

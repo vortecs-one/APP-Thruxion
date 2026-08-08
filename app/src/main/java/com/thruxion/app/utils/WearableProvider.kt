@@ -44,4 +44,34 @@ interface WearableProvider {
      * Fetches total calories (kcal) for the given time range.
      */
     suspend fun getCalories(context: Context, startTime: Instant, endTime: Instant): Double
+
+    /**
+     * Fetches latest weight reading (kg).
+     */
+    suspend fun getLatestWeight(context: Context): Double?
+
+    /**
+     * Fetches daily sleep duration (minutes).
+     */
+    suspend fun getDailySleep(context: Context): Int
+
+    /**
+     * Fetches latest stress reading.
+     */
+    suspend fun getLatestStress(context: Context): Int?
+
+    /**
+     * Fetches latest SpO2 reading (percentage).
+     */
+    suspend fun getLatestSpO2(context: Context): Int?
+
+    /**
+     * Fetches latest blood pressure reading (systolic/diastolic).
+     */
+    suspend fun getLatestBloodPressure(context: Context): Pair<Int, Int>?
+
+    /**
+     * Fetches latest skin temperature reading (Celsius).
+     */
+    suspend fun getLatestSkinTemperature(context: Context): Double?
 }

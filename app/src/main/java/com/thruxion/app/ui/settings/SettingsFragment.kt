@@ -14,6 +14,7 @@ import com.thruxion.app.databinding.FragmentSettingsBinding
 import com.thruxion.app.utils.LocaleManager
 import com.thruxion.app.utils.ThemeManager
 import com.thruxion.app.utils.HealthManager
+import com.thruxion.app.utils.HuaweiHealthProvider
 import com.thruxion.app.utils.HuaweiAuthManager
 import com.thruxion.app.utils.MetaMaskManager
 import com.thruxion.app.network.security.TokenManager
@@ -136,6 +137,18 @@ class SettingsFragment : Fragment() {
                 WalletDetailsDialogFragment().show(parentFragmentManager, "WalletDetails")
             } else {
                 Toast.makeText(context, "Please connect your wallet first", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.cardHealth.setOnClickListener {
+            lifecycleScope.launch {
+                val isConnected = HuaweiHealthProvider().isConnected(requireContext())
+                if (isConnected) {
+                    HuaweiDetailsDialogFragment().show(parentFragmentManager, "HuaweiDetails")
+                } else {
+                    // Fallback or explain it's for Huawei direct sync
+                    Toast.makeText(context, "Connect Huawei Account to see detailed metrics", Toast.LENGTH_SHORT).show()
+                }
             }
         }
         

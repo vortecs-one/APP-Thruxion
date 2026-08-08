@@ -28,6 +28,7 @@ foundation = "1.11.2"
 room = "2.8.4"
 composeBom = "2024.10.01"
 composeCompiler = "2.0.0"
+agconnect = "1.9.1.301"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -68,6 +69,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+huawei-agconnect-core = { group = "com.huawei.agconnect", name = "agconnect-core", version.ref = "agconnect" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -29,12 +29,11 @@ import java.math.BigInteger
  * Manages the MetaMask Embedded Wallet (Web3Auth) integration.
  * Handles authentication, session management, and key retrieval.
  */
-object MetaMaskManager {
+object MetaMaskManager
+{
     private const val TAG = "MetaMaskManager"
-    
-    private const val CLIENT_ID = "BGiQzOQVw_kEBI4c66cDKrYwTDsnWr2iQOLiZnojd7PTGssirKtDasVsNV3V0UtvMdtYXof8Z9122N1V4Vl6GPw" 
-    
-    // Default RPC for balance checks (Sepolia Testnet)
+    private const val CLIENT_ID = "BGiQzOQVw_kEBI4c66cDKrYwTDsnWr2iQOLiZnojd7PTGssirKtDasVsNV3V0UtvMdtYXof8Z9122N1V4Vl6GPw"
+    //Default RPC for balance checks (Sepolia Testnet)
     private const val DEFAULT_RPC = "https://rpc.ankr.com/eth_sepolia"
 
     data class Token(

@@ -100,4 +100,7 @@ dependencies {
     // METAMASK / WEB3AUTH
     implementation("com.github.web3auth:web3auth-android-sdk:10.0.1")
     implementation("org.web3j:core:4.8.8-android")
+
+    // HUAWEI AGC
+    implementation(libs.huawei.agconnect.core)
 }

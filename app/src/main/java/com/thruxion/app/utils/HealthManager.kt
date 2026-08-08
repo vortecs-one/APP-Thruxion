@@ -107,6 +107,66 @@ class HealthManager(internal val context: Context) {
         return total
     }
 
+    suspend fun readLatestWeight(): Double? {
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                val weight = provider.getLatestWeight(context)
+                if (weight != null) return weight
+            }
+        }
+        return null
+    }
+
+    suspend fun readDailySleep(): Int {
+        var total = 0
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                total += provider.getDailySleep(context)
+            }
+        }
+        return total
+    }
+
+    suspend fun readLatestStress(): Int? {
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                val stress = provider.getLatestStress(context)
+                if (stress != null) return stress
+            }
+        }
+        return null
+    }
+
+    suspend fun readLatestSpO2(): Int? {
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                val spo2 = provider.getLatestSpO2(context)
+                if (spo2 != null) return spo2
+            }
+        }
+        return null
+    }
+
+    suspend fun readLatestBloodPressure(): Pair<Int, Int>? {
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                val bp = provider.getLatestBloodPressure(context)
+                if (bp != null) return bp
+            }
+        }
+        return null
+    }
+
+    suspend fun readLatestSkinTemperature(): Double? {
+        for (provider in providers) {
+            if (provider.isConnected(context)) {
+                val temp = provider.getLatestSkinTemperature(context)
+                if (temp != null) return temp
+            }
+        }
+        return null
+    }
+
     // --- LEGACY METHODS (Maintained for existing UI compatibility) ---
     
     suspend fun readSteps(startTime: Instant, endTime: Instant): List<StepsRecord> {

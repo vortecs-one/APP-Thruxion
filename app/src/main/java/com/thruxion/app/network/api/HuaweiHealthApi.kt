@@ -51,16 +51,12 @@ data class SampleSet(
 data class SamplePoint(
     val startTime: Long,
     val endTime: Long,
+    val dataTypeName: String?,
     val value: List<SampleValue>?
 )
 
-data class SamplePointValue(
-    val intValue: Int? = null,
-    val fpValue: Double? = null
-)
-
-// Correcting the naming conflict with my thought vs implementation
 data class SampleValue(
-    val intValue: Int? = null,
-    val fpValue: Double? = null
+    val fieldName: String?,
+    val integerValue: Int? = null,
+    val floatValue: Double? = null
 )
