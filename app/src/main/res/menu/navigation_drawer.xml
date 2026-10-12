@@ -25,6 +25,10 @@
             android:icon="@drawable/ic_currency"
             android:title="@string/menu_reflow" />
         <item
+            android:id="@+id/nav_rt_location"
+            android:icon="@drawable/ic_my_location"
+            android:title="Live Location" />
+        <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_settings_black_24dp"
             android:title="@string/menu_settings" />

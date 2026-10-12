@@ -19,3 +19,22 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# kotlinx.serialization
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+-keepclassmembers class * {
+    *** Companion;
+}
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable <fields>;
+    @kotlinx.serialization.Serializable <methods>;
+}
+-keepclassmembers class * {
+    *** serializer(...);
+}
+-keepclassmembers class * implements kotlinx.serialization.KSerializer {
+    *** INSTANCE;
+}
+
+# AppAuth
+-keep class net.openid.appauth.** { *; }

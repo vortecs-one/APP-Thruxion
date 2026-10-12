@@ -3,6 +3,7 @@ import org.gradle.kotlin.dsl.invoke
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.plugin.serialization")
     alias(libs.plugins.legacy.kapt)
 }
 
@@ -19,15 +20,30 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["web3authScheme"] = "com.thruxion.app"
+
+        buildConfigField("String", "CLIENT_ID", "\"rt-android\"")
+        buildConfigField("String", "SCOPES", "\"openid offline_access\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "ISSUER", "\"https://localhost:8443/realms/field\"")
+            buildConfigField("String", "API_BASE", "\"https://localhost:8443\"")
+            buildConfigField("String", "WS_URL", "\"wss://localhost:8443/v1/ws\"")
+            buildConfigField("String", "REDIRECT_URI", "\"com.example.rt:/oauth2redirect\"")
+            manifestPlaceholders["appAuthRedirectScheme"] = "com.example.rt"
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "ISSUER", "\"https://rt.thruxion.com/realms/field\"")
+            buildConfigField("String", "API_BASE", "\"https://rt.thruxion.com\"")
+            buildConfigField("String", "WS_URL", "\"wss://rt.thruxion.com/v1/ws\"")
+            buildConfigField("String", "REDIRECT_URI", "\"com.thruxion.app:/oauth2redirect\"")
+            manifestPlaceholders["appAuthRedirectScheme"] = "com.thruxion.app"
         }
     }
     compileOptions {
@@ -103,4 +119,8 @@ dependencies {
 
     // HUAWEI AGC
     implementation(libs.huawei.agconnect.core)
+
+    // APPAUTH & SERIALIZATION
+    implementation("net.openid:appauth:0.11.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 }

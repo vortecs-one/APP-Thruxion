@@ -40,4 +40,10 @@
         android:name="com.thruxion.app.ui.healthy.HealthyFragment"
         android:label="@string/menu_healthy"
         tools:layout="@layout/fragment_healthy" />
+
+    <fragment
+        android:id="@+id/nav_rt_location"
+        android:name="com.thruxion.app.rt.ui.RtLocationFragment"
+        android:label="Live Location"
+        tools:layout="@layout/fragment_rt_location" />
 </navigation>

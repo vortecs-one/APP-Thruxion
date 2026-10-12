@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         // 3. Setup Unified AppBarConfiguration
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_settings, R.id.nav_webview, R.id.nav_healthy
+                R.id.nav_transform, R.id.nav_reflow, R.id.nav_slideshow, R.id.nav_rt_location, R.id.nav_settings, R.id.nav_webview, R.id.nav_healthy
             ),
             binding.drawerLayout
         )
@@ -111,7 +111,10 @@ class MainActivity : AppCompatActivity() {
             // Check if it's a Huawei redirect
             if (HuaweiAuthManager.handleAuthRedirect(this@MainActivity, uri)) {
                 Toast.makeText(this@MainActivity, "Huawei Account Connected!", Toast.LENGTH_SHORT).show()
-                findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_healthy)
+                val navController = findNavController(R.id.nav_host_fragment_content_main)
+                if (navController.currentDestination?.id != R.id.nav_settings) {
+                    navController.navigate(R.id.nav_settings)
+                }
                 intent.data = null // Consume the data
                 return@launch
             }

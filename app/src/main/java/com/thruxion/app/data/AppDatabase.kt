@@ -12,13 +12,16 @@ import com.thruxion.app.data.model.ChatMessage
 import com.thruxion.app.data.model.Contact
 import com.thruxion.app.data.model.Folder
 import com.thruxion.app.data.model.SavedPlace
+import com.thruxion.app.rt.db.PendingPoint
+import com.thruxion.app.rt.db.PendingPointDao
 
-@Database(entities = [Folder::class, SavedPlace::class, Contact::class, ChatMessage::class], version = 12, exportSchema = false)
+@Database(entities = [Folder::class, SavedPlace::class, Contact::class, ChatMessage::class, PendingPoint::class], version = 13, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun savedPlaceDao(): SavedPlaceDao
     abstract fun contactDao(): ContactDao
     abstract fun chatMessageDao(): ChatMessageDao
+    abstract fun pendingPointDao(): PendingPointDao
 
     companion object {
         @Volatile
