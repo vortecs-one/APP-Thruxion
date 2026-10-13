@@ -27,11 +27,11 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "ISSUER", "\"https://localhost:8443/realms/field\"")
-            buildConfigField("String", "API_BASE", "\"https://localhost:8443\"")
-            buildConfigField("String", "WS_URL", "\"wss://localhost:8443/v1/ws\"")
-            buildConfigField("String", "REDIRECT_URI", "\"com.example.rt:/oauth2redirect\"")
-            manifestPlaceholders["appAuthRedirectScheme"] = "com.example.rt"
+            buildConfigField("String", "ISSUER", "\"https://rt.thruxion.com/realms/field\"")
+            buildConfigField("String", "API_BASE", "\"https://rt.thruxion.com\"")
+            buildConfigField("String", "WS_URL", "\"wss://rt.thruxion.com/v1/ws\"")
+            buildConfigField("String", "REDIRECT_URI", "\"com.thruxion.app:/oauth2redirect\"")
+            manifestPlaceholders["appAuthRedirectScheme"] = "com.thruxion.app"
         }
         release {
             isMinifyEnabled = true

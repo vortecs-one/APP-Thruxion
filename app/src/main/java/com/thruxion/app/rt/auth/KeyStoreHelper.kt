@@ -40,14 +40,18 @@ object KeyStoreHelper {
 
     fun encrypt(plainText: String): String {
         if (plainText.isEmpty()) return ""
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
-        val iv = cipher.iv
-        val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
-        val combined = ByteArray(iv.size + cipherText.size)
-        System.arraycopy(iv, 0, combined, 0, iv.size)
-        System.arraycopy(cipherText, 0, combined, iv.size, cipherText.size)
-        return Base64.encodeToString(combined, Base64.NO_WRAP)
+        return try {
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
+            val iv = cipher.iv
+            val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+            val combined = ByteArray(iv.size + cipherText.size)
+            System.arraycopy(iv, 0, combined, 0, iv.size)
+            System.arraycopy(cipherText, 0, combined, iv.size, cipherText.size)
+            Base64.encodeToString(combined, Base64.NO_WRAP)
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     fun decrypt(encryptedBase64: String): String? {

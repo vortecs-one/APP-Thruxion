@@ -19,7 +19,7 @@
         android:layout_marginTop="4dp"
         android:text="You have reached the limit of 3 active devices. Please remove a device to register this phone."
         android:textSize="12sp"
-        android:textColor="?attr/colorOnSurfaceVariant"/>
+        android:textColor="?android:attr/textColorSecondary"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvDevicesDialog"

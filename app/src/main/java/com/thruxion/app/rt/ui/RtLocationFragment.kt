@@ -12,7 +12,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.thruxion.app.data.AppDatabase
@@ -47,14 +49,14 @@ class RtLocationFragment : Fragment() {
         if (data != null) {
             val response = AuthorizationResponse.fromIntent(data)
             val ex = AuthorizationException.fromIntent(data)
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val success = authManager.handleAuthResponse(response, ex)
                 if (success) {
-                    Toast.makeText(context, "Signed in successfully", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Signed in successfully", Toast.LENGTH_SHORT).show() }
                     updateAccountUI()
                     registerDeviceAndCheckLimit()
                 } else {
-                    Toast.makeText(context, "Sign in failed: ${ex?.errorDescription ?: "Cancelled"}", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Sign in failed: ${ex?.errorDescription ?: "Cancelled"}", Toast.LENGTH_SHORT).show() }
                 }
             }
         }
@@ -69,7 +71,7 @@ class RtLocationFragment : Fragment() {
         if (fineGranted || coarseGranted) {
             startTrackingService()
         } else {
-            Toast.makeText(context, "Location permissions are required for tracking", Toast.LENGTH_LONG).show()
+            context?.let { Toast.makeText(it, "Location permissions are required for tracking", Toast.LENGTH_LONG).show() }
         }
     }
 
@@ -84,9 +86,13 @@ class RtLocationFragment : Fragment() {
         wsClient = RtWebSocketClient.getInstance(requireContext())
 
         setupUI()
-        observeData()
 
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        observeData()
     }
 
     override fun onResume() {
@@ -97,13 +103,13 @@ class RtLocationFragment : Fragment() {
 
     private fun setupUI() {
         devicesAdapter = RtDevicesAdapter { device ->
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val success = deviceManager.deleteDevice(device.id)
                 if (success) {
-                    Toast.makeText(context, "Device removed", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Device removed", Toast.LENGTH_SHORT).show() }
                     refreshDevicesList()
                 } else {
-                    Toast.makeText(context, "Failed to remove device", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Failed to remove device", Toast.LENGTH_SHORT).show() }
                 }
             }
         }
@@ -112,22 +118,22 @@ class RtLocationFragment : Fragment() {
         binding.rvDevices.adapter = devicesAdapter
 
         binding.btnLogin.setOnClickListener {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val authIntent = authManager.createAuthIntent()
                     authLauncher.launch(authIntent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Error starting sign in: ${e.message}", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Error starting sign in: ${e.message}", Toast.LENGTH_SHORT).show() }
                 }
             }
         }
 
         binding.btnLogout.setOnClickListener {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val endSessionIntent = authManager.logout()
                 updateAccountUI()
                 refreshDevicesList()
-                Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+                context?.let { Toast.makeText(it, "Signed out", Toast.LENGTH_SHORT).show() }
                 if (endSessionIntent != null) {
                     try {
                         startActivity(endSessionIntent)
@@ -143,7 +149,7 @@ class RtLocationFragment : Fragment() {
                 stopTrackingService()
             } else {
                 if (!authManager.isLoggedIn()) {
-                    Toast.makeText(context, "Please sign in first", Toast.LENGTH_SHORT).show()
+                    context?.let { Toast.makeText(it, "Please sign in first", Toast.LENGTH_SHORT).show() }
                     return@setOnClickListener
                 }
                 checkPermissionsAndStart()
@@ -156,45 +162,52 @@ class RtLocationFragment : Fragment() {
     }
 
     private fun observeData() {
-        lifecycleScope.launch {
-            wsClient.statusFlow.collectLatest { status ->
-                isTrackingActive = status !is TrackingStatus.Stopped && status !is TrackingStatus.SignInRequired
-                binding.tvStatus.text = "Status: $status"
-                binding.btnStartStopTracking.text = if (isTrackingActive) "Stop tracking" else "Start tracking"
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    wsClient.statusFlow.collectLatest { status ->
+                        val b = _binding ?: return@collectLatest
+                        isTrackingActive = status !is TrackingStatus.Stopped && status !is TrackingStatus.SignInRequired
+                        b.tvStatus.text = "Status: $status"
+                        b.btnStartStopTracking.text = if (isTrackingActive) "Stop tracking" else "Start tracking"
 
-                if (status is TrackingStatus.SignInRequired) {
-                    updateAccountUI()
-                    Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_LONG).show()
+                        if (status is TrackingStatus.SignInRequired) {
+                            updateAccountUI()
+                            context?.let { Toast.makeText(it, "Session expired. Please sign in again.", Toast.LENGTH_LONG).show() }
+                        }
+                    }
                 }
-            }
-        }
 
-        lifecycleScope.launch {
-            val db = AppDatabase.getDatabase(requireContext())
-            db.pendingPointDao().getPendingCountFlow().collectLatest { count ->
-                binding.tvPendingCount.text = "Pending points in buffer: $count"
-            }
-        }
+                launch {
+                    val db = AppDatabase.getDatabase(requireContext())
+                    db.pendingPointDao().getPendingCountFlow().collectLatest { count ->
+                        val b = _binding ?: return@collectLatest
+                        b.tvPendingCount.text = "Pending points in buffer: $count"
+                    }
+                }
 
-        lifecycleScope.launch {
-            authManager.sessionEndedEvents.collectLatest {
-                updateAccountUI()
-                Toast.makeText(context, "Session ended. Please sign in again.", Toast.LENGTH_LONG).show()
+                launch {
+                    authManager.sessionEndedEvents.collectLatest {
+                        updateAccountUI()
+                        context?.let { Toast.makeText(it, "Session ended. Please sign in again.", Toast.LENGTH_LONG).show() }
+                    }
+                }
             }
         }
     }
 
     private fun updateAccountUI() {
+        val b = _binding ?: return
         val loggedIn = authManager.isLoggedIn()
         if (loggedIn) {
             val username = authManager.getPreferredUsername()
-            binding.tvUsername.text = "Signed in as: $username"
-            binding.btnLogin.visibility = View.GONE
-            binding.btnLogout.visibility = View.VISIBLE
+            b.tvUsername.text = "Signed in as: $username"
+            b.btnLogin.visibility = View.GONE
+            b.btnLogout.visibility = View.VISIBLE
         } else {
-            binding.tvUsername.text = "Not signed in"
-            binding.btnLogin.visibility = View.VISIBLE
-            binding.btnLogout.visibility = View.GONE
+            b.tvUsername.text = "Not signed in"
+            b.btnLogin.visibility = View.VISIBLE
+            b.btnLogout.visibility = View.GONE
         }
     }
 
@@ -203,9 +216,13 @@ class RtLocationFragment : Fragment() {
             devicesAdapter.submitList(emptyList())
             return
         }
-        lifecycleScope.launch {
-            val activeDevices = deviceManager.getActiveDevices()
-            devicesAdapter.submitList(activeDevices)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val activeDevices = deviceManager.getActiveDevices()
+                devicesAdapter.submitList(activeDevices)
+            } catch (e: Exception) {
+                devicesAdapter.submitList(emptyList())
+            }
         }
     }
 
@@ -241,11 +258,11 @@ class RtLocationFragment : Fragment() {
     }
 
     private fun startTrackingService() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val regResult = deviceManager.registerDeviceIfNeeded()
             when (regResult) {
                 is DeviceRegistrationResult.Success -> {
-                    RtLocationService.startService(requireContext())
+                    context?.let { RtLocationService.startService(it) }
                 }
                 is DeviceRegistrationResult.DeviceLimitReached -> {
                     val dialog = MyDevicesDialogFragment.newInstance()
@@ -255,25 +272,25 @@ class RtLocationFragment : Fragment() {
                     dialog.show(parentFragmentManager, "MyDevicesDialog")
                 }
                 is DeviceRegistrationResult.Revoked -> {
-                    Toast.makeText(context, "Device registration was revoked by server", Toast.LENGTH_LONG).show()
+                    context?.let { Toast.makeText(it, "Device registration was revoked by server", Toast.LENGTH_LONG).show() }
                     updateAccountUI()
                 }
                 is DeviceRegistrationResult.RateLimited -> {
-                    Toast.makeText(context, "Too many registration attempts. Please try again later.", Toast.LENGTH_LONG).show()
+                    context?.let { Toast.makeText(it, "Too many registration attempts. Please try again later.", Toast.LENGTH_LONG).show() }
                 }
                 is DeviceRegistrationResult.Error -> {
-                    Toast.makeText(context, "Device error: ${regResult.message}", Toast.LENGTH_LONG).show()
+                    context?.let { Toast.makeText(it, "Device error: ${regResult.message}", Toast.LENGTH_LONG).show() }
                 }
             }
         }
     }
 
     private fun stopTrackingService() {
-        RtLocationService.stopService(requireContext())
+        context?.let { RtLocationService.stopService(it) }
     }
 
     private fun registerDeviceAndCheckLimit() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val regResult = deviceManager.registerDeviceIfNeeded()
             refreshDevicesList()
             if (regResult is DeviceRegistrationResult.DeviceLimitReached) {

@@ -12,6 +12,11 @@ class Thruxion : Application()
     override fun onCreate()
     {
         super.onCreate()
+        try {
+            java.security.Security.setProperty("keystore.type", "PKCS12")
+        } catch (e: Exception) {
+            // Ignore
+        }
         TokenManager.init(this)
         ThemeManager.init(this)
         LocaleManager.init(this)

@@ -28,14 +28,14 @@
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?android:attr/textColorPrimary"/>
 
             <TextView
                 android:id="@+id/tvDeviceDetails"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
-                android:textColor="?attr/colorOnSurfaceVariant"/>
+                android:textColor="?android:attr/textColorSecondary"/>
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -44,7 +44,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Remove"
-            android:textColor="?attr/colorError"
-            app:strokeColor="?attr/colorError"/>
+            android:textColor="#D32F2F"
+            app:strokeColor="#D32F2F"/>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

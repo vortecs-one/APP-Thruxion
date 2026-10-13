@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import net.openid.appauth.AppAuthConfiguration
 import net.openid.appauth.AuthState
 import net.openid.appauth.AuthorizationException
 import net.openid.appauth.AuthorizationRequest
@@ -25,17 +26,54 @@ import net.openid.appauth.AuthorizationServiceConfiguration
 import net.openid.appauth.EndSessionRequest
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.TokenRequest
+import net.openid.appauth.connectivity.ConnectionBuilder
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.net.HttpURLConnection
+import java.net.URL
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.suspendCancellableCoroutine
+
+object RtConnectionBuilder : ConnectionBuilder {
+    override fun openConnection(uri: Uri): HttpURLConnection {
+        check("http" == uri.scheme || "https" == uri.scheme) {
+            "scheme must be http or https"
+        }
+        val connection = URL(uri.toString()).openConnection() as HttpURLConnection
+        connection.connectTimeout = 15_000
+        connection.readTimeout = 15_000
+        connection.instanceFollowRedirects = false
+        if (connection is HttpsURLConnection) {
+            try {
+                val sslContext = SSLContext.getInstance("TLS")
+                sslContext.init(null, null, null)
+                connection.sslSocketFactory = sslContext.socketFactory
+            } catch (e: Exception) {
+                // Ignore fallback
+            }
+        }
+        return connection
+    }
+}
 
 class RtAuthManager private constructor(context: Context) {
     private val appContext = context.applicationContext
     private val tokenStore = AuthTokenStore(appContext)
     private val refreshMutex = Mutex()
     private val okHttpClient = OkHttpClient()
+
+    private val appAuthConfig = AppAuthConfiguration.Builder()
+        .setConnectionBuilder(RtConnectionBuilder)
+        .build()
+
+    private fun getAuthService(): AuthorizationService {
+        return AuthorizationService(appContext, appAuthConfig)
+    }
 
     private var _authState: AuthState? = tokenStore.loadAuthState()
     val authState: AuthState? get() = _authState
@@ -80,15 +118,23 @@ class RtAuthManager private constructor(context: Context) {
     suspend fun discoverServiceConfiguration(): AuthorizationServiceConfiguration {
         authServiceConfig?.let { return it }
         return withContext(Dispatchers.IO) {
-            suspendCoroutine { continuation ->
-                AuthorizationServiceConfiguration.fetchFromIssuer(Uri.parse(BuildConfig.ISSUER)) { config, ex ->
-                    if (config != null) {
-                        authServiceConfig = config
-                        continuation.resume(config)
-                    } else {
-                        throw ex ?: RuntimeException("Failed to discover issuer configuration")
-                    }
-                }
+            suspendCancellableCoroutine { continuation ->
+                AuthorizationServiceConfiguration.fetchFromIssuer(
+                    Uri.parse(BuildConfig.ISSUER),
+                    { config, ex ->
+                        if (config != null) {
+                            authServiceConfig = config
+                            if (continuation.isActive) {
+                                continuation.resume(config)
+                            }
+                        } else {
+                            if (continuation.isActive) {
+                                continuation.resumeWithException(ex ?: RuntimeException("Failed to discover issuer configuration"))
+                            }
+                        }
+                    },
+                    RtConnectionBuilder
+                )
             }
         }
     }
@@ -104,7 +150,7 @@ class RtAuthManager private constructor(context: Context) {
             .setScope(BuildConfig.SCOPES)
             .build()
 
-        val authService = AuthorizationService(appContext)
+        val authService = getAuthService()
         return authService.getAuthorizationRequestIntent(authRequest)
     }
 
@@ -113,19 +159,23 @@ class RtAuthManager private constructor(context: Context) {
             return false
         }
         val tokenRequest = response.createTokenExchangeRequest()
-        val authService = AuthorizationService(appContext)
+        val authService = getAuthService()
 
         return withContext(Dispatchers.IO) {
-            suspendCoroutine { continuation ->
+            suspendCancellableCoroutine { continuation ->
                 authService.performTokenRequest(tokenRequest) { tokenResponse, tokenEx ->
                     if (tokenResponse != null) {
                         val newAuthState = AuthState(response, tokenEx)
                         newAuthState.update(tokenResponse, tokenEx)
                         _authState = newAuthState
                         tokenStore.saveAuthState(newAuthState)
-                        continuation.resume(true)
+                        if (continuation.isActive) {
+                            continuation.resume(true)
+                        }
                     } else {
-                        continuation.resume(false)
+                        if (continuation.isActive) {
+                            continuation.resume(false)
+                        }
                     }
                 }
             }
@@ -152,27 +202,36 @@ class RtAuthManager private constructor(context: Context) {
                 return@withLock null
             }
 
-            val config = discoverServiceConfiguration()
+            val config = try {
+                discoverServiceConfiguration()
+            } catch (e: Exception) {
+                return@withLock null
+            }
+
             val tokenRequest = TokenRequest.Builder(config, BuildConfig.CLIENT_ID)
                 .setGrantType("refresh_token")
                 .setRefreshToken(refreshToken)
                 .setScope(BuildConfig.SCOPES)
                 .build()
 
-            val authService = AuthorizationService(appContext)
+            val authService = getAuthService()
             val refreshResult: Pair<Boolean, Boolean> = withContext(Dispatchers.IO) {
-                suspendCoroutine { continuation ->
+                suspendCancellableCoroutine { continuation ->
                     authService.performTokenRequest(tokenRequest) { response, ex ->
                         if (response != null) {
                             state.update(response, ex)
                             _authState = state
                             tokenStore.saveAuthState(state)
-                            continuation.resume(Pair(true, false))
+                            if (continuation.isActive) {
+                                continuation.resume(Pair(true, false))
+                            }
                         } else {
                             val isInvalidGrant = ex?.code == AuthorizationException.TokenRequestErrors.INVALID_GRANT.code ||
                                     ex?.error == AuthorizationException.TokenRequestErrors.INVALID_GRANT.error ||
                                     ex?.errorDescription?.contains("invalid_grant", ignoreCase = true) == true
-                            continuation.resume(Pair(false, isInvalidGrant))
+                            if (continuation.isActive) {
+                                continuation.resume(Pair(false, isInvalidGrant))
+                            }
                         }
                     }
                 }
@@ -231,7 +290,7 @@ class RtAuthManager private constructor(context: Context) {
                 .setIdTokenHint(idToken)
                 .setPostLogoutRedirectUri(Uri.parse(BuildConfig.REDIRECT_URI))
                 .build()
-            val authService = AuthorizationService(appContext)
+            val authService = getAuthService()
             authService.getEndSessionRequestIntent(endSessionRequest)
         } else null
 
